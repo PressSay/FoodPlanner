@@ -110,6 +110,7 @@ class _ListScreen40State extends State<ListScreen40> {
         },
       ));
     });
+    categoryId = 0;
 
     return Scaffold(
       body: SafeArea(

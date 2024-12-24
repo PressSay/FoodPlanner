@@ -1,3 +1,0 @@
-/home/lpq/Projects/menu_qr/build/linux/x64/debug/pdfium-download/CMakeFiles/pdfium-download.dir
-/home/lpq/Projects/menu_qr/build/linux/x64/debug/pdfium-download/CMakeFiles/edit_cache.dir
-/home/lpq/Projects/menu_qr/build/linux/x64/debug/pdfium-download/CMakeFiles/rebuild_cache.dir

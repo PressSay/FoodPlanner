@@ -1,0 +1,14 @@
+# Target labels
+ pdfium-download
+# Source files and their labels
+/home/lpq/Projects/menu_qr/build/linux/x64/debug/pdfium-download/CMakeFiles/pdfium-download
+/home/lpq/Projects/menu_qr/build/linux/x64/debug/pdfium-download/CMakeFiles/pdfium-download.rule
+/home/lpq/Projects/menu_qr/build/linux/x64/debug/pdfium-download/CMakeFiles/pdfium-download-complete.rule
+/home/lpq/Projects/menu_qr/build/linux/x64/debug/pdfium-download/pdfium-download-prefix/src/pdfium-download-stamp/pdfium-download-build.rule
+/home/lpq/Projects/menu_qr/build/linux/x64/debug/pdfium-download/pdfium-download-prefix/src/pdfium-download-stamp/pdfium-download-configure.rule
+/home/lpq/Projects/menu_qr/build/linux/x64/debug/pdfium-download/pdfium-download-prefix/src/pdfium-download-stamp/pdfium-download-download.rule
+/home/lpq/Projects/menu_qr/build/linux/x64/debug/pdfium-download/pdfium-download-prefix/src/pdfium-download-stamp/pdfium-download-install.rule
+/home/lpq/Projects/menu_qr/build/linux/x64/debug/pdfium-download/pdfium-download-prefix/src/pdfium-download-stamp/pdfium-download-mkdir.rule
+/home/lpq/Projects/menu_qr/build/linux/x64/debug/pdfium-download/pdfium-download-prefix/src/pdfium-download-stamp/pdfium-download-patch.rule
+/home/lpq/Projects/menu_qr/build/linux/x64/debug/pdfium-download/pdfium-download-prefix/src/pdfium-download-stamp/pdfium-download-test.rule
+/home/lpq/Projects/menu_qr/build/linux/x64/debug/pdfium-download/pdfium-download-prefix/src/pdfium-download-stamp/pdfium-download-update.rule

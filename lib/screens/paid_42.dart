@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/dish_record.dart';
 import 'package:menu_qr/services/databases/data.dart';
 import 'package:menu_qr/services/pdf_api.dart';
@@ -9,7 +10,8 @@ import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:provider/provider.dart';
 
 class Paid42 extends StatefulWidget {
-  const Paid42({super.key});
+  const Paid42({super.key, required this.billId});
+  final int billId;
 
   @override
   State<Paid42> createState() => _Paid42State();
@@ -166,19 +168,22 @@ class _Paid42State extends State<Paid42> {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     BillProvider billProvider = context.watch<BillProvider>();
-    int billId = billProvider.billRecord.id;
+    // int billId = billProvider.billRecord.id;
+    int billId = widget.billId;
     String logoPath = 'assets/images/wislam.png';
     String logoText = 'https://wislam.ct.ws';
     String qrImage = logoPath;
     String qrText = logoText;
 
-    amountPaid = billProvider.billRecord.amountPaid;
+    // amountPaid = billProvider.billRecord.amountPaid;
+    BillRecord? billRecord = billProvider.billRecords[billId];
+    amountPaid = billRecord?.amountPaid ?? 0;
     total = 0;
-    for (var element in billProvider.preOrderedDishRecords) {
+    billRecord?.preOrderedDishRecords?.forEach((element) {
       int dishId = element.dishId;
       DishRecord dishRecord = dishRecords[dishId]!;
       total += (element.amount * dishRecord.price);
-    }
+    });
     tax = total * 0.05;
     double change = amountPaid - total;
 

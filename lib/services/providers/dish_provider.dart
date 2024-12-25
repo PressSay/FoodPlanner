@@ -5,8 +5,31 @@ import 'package:menu_qr/models/pre_ordered_dish.dart';
 // ignore: prefer_mixin
 class DishProvider extends ChangeNotifier {
   final Map<int, PreOrderedDishRecord> _indexDishList = {};
+  final List<PreOrderedDishRecord> _indexDishListSorted = [];
 
   Map<int, PreOrderedDishRecord> get indexDishList => _indexDishList;
+  List<PreOrderedDishRecord> get indexDishListSorted => _indexDishListSorted;
+
+  void addIndexDishLIstSorted(PreOrderedDishRecord preOrderedDishRecord) {
+    _indexDishListSorted.add(preOrderedDishRecord);
+  }
+
+  void importDataToIndexDishList(
+      List<PreOrderedDishRecord> preOrderedDishRecords) {
+    _indexDishList.clear();
+    for (var e in preOrderedDishRecords) {
+      _indexDishList.addAll({e.dishId: e});
+    }
+  }
+
+  void importDataToIndexDishListSorted(
+      List<PreOrderedDishRecord> preOrderedDishRecords) {
+    _indexDishListSorted.clear();
+    for (var e in preOrderedDishRecords) {
+      _indexDishListSorted.add(e);
+    }
+    notifyListeners();
+  }
 
   // table will be 0 if user choose order imediately
   void increaseAmount(
@@ -52,6 +75,11 @@ class DishProvider extends ChangeNotifier {
       return;
     }
     _indexDishList.remove(id);
+    notifyListeners();
+  }
+
+  void deleteAmountSorted(int id) {
+    _indexDishListSorted.removeWhere((e) => e.dishId == id);
     notifyListeners();
   }
 

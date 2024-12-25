@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:menu_qr/models/dish_record.dart';
+import 'package:menu_qr/models/pre_ordered_dish.dart';
 import 'package:menu_qr/screens/category_45.dart';
 import 'package:menu_qr/screens/confirm_38.dart';
+import 'package:menu_qr/services/providers/bill_provider.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:menu_qr/widgets/dish_button.dart';
@@ -10,9 +12,16 @@ import 'package:provider/provider.dart';
 import 'package:menu_qr/services/databases/data.dart';
 
 class Order44 extends StatefulWidget {
-  const Order44({super.key, required this.isImmediate});
+  const Order44(
+      {super.key,
+      required this.isImmediate,
+      required this.isRebuild,
+      this.billId});
   final bool isImmediate;
+  final bool isRebuild;
+  final int? billId;
   final iconSize = 24;
+
   @override
   State<StatefulWidget> createState() => _Order44();
 }
@@ -21,16 +30,33 @@ class _Order44 extends State<Order44> {
   String filterTitleDish = "";
   bool _showWidgetB = false;
   final TextEditingController _controller = TextEditingController();
+
+  void saveBillToSql(DishProvider dishProvider, BillProvider billProvider) {
+    List<PreOrderedDishRecord> dishRecordSorted = dishProvider
+        .indexDishList.entries
+        .map((element) => element.value)
+        .toList();
+    dishRecordSorted.sort((a, b) {
+      return dishRecords[a.dishId]!.categoryId! -
+          dishRecords[b.dishId]!.categoryId!;
+    });
+    dishProvider.importDataToIndexDishListSorted(dishRecordSorted);
+    billProvider.saveDishesAtBillId(
+        dishProvider.indexDishListSorted, widget.billId!);
+  }
+
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     // final currentWidth = MediaQuery.of(context).size.width;
     DishProvider dishProvider = context.watch<DishProvider>();
+    BillProvider billProvider = context.watch<BillProvider>();
     // Add item to listview
     Map<int, DishRecord> dishRecordsFiltered =
         (filterTitleDish.isEmpty) ? dishRecords : Map.from(dishRecords)
           ..removeWhere((k, v) => !v.title.contains(filterTitleDish));
     List<Widget> itemDishBuilder = [];
+
     dishRecordsFiltered.forEach((key, value) {
       itemDishBuilder.add(Padding(
           padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
@@ -71,6 +97,11 @@ class _Order44 extends State<Order44> {
               }, orderFunc: () {
                 dishProvider.deleteZero();
                 if (dishProvider.indexDishList.isEmpty) {
+                  return;
+                }
+                if (widget.isRebuild) {
+                  saveBillToSql(dishProvider, billProvider);
+                  Navigator.pop(context);
                   return;
                 }
                 Navigator.push(

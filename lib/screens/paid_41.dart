@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/dish_record.dart';
+import 'package:menu_qr/screens/order_44.dart';
 import 'package:menu_qr/screens/paid_42.dart';
 import 'package:menu_qr/services/databases/data.dart';
 import 'package:menu_qr/services/providers/bill_provider.dart';
+import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:menu_qr/services/throusand_separator_formatter.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:provider/provider.dart';
 
 class Paid41 extends StatefulWidget {
-  const Paid41({super.key});
+  const Paid41({super.key, required this.billId, required this.isRebuild});
+  final int billId;
+  final bool isRebuild;
 
   @override
   State<Paid41> createState() => _Paid41State();
@@ -23,6 +28,72 @@ class _Paid41State extends State<Paid41> {
   double change = 0;
   String timeZone = "vi_VN";
 
+  List<Widget> bottomNavigationBar(
+      BillProvider billProvider, DishProvider dishProvider) {
+    List<Widget> bottomNavWidgets = [];
+    if (widget.isRebuild) {
+      bottomNavWidgets.add(BottomBarButton(
+          child: Icon(
+            Icons.arrow_back,
+          ),
+          callback: () {
+            Navigator.pop(context);
+          }));
+    }
+    bottomNavWidgets.add(
+      BottomBarButton(
+          child: Icon(
+            Icons.home,
+          ),
+          callback: () {
+            billProvider.resetBillIdInRam();
+            Navigator.popUntil(context, (route) => route.isFirst);
+          }),
+    );
+    int quantityElePadding = (widget.isRebuild) ? 0 : 1;
+    for (int i = 0; i < quantityElePadding; i++) {
+      bottomNavWidgets.add(Padding(padding: const EdgeInsets.all(48)));
+    }
+    if (widget.isRebuild) {
+      bottomNavWidgets.add(BottomBarButton(
+          child: Icon(
+            Icons.build,
+          ),
+          callback: () {
+            dishProvider.importDataToIndexDishList(billProvider
+                .billRecords[widget.billId]!.preOrderedDishRecords!);
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (BuildContext context) => Order44(
+                      billId: widget.billId,
+                      isRebuild: true,
+                      isImmediate: true),
+                ));
+          }));
+    }
+    bottomNavWidgets.add(
+      BottomBarButton(
+          child: Icon(
+            Icons.save,
+          ),
+          callback: () {
+            saveBill(billProvider);
+            if (widget.isRebuild) {
+              Navigator.pop(context);
+              return;
+            }
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (BuildContext context) =>
+                      Paid42(billId: widget.billId),
+                ));
+          }),
+    );
+    return bottomNavWidgets;
+  }
+
   void changeMoney(text) {
     setState(() {
       double moneyCustomer =
@@ -32,7 +103,7 @@ class _Paid41State extends State<Paid41> {
   }
 
   void saveBill(BillProvider billProvider) {
-    billProvider.billRecord.amountPaid = change + total;
+    billProvider.savePaidMoneyAtBillId(widget.billId, total + change);
     return;
   }
 
@@ -40,15 +111,15 @@ class _Paid41State extends State<Paid41> {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     BillProvider billProvider = context.watch<BillProvider>();
-    int tableId = billProvider.billRecord.tableId;
-    int billId = billProvider.billRecord.id;
-    String typeCustomer =
-        (billProvider.billRecord.type) ? "Buy take away" : "Sit in place";
+    DishProvider dishProvider = context.watch<DishProvider>();
+    BillRecord billRecord = billProvider.billRecords[widget.billId]!;
+    int tableId = billRecord.tableId;
+    String typeCustomer = (billRecord.type) ? "Buy take away" : "Sit in place";
     String tableName = (tableId == 0) ? 'None' : tableRecords[tableId]!.name;
 
-    amountPaid = billProvider.billRecord.amountPaid;
+    amountPaid = billRecord.amountPaid;
     total = 0;
-    for (var element in billProvider.preOrderedDishRecords) {
+    for (var element in billRecord.preOrderedDishRecords!) {
       int dishId = element.dishId;
       DishRecord dishRecord = dishRecords[dishId]!;
       total += (element.amount * dishRecord.price);
@@ -67,6 +138,23 @@ class _Paid41State extends State<Paid41> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 24.0),
+            child: RichText(
+              text: TextSpan(children: [
+                TextSpan(
+                    text: 'Date: ',
+                    style: TextStyle(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.bold)),
+                TextSpan(
+                    text: '${billRecord.dateTime}',
+                    style: TextStyle(
+                        color: colorScheme.secondary,
+                        fontWeight: FontWeight.bold))
+              ]),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
             child: RichText(
               text: TextSpan(children: [
                 TextSpan(
@@ -191,7 +279,7 @@ class _Paid41State extends State<Paid41> {
                         color: colorScheme.primary,
                         fontWeight: FontWeight.bold)),
                 TextSpan(
-                    text: '$billId',
+                    text: '${widget.billId}',
                     style: TextStyle(
                         color: colorScheme.secondary,
                         fontWeight: FontWeight.bold))
@@ -201,34 +289,9 @@ class _Paid41State extends State<Paid41> {
         ],
       )),
       bottomNavigationBar: BottomAppBar(
-          child:
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        BottomBarButton(
-            child: Icon(Icons.arrow_back),
-            callback: () {
-              Navigator.pop(context);
-            }),
-        BottomBarButton(
-            child: Icon(
-              Icons.home,
-            ),
-            callback: () {
-              Navigator.popUntil(context, (route) => route.isFirst);
-            }),
-        Padding(padding: EdgeInsets.all(48)),
-        BottomBarButton(
-            child: Icon(
-              Icons.save,
-            ),
-            callback: () {
-              saveBill(billProvider);
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (BuildContext context) => Paid42(),
-                  ));
-            }),
-      ])),
+          child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: bottomNavigationBar(billProvider, dishProvider))),
     );
   }
 }

@@ -23,9 +23,9 @@ class _Table35 extends State<Table35> {
   int numEleInRow = 2;
 
   void saveBillToRam(int tableId, nameTable, BillProvider billProvider,
-      Map<int, PreOrderedDishRecord> indexDishList) {
+      List<PreOrderedDishRecord> indexDishListSorted) {
     billProvider.setBillRecord(0, 0, 0, tableId, nameTable, false, false);
-    billProvider.saveBill(indexDishList);
+    billProvider.saveBill(indexDishListSorted);
   }
 
   @override
@@ -51,8 +51,8 @@ class _Table35 extends State<Table35> {
       Widget tableButton = TableButton(
           nameTable: value.name,
           callBack: () {
-            saveBillToRam(
-                key, value.name, billProvider, dishProvider.indexDishList);
+            saveBillToRam(key, value.name, billProvider,
+                dishProvider.indexDishListSorted);
             Navigator.push(
                 context,
                 MaterialPageRoute(

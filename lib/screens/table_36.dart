@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/table_record.dart';
 import 'package:menu_qr/screens/paid_41.dart';
 import 'package:menu_qr/services/databases/data.dart';
@@ -25,9 +26,25 @@ class _Table36State extends State<Table36> {
     }
   }
 
-  void saveBillToSQL(BillProvider billProvider) {
+  void saveBillToSQL(BillProvider billProvider, DishProvider dishProvider) {
     // remember reassign value billId for billProvider,
     // this allow to back and select dish again
+    billProvider.billRecord.id = billProvider.lastBillId + 1;
+    BillRecord newBillRecord = BillRecord(
+        id: billProvider.billRecord.id,
+        amountPaid: billProvider.billRecord.amountPaid,
+        discount: billProvider.billRecord.discount,
+        tableId: billProvider.billRecord.tableId,
+        nameTable: billProvider.billRecord.nameTable,
+        isLeft: billProvider.billRecord.isLeft,
+        type: billProvider.billRecord.type,
+        dateTime: billProvider.billRecord.dateTime);
+    newBillRecord.preOrderedDishRecords =
+        billProvider.preOrderedDishRecords.toList();
+    billProvider.billRecords
+        .addAll({billProvider.billRecord.id: newBillRecord});
+    billProvider.increaseLastBillId();
+    dishProvider.clearRam();
     return;
   }
 
@@ -57,21 +74,25 @@ class _Table36State extends State<Table36> {
       TableConfirm(
           callBack: () {
             saveInfoTable(tableId);
-            saveBillToSQL(billProvider);
+            saveBillToSQL(billProvider, dishProvider);
             dishProvider.clearRam();
+            billProvider.resetBillIdInRam();
             Navigator.popUntil(context, (route) => route.isFirst);
           },
-          text: (isLock) ? "Add" : "Conifrm"),
+          text: (isLock) ? "Add" : "Confirm"),
     ];
     letMeSeeVar.add(Padding(padding: EdgeInsets.all(14)));
     letMeSeeVar.add(TableConfirm(
         callBack: () {
           saveInfoTable(tableId);
-          saveBillToSQL(billProvider);
+          saveBillToSQL(billProvider, dishProvider);
           Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (BuildContext context) => Paid41(),
+                builder: (BuildContext context) => Paid41(
+                  billId: billProvider.billRecord.id,
+                  isRebuild: false,
+                ),
               ));
         },
         text: 'Prepaid'));

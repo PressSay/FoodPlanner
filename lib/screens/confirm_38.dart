@@ -33,6 +33,7 @@ class _Confirm38 extends State<Confirm38> {
       return dishRecords[a.key]!.categoryId! - dishRecords[b.key]!.categoryId!;
     });
     for (var e in dishRecordSorted) {
+      dishProvider.addIndexDishLIstSorted(e.value);
       if (dishRecords[e.key]!.categoryId! != categoryId) {
         categoryId = dishRecords[e.key]!.categoryId!;
         itemDishBuilder.add(Center(

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:menu_qr/screens/list_40.dart';
+import 'package:menu_qr/screens/list_detail_40.dart';
 import 'package:menu_qr/widgets/bar_button.dart';
 import 'package:menu_qr/widgets/menu_button.dart';
 import 'package:menu_qr/screens/order_44.dart';
@@ -82,7 +82,7 @@ class _Home18 extends State<Home18> {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (BuildContext context) => ListScreen40(),
+                            builder: (BuildContext context) => ListDetail40(),
                           ));
                     },
                   ),
@@ -94,8 +94,10 @@ class _Home18 extends State<Home18> {
                         Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (BuildContext context) =>
-                                  Order44(isImmediate: false),
+                              builder: (BuildContext context) => Order44(
+                                isImmediate: false,
+                                isRebuild: false,
+                              ),
                             ));
                       })
                 ])),
@@ -117,7 +119,7 @@ class _Home18 extends State<Home18> {
                             context,
                             MaterialPageRoute(
                               builder: (BuildContext context) =>
-                                  Order44(isImmediate: true),
+                                  Order44(isImmediate: true, isRebuild: false),
                             ));
                       })
                 ]))

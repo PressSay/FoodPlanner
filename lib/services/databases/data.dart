@@ -1,8 +1,9 @@
-import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/category_record.dart';
 import 'package:menu_qr/models/dish_record.dart';
-import 'package:menu_qr/models/pre_ordered_dish.dart';
 import 'package:menu_qr/models/table_record.dart';
+
+int lastDishId = 5;
+int lastCategoryId = 2;
 
 Map<int, CategoryRecord> categoryRecords = {
   1: CategoryRecord(
@@ -67,77 +68,4 @@ Map<int, TableRecord> tableRecords = {
       id: 6, name: "Bàn gia đình", desc: "Bàn rộng rãi", isLock: false),
   7: TableRecord(id: 7, name: "Bàn bar", desc: "Bàn cao", isLock: false),
   // 8: TableRecord(id: 8, name: "Bàn họp", desc: "Bàn dành cho cuộc họp")
-};
-
-Map<int, BillRecord> billRecords = {
-  1: BillRecord(
-      id: 1,
-      nameTable: "Bàn dãy cuối bàn số 1",
-      tableId: 1,
-      isLeft: false,
-      type: false,
-      dateTime: DateTime.now(),
-      amountPaid: 200000,
-      discount: 0,
-      preOrderedDishRecords: [
-        PreOrderedDishRecord(
-            dishId: 1,
-            billId: 1,
-            titleDish: dishRecords[1]!.title,
-            amount: 3,
-            price: dishRecords[1]!.price,
-            categoryId: dishRecords[1]!.categoryId!,
-            imagePath: dishRecords[1]!.imagePath),
-        PreOrderedDishRecord(
-            dishId: 2,
-            billId: 1,
-            titleDish: dishRecords[2]!.title,
-            amount: 4,
-            price: dishRecords[2]!.price,
-            categoryId: dishRecords[2]!.categoryId!,
-            imagePath: dishRecords[2]!.imagePath),
-        PreOrderedDishRecord(
-            dishId: 3,
-            billId: 1,
-            titleDish: dishRecords[3]!.title,
-            amount: 5,
-            price: dishRecords[3]!.price,
-            categoryId: dishRecords[3]!.categoryId!,
-            imagePath: dishRecords[3]!.imagePath),
-      ]),
-  2: BillRecord(
-      id: 2,
-      nameTable: "Bàn dãy cuối bàn số 1",
-      tableId: 1,
-      isLeft: false,
-      type: false,
-      dateTime: DateTime.now(),
-      amountPaid: 200000,
-      discount: 0,
-      preOrderedDishRecords: [
-        PreOrderedDishRecord(
-            dishId: 1,
-            billId: 2,
-            titleDish: dishRecords[1]!.title,
-            amount: 3,
-            price: dishRecords[1]!.price,
-            categoryId: dishRecords[1]!.categoryId!,
-            imagePath: dishRecords[1]!.imagePath),
-        PreOrderedDishRecord(
-            dishId: 2,
-            billId: 2,
-            titleDish: dishRecords[2]!.title,
-            amount: 4,
-            price: dishRecords[2]!.price,
-            categoryId: dishRecords[2]!.categoryId!,
-            imagePath: dishRecords[2]!.imagePath),
-        PreOrderedDishRecord(
-            dishId: 3,
-            billId: 2,
-            titleDish: dishRecords[3]!.title,
-            amount: 5,
-            price: dishRecords[3]!.price,
-            categoryId: dishRecords[3]!.categoryId!,
-            imagePath: dishRecords[3]!.imagePath),
-      ])
 };

@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 
 class AssignmentButton extends StatelessWidget {
   const AssignmentButton(
-      {super.key, required this.callBack, required this.colors});
+      {super.key,
+      required this.active,
+      required this.callBack,
+      required this.colors});
 
   final Function callBack;
   final List<Color> colors;
+  final bool active;
 
   @override
   Widget build(BuildContext context) {
@@ -17,18 +21,20 @@ class AssignmentButton extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.all(Radius.circular(8)),
           child: Material(
-            color: colors[2], // button color
+            color: (active) ? colors[1] : colors[2], // button color
             child: InkWell(
-              splashColor: colors[1],
+              splashColor: (active) ? colors[1] : colors[0],
               // splash color
-              onTap: () {},
+              onTap: () {
+                callBack();
+              },
               // button pressed
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
                   Icon(
                     Icons.assignment,
-                    color: colors[0],
+                    color: (active) ? colors[0] : colors[1],
                   ), // icon
                 ],
               ),

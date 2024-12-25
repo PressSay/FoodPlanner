@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:logger/logger.dart';
+import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/pre_ordered_dish.dart';
 import 'package:menu_qr/screens/paid_41.dart';
+import 'package:menu_qr/screens/paid_42.dart';
 import 'package:menu_qr/services/databases/data.dart';
 import 'package:menu_qr/services/providers/bill_provider.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
@@ -12,8 +13,8 @@ import 'package:menu_qr/widgets/dish_cofirm.dart';
 import 'package:provider/provider.dart';
 
 class ListDetail40 extends StatefulWidget {
-  const ListDetail40({super.key});
-
+  const ListDetail40({super.key, required this.billRecords});
+  final Map<int, BillRecord> billRecords;
   @override
   State<ListDetail40> createState() => _ListDetail40State();
 }
@@ -25,7 +26,6 @@ class _ListDetail40State extends State<ListDetail40> {
   double total = 0;
   bool isInitBillId = true;
   bool isInitDishes = true;
-  final logger = Logger();
 
   Widget infoPrice(ColorScheme colorScheme, double paid, double total) {
     return Container(
@@ -97,7 +97,8 @@ class _ListDetail40State extends State<ListDetail40> {
     DishProvider dishProvider = context.watch<DishProvider>();
 
     List<Widget> listAssignment = [];
-    billProvider.billRecords.forEach((k, v) {
+
+    widget.billRecords.forEach((k, v) {
       if (isInitBillId) {
         billId = k;
         isInitBillId = !isInitBillId;
@@ -124,8 +125,7 @@ class _ListDetail40State extends State<ListDetail40> {
     // nếu đúng thì khi xóa một DishCofirm hệ thống rebuild sẽ không chạy lại lệnh này
     if (isInitDishes) {
       dishProvider.importDataToIndexDishListSorted(
-          billProvider.billRecords[billId]?.preOrderedDishRecords?.toList() ??
-              []);
+          widget.billRecords[billId]?.preOrderedDishRecords?.toList() ?? []);
       isInitDishes = false;
     }
 
@@ -202,7 +202,14 @@ class _ListDetail40State extends State<ListDetail40> {
               dishProvider.clearRam();
               Navigator.pop(context);
             }),
-        Padding(padding: EdgeInsets.all(48)),
+        BottomBarButton(
+            child: Icon(
+              Icons.home,
+            ),
+            callback: () {
+              billProvider.resetBillIdInRam();
+              Navigator.popUntil(context, (route) => route.isFirst);
+            }),
         BottomBarButton(
             child: Icon(
               Icons.build,
@@ -222,11 +229,15 @@ class _ListDetail40State extends State<ListDetail40> {
               Icons.check,
             ),
             callback: () {
-              // Navigator.push(
-              //     context,
-              //     MaterialPageRoute(
-              //       builder: (BuildContext context) => Paid42(),
-              //     ));
+              billProvider.checkLeftBillId(billId);
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (BuildContext context) => Paid42(
+                      billId: billId,
+                      isRebuild: true,
+                    ),
+                  ));
             }),
       ])),
     );

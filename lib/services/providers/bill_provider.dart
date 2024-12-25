@@ -1,13 +1,10 @@
 import 'package:flutter/foundation.dart';
-import 'package:logger/logger.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/pre_ordered_dish.dart';
 
 import '../databases/data.dart';
 
 class BillProvider extends ChangeNotifier {
-  final logger = Logger();
-
   final BillRecord _billRecord = BillRecord(
       id: 0,
       amountPaid: 0,
@@ -40,7 +37,8 @@ class BillProvider extends ChangeNotifier {
   List<PreOrderedDishRecord> get preOrderedDishRecords =>
       _preOrderedDishRecords;
 
-  void saveBill(List<PreOrderedDishRecord> indexDishListSorted) {
+  void saveIndexListSortedForBill(
+      List<PreOrderedDishRecord> indexDishListSorted) {
     _preOrderedDishRecords.clear();
     for (var e in indexDishListSorted) {
       _preOrderedDishRecords.add(PreOrderedDishRecord(
@@ -141,10 +139,9 @@ class BillProvider extends ChangeNotifier {
 
   void saveDishesAtBillId(
       List<PreOrderedDishRecord> indexDishListSorted, int billId) {
-    _billRecords[billId]!.preOrderedDishRecords!.clear();
-
+    _billRecords[billId]?.preOrderedDishRecords?.clear();
     for (var e in indexDishListSorted) {
-      _billRecords[billId]!.preOrderedDishRecords!.add(PreOrderedDishRecord(
+      _billRecords[billId]?.preOrderedDishRecords?.add(PreOrderedDishRecord(
             dishId: e.dishId,
             billId: e.billId,
             amount: e.amount,
@@ -160,5 +157,14 @@ class BillProvider extends ChangeNotifier {
   void savePaidMoneyAtBillId(int billId, double paid) {
     _billRecords[billId]!.amountPaid = paid;
     notifyListeners();
+  }
+
+  void removeBillRecordAtId(int billId) {
+    _billRecords.removeWhere((k, v) => k == billId);
+    notifyListeners();
+  }
+
+  void checkLeftBillId(int billId) {
+    _billRecords[billId]!.isLeft = true;
   }
 }

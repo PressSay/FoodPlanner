@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:logger/logger.dart';
+import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/dish_record.dart';
 import 'package:menu_qr/models/pre_ordered_dish.dart';
+import 'package:menu_qr/screens/paid_41.dart';
 import 'package:menu_qr/screens/table_35.dart';
+import 'package:menu_qr/services/providers/bill_provider.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:menu_qr/widgets/dish_cofirm.dart';
@@ -20,20 +24,61 @@ class _Confirm38 extends State<Confirm38> {
   int categoryId = 0;
   double total = 0;
   String timeZone = 'vi_VN';
+  bool isAddedDishRecordSorted = false;
+  final logger = Logger();
+
+  void saveBillImmediately(
+      BillProvider billProvider, DishProvider dishProvider) {
+    billProvider.billRecord.id = billProvider.lastBillId + 1;
+    BillRecord newBillRecord = BillRecord(
+        id: billProvider.billRecord.id,
+        amountPaid: billProvider.billRecord.amountPaid,
+        discount: billProvider.billRecord.discount,
+        tableId: 0,
+        nameTable: "không",
+        isLeft: billProvider.billRecord.isLeft,
+        type: billProvider.billRecord.type,
+        dateTime: billProvider.billRecord.dateTime);
+
+    newBillRecord.preOrderedDishRecords = [];
+    billProvider.billRecords
+        .addAll({billProvider.billRecord.id: newBillRecord});
+    billProvider.saveDishesAtBillId(
+        dishProvider.indexDishListSorted, billProvider.billRecord.id);
+    billProvider.increaseLastBillId();
+    dishProvider.clearRam();
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (BuildContext context) => Paid41(
+                  billId: newBillRecord.id,
+                  isRebuild: false,
+                )));
+    logger.d(newBillRecord.preOrderedDishRecords);
+    return;
+  }
 
   @override
   Widget build(BuildContext context) {
     total = 0;
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     DishProvider dishProvider = context.watch<DishProvider>();
+    BillProvider billProvider = context.watch<BillProvider>();
+
     List<Widget> itemDishBuilder = [Padding(padding: EdgeInsets.all(8))];
     List<MapEntry<int, PreOrderedDishRecord>> dishRecordSorted =
         dishProvider.indexDishList.entries.toList();
     dishRecordSorted.sort((a, b) {
       return dishRecords[a.key]!.categoryId! - dishRecords[b.key]!.categoryId!;
     });
+
+    if (!isAddedDishRecordSorted) {
+      dishProvider.clearIndexDishListSorted();
+    }
     for (var e in dishRecordSorted) {
-      dishProvider.addIndexDishLIstSorted(e.value);
+      if (!isAddedDishRecordSorted) {
+        dishProvider.addIndexDishListSorted(e.value);
+      }
       if (dishRecords[e.key]!.categoryId! != categoryId) {
         categoryId = dishRecords[e.key]!.categoryId!;
         itemDishBuilder.add(Center(
@@ -60,8 +105,12 @@ class _Confirm38 extends State<Confirm38> {
         amount: e.value.amount,
         callBackDel: () {
           dishProvider.deleteAmount(e.key);
+          dishProvider.deleteAmountSorted(e.key);
         },
       ));
+    }
+    if (!isAddedDishRecordSorted) {
+      isAddedDishRecordSorted = true;
     }
     categoryId = 0;
     return Scaffold(
@@ -159,12 +208,15 @@ class _Confirm38 extends State<Confirm38> {
             child: Icon(Icons.list_alt),
             callback: () {
               if (widget.isImmediate) {
+                saveBillImmediately(billProvider, dishProvider);
                 return;
               }
               Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (BuildContext context) => Table35()));
+                      builder: (BuildContext context) => Table35(
+                            isList: false,
+                          )));
             }),
       ])),
     );

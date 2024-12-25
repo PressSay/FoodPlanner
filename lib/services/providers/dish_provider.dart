@@ -10,8 +10,12 @@ class DishProvider extends ChangeNotifier {
   Map<int, PreOrderedDishRecord> get indexDishList => _indexDishList;
   List<PreOrderedDishRecord> get indexDishListSorted => _indexDishListSorted;
 
-  void addIndexDishLIstSorted(PreOrderedDishRecord preOrderedDishRecord) {
+  void addIndexDishListSorted(PreOrderedDishRecord preOrderedDishRecord) {
     _indexDishListSorted.add(preOrderedDishRecord);
+  }
+
+  void clearIndexDishListSorted() {
+    _indexDishListSorted.clear();
   }
 
   void importDataToIndexDishList(
@@ -28,7 +32,6 @@ class DishProvider extends ChangeNotifier {
     for (var e in preOrderedDishRecords) {
       _indexDishListSorted.add(e);
     }
-    notifyListeners();
   }
 
   // table will be 0 if user choose order imediately

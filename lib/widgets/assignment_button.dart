@@ -29,14 +29,9 @@ class AssignmentButton extends StatelessWidget {
                 callBack();
               },
               // button pressed
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Icon(
-                    Icons.assignment,
-                    color: (active) ? colors[0] : colors[1],
-                  ), // icon
-                ],
+              child: Icon(
+                Icons.assignment,
+                color: (active) ? colors[0] : colors[1],
               ),
             ),
           ),

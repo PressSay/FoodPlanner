@@ -17,7 +17,6 @@ class _Category45 extends State<Category45> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    double widthScreen = MediaQuery.sizeOf(context).width;
     Map<int, CategoryRecord> filterCategoryRecoreds = (filterTitleCategory
             .isEmpty)
         ? categoryRecords
@@ -31,7 +30,7 @@ class _Category45 extends State<Category45> {
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           SizedBox(
             height: 64,
-            width: widthScreen * 0.8,
+            width: 288.0, // 320 * 0.9
             child: ElevatedButton(
                 style: ButtonStyle(
                     shape: WidgetStateProperty.all<RoundedRectangleBorder>(

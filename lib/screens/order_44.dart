@@ -31,7 +31,7 @@ class _Order44 extends State<Order44> {
   bool _showWidgetB = false;
   final TextEditingController _controller = TextEditingController();
 
-  void saveBillToSql(DishProvider dishProvider, BillProvider billProvider) {
+  void saveRebuildDishes(DishProvider dishProvider, BillProvider billProvider) {
     List<PreOrderedDishRecord> dishRecordSorted = dishProvider
         .indexDishList.entries
         .map((element) => element.value)
@@ -60,15 +60,13 @@ class _Order44 extends State<Order44> {
     dishRecordsFiltered.forEach((key, value) {
       itemDishBuilder.add(Padding(
           padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
-          child: Center(
-            child: DishButton(
-                id: key,
-                categoryId: value.categoryId!,
-                imagePath: value.imagePath,
-                title: value.title,
-                desc: value.desc,
-                price: value.price),
-          )));
+          child: DishButton(
+              id: key,
+              categoryId: value.categoryId!,
+              imagePath: value.imagePath,
+              title: value.title,
+              desc: value.desc,
+              price: value.price)));
     });
 
     return PopScope(
@@ -100,7 +98,7 @@ class _Order44 extends State<Order44> {
                   return;
                 }
                 if (widget.isRebuild) {
-                  saveBillToSql(dishProvider, billProvider);
+                  saveRebuildDishes(dishProvider, billProvider);
                   Navigator.pop(context);
                   return;
                 }

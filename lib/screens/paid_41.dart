@@ -86,8 +86,10 @@ class _Paid41State extends State<Paid41> {
             Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (BuildContext context) =>
-                      Paid42(billId: widget.billId),
+                  builder: (BuildContext context) => Paid42(
+                    billId: widget.billId,
+                    isRebuild: !widget.isRebuild,
+                  ),
                 ));
           }),
     );

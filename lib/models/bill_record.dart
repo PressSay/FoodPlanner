@@ -4,7 +4,7 @@ class BillRecord {
   int id;
   double amountPaid;
   double discount;
-  int tableId;
+  int tableId; // sau khi đã hoàn thành giao dịch thì tableId chỉ là liên kết lỏng lẻo
   String nameTable;
   bool isLeft;
   bool type; // if true buy take away

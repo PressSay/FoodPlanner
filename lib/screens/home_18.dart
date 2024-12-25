@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:menu_qr/screens/list_47.dart';
 import 'package:menu_qr/screens/list_detail_40.dart';
 import 'package:menu_qr/widgets/bar_button.dart';
 import 'package:menu_qr/widgets/menu_button.dart';
@@ -82,7 +83,7 @@ class _Home18 extends State<Home18> {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (BuildContext context) => ListDetail40(),
+                            builder: (BuildContext context) => ListScreen47(),
                           ));
                     },
                   ),

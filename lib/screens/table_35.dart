@@ -10,8 +10,8 @@ import 'package:menu_qr/widgets/table_button.dart';
 import 'package:provider/provider.dart';
 
 class Table35 extends StatefulWidget {
-  const Table35({super.key});
-
+  const Table35({super.key, required this.isList});
+  final bool isList;
   @override
   State<StatefulWidget> createState() => _Table35();
 }
@@ -25,7 +25,7 @@ class _Table35 extends State<Table35> {
   void saveBillToRam(int tableId, nameTable, BillProvider billProvider,
       List<PreOrderedDishRecord> indexDishListSorted) {
     billProvider.setBillRecord(0, 0, 0, tableId, nameTable, false, false);
-    billProvider.saveBill(indexDishListSorted);
+    billProvider.saveIndexListSortedForBill(indexDishListSorted);
   }
 
   @override
@@ -51,13 +51,15 @@ class _Table35 extends State<Table35> {
       Widget tableButton = TableButton(
           nameTable: value.name,
           callBack: () {
-            saveBillToRam(key, value.name, billProvider,
-                dishProvider.indexDishListSorted);
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (BuildContext context) => Table36(),
-                ));
+            if (!widget.isList) {
+              saveBillToRam(key, value.name, billProvider,
+                  dishProvider.indexDishListSorted);
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (BuildContext context) => Table36(),
+                  ));
+            }
           });
       itemBuilderRow.add(tableButton);
       if (counterEle != numEleInRow - 1) {
@@ -110,7 +112,7 @@ class _Table35 extends State<Table35> {
                     controller: _controller,
                     decoration: InputDecoration(
                         border: OutlineInputBorder(),
-                        labelText: 'Search Dish',
+                        labelText: 'Search Table',
                         filled: true,
                         fillColor: colorScheme.primaryContainer),
                     onSubmitted: (text) {

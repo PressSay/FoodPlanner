@@ -10,8 +10,9 @@ import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:provider/provider.dart';
 
 class Paid42 extends StatefulWidget {
-  const Paid42({super.key, required this.billId});
+  const Paid42({super.key, required this.billId, required this.isRebuild});
   final int billId;
+  final bool isRebuild;
 
   @override
   State<Paid42> createState() => _Paid42State();
@@ -249,8 +250,8 @@ class _Paid42State extends State<Paid42> {
                   callback: () async {
                     final pdfFile = await PdfInvoiceApi.generate(
                         colorScheme,
-                        billProvider.billRecord,
-                        billProvider.preOrderedDishRecords,
+                        billRecord!,
+                        billRecord.preOrderedDishRecords ?? [],
                         [
                           'My Name Shop',
                           'My Address Shop',

@@ -114,7 +114,7 @@ class _DishButton extends State<DishButton> {
                                       color: colorScheme.primary,
                                       fontWeight: FontWeight.bold))
                             ]),
-                        Padding(padding: EdgeInsets.all(4.0)),
+                        Padding(padding: EdgeInsets.all(2.0)),
                         Row(
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
@@ -123,13 +123,14 @@ class _DishButton extends State<DishButton> {
                                       color: colorScheme.primary,
                                       fontWeight: FontWeight.bold))
                             ]),
-                        Padding(padding: EdgeInsets.all(4.0)),
+                        Padding(padding: EdgeInsets.all(2.0)),
                         Row(
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
                               SizedBox(
                                 width: halfWidth,
-                                height: 132,
+                                height:
+                                    132, // không được vượt quá halfHeight + 22
                                 child: Text(
                                   widget.desc,
                                   style: TextStyle(

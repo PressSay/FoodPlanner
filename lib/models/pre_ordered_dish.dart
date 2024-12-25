@@ -1,5 +1,5 @@
 class PreOrderedDishRecord {
-  int dishId;
+  int dishId; // sau khi đã hoàn thành giao dịch thì dishId chỉ là liên kết lỏng lẻo
   int billId;
   int categoryId;
   String titleDish;

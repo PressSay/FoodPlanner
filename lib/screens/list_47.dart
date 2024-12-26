@@ -27,9 +27,10 @@ class _ListScreen47State extends State<ListScreen47> {
     List<Widget> itemBuilder = [];
 
     Map<int, BillRecord> filteredBillRecords = (filterTitleBillId.isEmpty)
-        ? billProvider.billRecords
-        : Map.from(billProvider.billRecords)
-      ..removeWhere((k, v) => !'${v.dateTime}'.contains(filterTitleBillId));
+        ? (Map.from(billProvider.billRecords)..removeWhere((k, v) => v.isLeft))
+        : (Map.from(billProvider.billRecords)
+          ..removeWhere(
+              (k, v) => !'${v.dateTime}'.contains(filterTitleBillId)));
 
     filteredBillRecords.forEach((k, v) {
       Widget billButton = Center(
@@ -60,72 +61,97 @@ class _ListScreen47State extends State<ListScreen47> {
 
     return Scaffold(
       body: SafeArea(
-          child: ListView(
-        children: itemBuilder,
-      )),
-      bottomNavigationBar: BottomAppBar(
-          child:
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        BottomBarButton(
-            child: Icon(Icons.arrow_back),
-            callback: () {
-              Navigator.pop(context);
-            }),
-        Padding(padding: EdgeInsets.all(48)),
-        BottomBarButton(
-            child: Icon(
-              Icons.search,
+          child: Column(
+        children: [
+          Expanded(
+            child: ListView(
+              children: itemBuilder,
             ),
-            callback: () {
-              setState(() {
-                _showWidgetB = !_showWidgetB;
-                filterTitleBillId = "";
-              });
-            }),
-        BottomBarButton(
-            child: Icon(Icons.build),
-            callback: () {
-              billRecords.removeWhere((k, v) {
-                return !checkedBillIdList[k]!;
-              });
-              checkedBillIdList.removeWhere((k, v) {
-                return !checkedBillIdList[k]!;
-              });
-              if (billRecords.isEmpty || checkedBillIdList.isEmpty) {
-                return;
-              }
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (BuildContext context) => ListDetail40(
-                      billRecords: billRecords,
-                    ),
-                  ));
-            }),
-      ])),
-      floatingActionButton: AnimatedCrossFade(
-        firstChild: SizedBox(), // Thay thế CategoryBar bằng SizedBox
-        secondChild: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 5, 20, 5),
-          child: TextField(
-            controller: _controller,
-            decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Search BillId',
-                fillColor: colorScheme.primaryContainer),
-            onSubmitted: (text) {
-              setState(() {
-                _showWidgetB = !_showWidgetB;
-                filterTitleBillId = text;
-              });
-            },
           ),
-        ),
-        crossFadeState:
-            _showWidgetB ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-        duration: const Duration(milliseconds: 200),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+          AnimatedCrossFade(
+            firstChild: SizedBox(), // Thay thế CategoryBar bằng SizedBox
+            secondChild: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+              child: TextField(
+                controller: _controller,
+                decoration: InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText: 'Search BillId',
+                    fillColor: colorScheme.primaryContainer),
+                onSubmitted: (text) {
+                  setState(() {
+                    _showWidgetB = !_showWidgetB;
+                    filterTitleBillId = text;
+                  });
+                },
+              ),
+            ),
+            crossFadeState: _showWidgetB
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+          ),
+          Container(
+            height: 56,
+            decoration: BoxDecoration(
+                color: colorScheme.primaryContainer,
+                border: Border(
+                    top: BorderSide(width: 1.0, color: colorScheme.primary))),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+              child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    BottomBarButton(
+                        child: Icon(
+                          Icons.arrow_back,
+                          color: colorScheme.primary,
+                        ),
+                        callback: () {
+                          Navigator.pop(context);
+                        }),
+                    SizedBox(width: 42),
+                    BottomBarButton(
+                        child: Icon(
+                          Icons.search,
+                          color: colorScheme.primary,
+                        ),
+                        callback: () {
+                          setState(() {
+                            _showWidgetB = !_showWidgetB;
+                            filterTitleBillId = "";
+                          });
+                        }),
+                    BottomBarButton(
+                        child: Icon(
+                          Icons.build,
+                          color: colorScheme.primary,
+                        ),
+                        callback: () {
+                          billRecords.removeWhere((k, v) {
+                            return !checkedBillIdList[k]!;
+                          });
+                          checkedBillIdList.removeWhere((k, v) {
+                            return !checkedBillIdList[k]!;
+                          });
+                          if (billRecords.isEmpty ||
+                              checkedBillIdList.isEmpty) {
+                            return;
+                          }
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (BuildContext context) => ListDetail40(
+                                  billRecords: billRecords,
+                                  isViewFromTable: false,
+                                ),
+                              ));
+                        }),
+                  ]),
+            ),
+          )
+        ],
+      )),
     );
   }
 }

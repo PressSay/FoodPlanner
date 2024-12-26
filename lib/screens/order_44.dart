@@ -43,6 +43,8 @@ class _Order44 extends State<Order44> {
     dishProvider.importDataToIndexDishListSorted(dishRecordSorted);
     billProvider.saveDishesAtBillId(
         dishProvider.indexDishListSorted, widget.billId!);
+
+    ///
   }
 
   @override
@@ -77,96 +79,112 @@ class _Order44 extends State<Order44> {
           }
         },
         child: Scaffold(
-          body: SafeArea(
-              child: Column(
+          body: Column(
             children: [
-              Padding(padding: EdgeInsets.all(10)),
               Expanded(
-                  child: ListView(
-                children: itemDishBuilder,
-              )),
-              Padding(padding: EdgeInsets.all(8)),
-              CategoryBar(categoryFunc: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (BuildContext context) => Category45(),
-                    ));
-              }, orderFunc: () {
-                dishProvider.deleteZero();
-                if (dishProvider.indexDishList.isEmpty) {
-                  return;
-                }
-                if (widget.isRebuild) {
-                  saveRebuildDishes(dishProvider, billProvider);
-                  Navigator.pop(context);
-                  return;
-                }
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (BuildContext context) =>
-                            Confirm38(isImmediate: widget.isImmediate)));
-              }),
-              Padding(padding: EdgeInsets.all(8)),
-            ],
-          )),
-          bottomNavigationBar: BottomAppBar(
-              child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: SafeArea(
+                    child: Column(
                   children: [
-                BottomBarButton(
-                    child: Icon(Icons.arrow_back),
-                    callback: () {
-                      Navigator.pop(context);
+                    Padding(padding: EdgeInsets.all(10)),
+                    Expanded(
+                        child: ListView(
+                      children: itemDishBuilder,
+                    )),
+                    Padding(padding: EdgeInsets.all(8)),
+                    CategoryBar(categoryFunc: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (BuildContext context) => Category45(),
+                          ));
+                    }, orderFunc: () {
+                      dishProvider.deleteZero();
+                      if (dishProvider.indexDishList.isEmpty) {
+                        return;
+                      }
+                      if (widget.isRebuild) {
+                        saveRebuildDishes(dishProvider, billProvider);
+                        Navigator.pop(context);
+                        return;
+                      }
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (BuildContext context) =>
+                                  Confirm38(isImmediate: widget.isImmediate)));
                     }),
-                BottomBarButton(
-                    child: Icon(
-                      Icons.delete,
-                      color: colorScheme.error,
-                    ),
-                    callback: () {
-                      dishProvider.clearRamWithNotify();
-                    }),
-                // BottomBarButton(
-                //     child: Icon(Icons.next_plan),
-                //     callback: () {
-                //       Navigator.pop(context);
-                //     }),
-                Padding(padding: EdgeInsets.all(48)),
-                BottomBarButton(
-                    child: Icon(Icons.search),
-                    callback: () {
-                      setState(() {
-                        _showWidgetB = !_showWidgetB;
-                        filterTitleDish = "";
-                      });
-                    })
-              ])),
-          floatingActionButton: AnimatedCrossFade(
-            firstChild: SizedBox(),
-            secondChild: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 5, 20, 5),
-                child: TextField(
-                    controller: _controller,
-                    decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'Search Dish',
-                        filled: true,
-                        fillColor: colorScheme.primaryContainer),
-                    onSubmitted: (text) {
-                      setState(() {
-                        _showWidgetB = !_showWidgetB;
-                        filterTitleDish = text;
-                      });
-                    })),
-            crossFadeState: _showWidgetB
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 200),
+                    Padding(padding: EdgeInsets.all(8)),
+                  ],
+                )),
+              ),
+              AnimatedCrossFade(
+                firstChild: SizedBox(),
+                secondChild: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                    child: TextField(
+                        controller: _controller,
+                        decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                            labelText: 'Search Dish',
+                            filled: true,
+                            fillColor: colorScheme.primaryContainer),
+                        onSubmitted: (text) {
+                          setState(() {
+                            _showWidgetB = !_showWidgetB;
+                            filterTitleDish = text;
+                          });
+                        })),
+                crossFadeState: _showWidgetB
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
+                duration: const Duration(milliseconds: 200),
+              ),
+              Container(
+                height: 56,
+                decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    border: Border(
+                        top: BorderSide(
+                            width: 1.0, color: colorScheme.primary))),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+                  child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        BottomBarButton(
+                            child: Icon(
+                              Icons.arrow_back,
+                              color: colorScheme.primary,
+                            ),
+                            callback: () {
+                              Navigator.pop(context);
+                            }),
+                        BottomBarButton(
+                            child: Icon(
+                              Icons.delete,
+                              color: colorScheme.error,
+                            ),
+                            callback: () {
+                              dishProvider.clearRamWithNotify();
+                            }),
+                        SizedBox(width: 48),
+                        BottomBarButton(
+                            child: Icon(
+                              Icons.search,
+                              color: colorScheme.primary,
+                            ),
+                            callback: () {
+                              setState(() {
+                                _showWidgetB = !_showWidgetB;
+                                filterTitleDish = "";
+                              });
+                            })
+                      ]),
+                ),
+              )
+            ],
           ),
-          floatingActionButtonLocation:
-              FloatingActionButtonLocation.centerFloat,
         ));
   }
 }

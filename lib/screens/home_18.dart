@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:menu_qr/screens/list_47.dart';
 import 'package:menu_qr/screens/list_detail_40.dart';
+import 'package:menu_qr/screens/table_35.dart';
 import 'package:menu_qr/widgets/bar_button.dart';
 import 'package:menu_qr/widgets/menu_button.dart';
 import 'package:menu_qr/screens/order_44.dart';
@@ -54,8 +55,7 @@ class _Home18 extends State<Home18> {
           decoration: BoxDecoration(
               borderRadius: BorderRadius.vertical(top: Radius.circular(8.0)),
               border: Border(
-                  top: BorderSide(
-                      width: 1.0, color: colorScheme.onPrimaryContainer))),
+                  top: BorderSide(width: 1.0, color: colorScheme.primary))),
           child: ListView(children: [
             Padding(
                 padding: EdgeInsets.fromLTRB(30, 25, 30, 20),
@@ -64,7 +64,13 @@ class _Home18 extends State<Home18> {
                   MenuButton(
                     iconData: Icons.table_bar,
                     text: "Table Unclock",
-                    navigateFunc: () {},
+                    navigateFunc: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              maintainState: true,
+                              builder: (context) => Table35(isList: true)));
+                    },
                   ),
                   Padding(padding: EdgeInsets.all(20)),
                   MenuButton(

@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:provider/provider.dart';
 
-class DishButton extends StatefulWidget {
+class DishButton extends StatelessWidget {
   const DishButton(
       {super.key,
       required this.id,
@@ -18,18 +18,11 @@ class DishButton extends StatefulWidget {
   final String title;
   final String desc;
   final double price;
-
-  @override
-  State<StatefulWidget> createState() => _DishButton();
-}
-
-class _DishButton extends State<DishButton> {
-  double width = 320;
-  double height = 220;
-  double halfWidth = 160;
-  double halfHeight = 110;
-
-  int amountDisplay = 0;
+  final double width = 320;
+  final double height = 220;
+  final double halfWidth = 160;
+  final double halfHeight = 110;
+  final int amountDisplay = 0;
 
   String formatNumber(int number) {
     return number.toString().padLeft(2, '0');
@@ -39,7 +32,7 @@ class _DishButton extends State<DishButton> {
   Widget build(BuildContext context) {
     DishProvider dishProvider = context.watch<DishProvider>();
     String priceDisplayToStr =
-        NumberFormat.currency(locale: 'vi_VN').format(widget.price);
+        NumberFormat.currency(locale: 'vi_VN').format(price);
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     return Stack(
       children: [
@@ -93,7 +86,7 @@ class _DishButton extends State<DishButton> {
                             bottomLeft: Radius.circular(20.0),
                           ),
                           child: Image.asset(
-                            widget.imagePath,
+                            imagePath,
                             fit: BoxFit.cover,
                             width: 150, // width * 0.47
                             height: 165, // height * 0.75
@@ -109,7 +102,7 @@ class _DishButton extends State<DishButton> {
                         Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(widget.title,
+                              Text(title,
                                   style: TextStyle(
                                       color: colorScheme.primary,
                                       fontWeight: FontWeight.bold))
@@ -132,7 +125,7 @@ class _DishButton extends State<DishButton> {
                                 height:
                                     132, // không được vượt quá halfHeight + 22
                                 child: Text(
-                                  widget.desc,
+                                  desc,
                                   style: TextStyle(
                                       fontSize: 16, color: colorScheme.primary),
                                   overflow: TextOverflow.clip,
@@ -160,7 +153,7 @@ class _DishButton extends State<DishButton> {
                     child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(formatNumber(dishProvider.amount(widget.id)),
+                          Text(formatNumber(dishProvider.amount(id)),
                               style: TextStyle(
                                   color: colorScheme.primary,
                                   fontWeight: FontWeight.bold)),
@@ -185,8 +178,8 @@ class _DishButton extends State<DishButton> {
                         maximumSize:
                             WidgetStateProperty.all(Size(width, halfHeight))),
                     onPressed: () {
-                      dishProvider.increaseAmount(widget.id, widget.categoryId,
-                          widget.price, widget.title, widget.imagePath);
+                      dishProvider.increaseAmount(
+                          id, categoryId, price, title, imagePath);
                     },
                     child: SizedBox(
                       height: halfHeight,
@@ -202,8 +195,8 @@ class _DishButton extends State<DishButton> {
                         maximumSize:
                             WidgetStateProperty.all(Size(width, halfHeight))),
                     onPressed: () {
-                      dishProvider.decreaseAmount(widget.id, widget.categoryId,
-                          widget.price, widget.title, widget.imagePath);
+                      dishProvider.decreaseAmount(
+                          id, categoryId, price, title, imagePath);
                     },
                     child: SizedBox(
                       height: halfHeight,

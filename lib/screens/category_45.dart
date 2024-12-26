@@ -48,53 +48,74 @@ class _Category45 extends State<Category45> {
     });
     return Scaffold(
       body: SafeArea(
-          child: Padding(
-        padding: const EdgeInsets.fromLTRB(0, 15, 0, 0),
-        child: ListView(
-          children: itemCategoryBuilder,
-        ),
-      )),
-      bottomNavigationBar: BottomAppBar(
-          child:
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        BottomBarButton(
-            child: Icon(Icons.arrow_back),
-            callback: () {
-              Navigator.pop(context);
-            }),
-        Padding(padding: EdgeInsets.all(48)),
-        BottomBarButton(
-            child: Icon(Icons.search),
-            callback: () {
-              setState(() {
-                _showWidgetB = !_showWidgetB;
-                filterTitleCategory = "";
-              });
-            }),
-      ])),
-      floatingActionButton: AnimatedCrossFade(
-        firstChild: SizedBox(), // Thay thế CategoryBar bằng SizedBox
-        secondChild: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 5, 20, 5),
-          child: TextField(
-            controller: _controller,
-            decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Search Category',
-                fillColor: colorScheme.primaryContainer),
-            onSubmitted: (text) {
-              setState(() {
-                _showWidgetB = !_showWidgetB;
-                filterTitleCategory = text;
-              });
-            },
+          child: Column(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(0, 15, 0, 0),
+              child: ListView(
+                children: itemCategoryBuilder,
+              ),
+            ),
           ),
-        ),
-        crossFadeState:
-            _showWidgetB ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-        duration: const Duration(milliseconds: 200),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+          AnimatedCrossFade(
+            firstChild: SizedBox(), // Thay thế CategoryBar bằng SizedBox
+            secondChild: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+              child: TextField(
+                controller: _controller,
+                decoration: InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText: 'Search Category',
+                    fillColor: colorScheme.primaryContainer),
+                onSubmitted: (text) {
+                  setState(() {
+                    _showWidgetB = !_showWidgetB;
+                    filterTitleCategory = text;
+                  });
+                },
+              ),
+            ),
+            crossFadeState: _showWidgetB
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+          ),
+          Container(
+            height: 56,
+            decoration: BoxDecoration(
+                color: colorScheme.primaryContainer,
+                border: Border(
+                    top: BorderSide(width: 1.0, color: colorScheme.primary))),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+              child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    BottomBarButton(
+                        child: Icon(
+                          Icons.arrow_back,
+                          color: colorScheme.primary,
+                        ),
+                        callback: () {
+                          Navigator.pop(context);
+                        }),
+                    BottomBarButton(
+                        child: Icon(
+                          Icons.search,
+                          color: colorScheme.primary,
+                        ),
+                        callback: () {
+                          setState(() {
+                            _showWidgetB = !_showWidgetB;
+                            filterTitleCategory = "";
+                          });
+                        }),
+                  ]),
+            ),
+          )
+        ],
+      )),
     );
   }
 }

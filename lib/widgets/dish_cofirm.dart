@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-class DishCofirm extends StatefulWidget {
+class DishCofirm extends StatelessWidget {
   const DishCofirm(
       {super.key,
       required this.imagePath,
@@ -14,13 +14,8 @@ class DishCofirm extends StatefulWidget {
   final double price;
   final int amount;
   final Function callBackDel;
-  @override
-  State<StatefulWidget> createState() => _DishCofirm();
-}
-
-class _DishCofirm extends State<DishCofirm> {
-  double widthBarDish = 345;
-  double heightBarDish = 90;
+  final double widthBarDish = 345;
+  final double heightBarDish = 90;
 
   String formatNumber(int number) {
     return number.toString().padLeft(2, '0');
@@ -30,7 +25,7 @@ class _DishCofirm extends State<DishCofirm> {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     String priceDisplayToStr =
-        NumberFormat.currency(locale: 'vi_VN').format(widget.price);
+        NumberFormat.currency(locale: 'vi_VN').format(price);
     return Center(
         child: Padding(
       padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
@@ -62,7 +57,7 @@ class _DishCofirm extends State<DishCofirm> {
               bottomLeft: Radius.circular(20.0),
             ),
             child: Image.asset(
-              widget.imagePath,
+              imagePath,
               fit: BoxFit.cover,
               width: 86.25 /* widthBarDish * 0.25 */,
               height: 76.5 /* heightBarDish * 0.85 */,
@@ -81,7 +76,7 @@ class _DishCofirm extends State<DishCofirm> {
                     child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(widget.title,
+                          Text(title,
                               style: TextStyle(
                                   color: colorScheme.primary,
                                   fontWeight: FontWeight.bold))
@@ -126,7 +121,7 @@ class _DishCofirm extends State<DishCofirm> {
                               bottomStart: Radius.circular(8))),
                       child: Padding(
                           padding: EdgeInsets.all(8),
-                          child: Text(formatNumber(widget.amount),
+                          child: Text(formatNumber(amount),
                               style: TextStyle(
                                   color: colorScheme.primary,
                                   fontWeight: FontWeight.bold))))
@@ -137,7 +132,7 @@ class _DishCofirm extends State<DishCofirm> {
                         children: [
                       IconButton(
                           onPressed: () {
-                            widget.callBackDel();
+                            callBackDel();
                           },
                           icon: Icon(
                             Icons.delete,

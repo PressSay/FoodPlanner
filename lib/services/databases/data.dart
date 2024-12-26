@@ -57,7 +57,7 @@ Map<int, TableRecord> tableRecords = {
       id: 1,
       name: "Bàn dãy cuối bàn số 1",
       desc: "Bàn có người ăn chùa",
-      isLock: false),
+      isLock: true),
   2: TableRecord(
       id: 2, name: "Bàn VIP", desc: "Bàn dành cho khách VIP", isLock: true),
   3: TableRecord(id: 3, name: "Bàn tròn", desc: "Bàn tròn lớn", isLock: false),

@@ -13,8 +13,10 @@ import 'package:menu_qr/widgets/dish_cofirm.dart';
 import 'package:provider/provider.dart';
 
 class ListDetail40 extends StatefulWidget {
-  const ListDetail40({super.key, required this.billRecords});
+  const ListDetail40(
+      {super.key, required this.billRecords, required this.isViewFromTable});
   final Map<int, BillRecord> billRecords;
+  final bool isViewFromTable;
   @override
   State<ListDetail40> createState() => _ListDetail40State();
 }
@@ -167,79 +169,103 @@ class _ListDetail40State extends State<ListDetail40> {
 
     return Scaffold(
       body: SafeArea(
-          child: Column(children: [
-        Expanded(
-          child: ListView(
-            children: itemDishBuilder,
+          child: Column(
+        children: [
+          Expanded(
+            child: Column(children: [
+              Expanded(
+                child: ListView(
+                  children: itemDishBuilder,
+                ),
+              ),
+              infoPrice(colorScheme,
+                  billProvider.billRecords[billId]?.amountPaid ?? 0, total),
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Container(
+                  height: 70,
+                  decoration: BoxDecoration(
+                      border: Border.all(width: 1, color: colorScheme.primary)),
+                  child: Row(
+                    children: [
+                      Expanded(
+                          child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: listAssignment,
+                      ))
+                    ],
+                  ),
+                ),
+              )
+            ]),
           ),
-        ),
-        infoPrice(colorScheme,
-            billProvider.billRecords[billId]?.amountPaid ?? 0, total),
-        Padding(
-          padding: EdgeInsets.all(16),
-          child: Container(
-            height: 70,
+          Container(
+            height: 56,
             decoration: BoxDecoration(
-                border: Border.all(width: 1, color: colorScheme.primary)),
-            child: Row(
-              children: [
-                Expanded(
-                    child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: listAssignment,
-                ))
-              ],
+                color: colorScheme.primaryContainer,
+                border: Border(
+                    top: BorderSide(width: 1.0, color: colorScheme.primary))),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+              child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    BottomBarButton(
+                        child: Icon(Icons.arrow_back),
+                        callback: () {
+                          Navigator.pop(context);
+                          if (widget.isViewFromTable) return;
+                          dishProvider.clearRam();
+                        }),
+                    BottomBarButton(
+                        child: Icon(
+                          Icons.home,
+                          color: colorScheme.primary,
+                        ),
+                        callback: () {
+                          billProvider.resetBillIdInRam();
+                          Navigator.popUntil(context, (route) => route.isFirst);
+                        }),
+                    BottomBarButton(
+                        child: Icon(
+                          Icons.build,
+                          color: colorScheme.primary,
+                        ),
+                        callback: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (BuildContext context) => Paid41(
+                                  billId: billId,
+                                  isRebuild: true,
+                                ),
+                              ));
+                        }),
+                    BottomBarButton(
+                        child: Icon(
+                          Icons.check,
+                          color: colorScheme.primary,
+                        ),
+                        callback: () {
+                          billProvider.checkLeftBillId(billId);
+                          setState(() {
+                            widget.billRecords
+                                .removeWhere((k, v) => k == billId);
+                          });
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (BuildContext context) => Paid42(
+                                  billId: billId,
+                                  isRebuild: true,
+                                ),
+                              ));
+                        }),
+                  ]),
             ),
-          ),
-        )
-      ])),
-      bottomNavigationBar: BottomAppBar(
-          child:
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        BottomBarButton(
-            child: Icon(Icons.arrow_back),
-            callback: () {
-              dishProvider.clearRam();
-              Navigator.pop(context);
-            }),
-        BottomBarButton(
-            child: Icon(
-              Icons.home,
-            ),
-            callback: () {
-              billProvider.resetBillIdInRam();
-              Navigator.popUntil(context, (route) => route.isFirst);
-            }),
-        BottomBarButton(
-            child: Icon(
-              Icons.build,
-            ),
-            callback: () {
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (BuildContext context) => Paid41(
-                      billId: billId,
-                      isRebuild: true,
-                    ),
-                  ));
-            }),
-        BottomBarButton(
-            child: Icon(
-              Icons.check,
-            ),
-            callback: () {
-              billProvider.checkLeftBillId(billId);
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (BuildContext context) => Paid42(
-                      billId: billId,
-                      isRebuild: true,
-                    ),
-                  ));
-            }),
-      ])),
+          )
+        ],
+      )),
     );
   }
 }

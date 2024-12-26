@@ -218,56 +218,74 @@ class _Paid42State extends State<Paid42> {
     itemBuilder.addAll(qrCode(colorScheme, logoPath, logoText));
 
     return Scaffold(
-        body: SafeArea(
+      body: SafeArea(
+          child: Column(
+        children: [
+          Expanded(
             child: ListView(children: [
-          Padding(
-              padding: EdgeInsets.all(12),
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: itemBuilder)),
-        ])),
-        bottomNavigationBar: BottomAppBar(
-            child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-              BottomBarButton(
-                  child: Icon(Icons.arrow_back),
-                  callback: () {
-                    Navigator.pop(context);
-                  }),
-              BottomBarButton(
-                  child: Icon(
-                    Icons.home,
-                  ),
-                  callback: () {
-                    Navigator.popUntil(context, (route) => route.isFirst);
-                  }),
-              Padding(padding: EdgeInsets.all(48)),
-              BottomBarButton(
-                  child: Icon(
-                    Icons.print,
-                  ),
-                  callback: () async {
-                    final pdfFile = await PdfInvoiceApi.generate(
-                        colorScheme,
-                        billRecord!,
-                        billRecord.preOrderedDishRecords ?? [],
-                        [
-                          'My Name Shop',
-                          'My Address Shop',
-                          billProvider.billRecord.nameTable,
-                          taxString,
-                          totalString,
-                          amountPaidString,
-                          changeString,
-                          qrImage,
-                          qrText
-                        ],
-                        descFromShop,
-                        timeZone,
-                        "Bill-$billId");
-                    PdfApi.openFile(pdfFile);
-                  }),
-            ])));
+              Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: itemBuilder)),
+            ]),
+          ),
+          Container(
+            height: 56,
+            decoration: BoxDecoration(
+                color: colorScheme.primaryContainer,
+                border: Border(
+                    top: BorderSide(width: 1.0, color: colorScheme.primary))),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+              child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    BottomBarButton(
+                        child: Icon(
+                          Icons.arrow_back,
+                          color: colorScheme.primary,
+                        ),
+                        callback: () {
+                          Navigator.pop(context);
+                        }),
+                    BottomBarButton(
+                        child: Icon(Icons.home, color: colorScheme.primary),
+                        callback: () {
+                          Navigator.popUntil(context, (route) => route.isFirst);
+                        }),
+                    SizedBox(width: 42),
+                    BottomBarButton(
+                        child: Icon(
+                          Icons.print,
+                          color: colorScheme.primary,
+                        ),
+                        callback: () async {
+                          final pdfFile = await PdfInvoiceApi.generate(
+                              colorScheme,
+                              billRecord!,
+                              billRecord.preOrderedDishRecords ?? [],
+                              [
+                                'My Name Shop',
+                                'My Address Shop',
+                                billProvider.billRecord.nameTable,
+                                taxString,
+                                totalString,
+                                amountPaidString,
+                                changeString,
+                                qrImage,
+                                qrText
+                              ],
+                              descFromShop,
+                              timeZone,
+                              "Bill-$billId");
+                          PdfApi.openFile(pdfFile);
+                        }),
+                  ]),
+            ),
+          )
+        ],
+      )),
+    );
   }
 }

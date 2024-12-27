@@ -8,14 +8,14 @@ class SettingButtonOnline extends StatelessWidget {
       required this.callbackCheck,
       required this.callbackRebuild,
       required this.callbackDelete,
-      required this.nameBill});
+      required this.content});
   final ColorScheme colorScheme;
   final double sizeRadius = 8;
   final Function callbackCheck;
   final Function callbackRebuild;
   final Function callbackDelete;
   final bool isChecked;
-  final String nameBill;
+  final String content;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +27,9 @@ class SettingButtonOnline extends StatelessWidget {
           borderRadius: BorderRadius.all(Radius.circular(sizeRadius)),
           boxShadow: [
             BoxShadow(
-                color: Colors.grey, blurRadius: 1.0, offset: Offset(1.0, 1.0))
+                color: colorScheme.primary,
+                blurRadius: 1.0,
+                offset: Offset(1.0, 1.0))
           ]),
 
       child: Row(
@@ -37,14 +39,15 @@ class SettingButtonOnline extends StatelessWidget {
             borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(sizeRadius),
                 bottomLeft: Radius.circular(sizeRadius)),
-            child: Material(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
               color: (isChecked)
                   ? colorScheme.onPrimaryContainer
                   : colorScheme.onPrimary,
-              child: InkWell(
-                splashColor: (!isChecked)
-                    ? colorScheme.onPrimaryContainer
-                    : colorScheme.onPrimary,
+              child: GestureDetector(
+                // splashColor: (!isChecked)
+                //     ? colorScheme.onPrimaryContainer
+                //     : colorScheme.onPrimary,
                 child: SizedBox(
                   width: 222, // width * 0.7 - 2
                   height: 80,
@@ -53,7 +56,7 @@ class SettingButtonOnline extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.all(8.0),
+                        padding: const EdgeInsets.fromLTRB(8, 0, 0, 0),
                         child: Icon(
                           Icons.assignment,
                           color: colorScheme.primary,
@@ -63,10 +66,10 @@ class SettingButtonOnline extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: SizedBox(
-                          width: 182, // width(222) - icon_size - 10
+                          width: 164, // width(222) - icon_size - 10
                           height: 70,
                           child: Text(
-                            nameBill,
+                            content,
                             style: TextStyle(
                                 fontSize: 16, color: colorScheme.primary),
                             overflow: TextOverflow.clip,

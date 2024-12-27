@@ -30,9 +30,15 @@ class _Paid41State extends State<Paid41> {
 
   List<Widget> bottomNavigationBar(BillProvider billProvider,
       DishProvider dishProvider, ColorScheme colorScheme) {
+    final colorBottomBarBtn = [
+      colorScheme.primary,
+      colorScheme.secondaryContainer,
+      colorScheme.onSecondary
+    ];
     List<Widget> bottomNavWidgets = [];
     if (widget.isRebuild) {
       bottomNavWidgets.add(BottomBarButton(
+          colorPrimary: colorBottomBarBtn,
           child: Icon(
             Icons.arrow_back,
             color: colorScheme.primary,
@@ -43,6 +49,7 @@ class _Paid41State extends State<Paid41> {
     }
     bottomNavWidgets.add(
       BottomBarButton(
+          colorPrimary: colorBottomBarBtn,
           child: Icon(Icons.home, color: colorScheme.primary),
           callback: () {
             billProvider.resetBillIdInRam();
@@ -51,10 +58,11 @@ class _Paid41State extends State<Paid41> {
     );
     int quantityElePadding = (widget.isRebuild) ? 0 : 1;
     for (int i = 0; i < quantityElePadding; i++) {
-      bottomNavWidgets.add(Padding(padding: const EdgeInsets.all(48)));
+      bottomNavWidgets.add(SizedBox(width: 42));
     }
     if (widget.isRebuild) {
       bottomNavWidgets.add(BottomBarButton(
+          colorPrimary: colorBottomBarBtn,
           child: Icon(Icons.build, color: colorScheme.primary),
           callback: () {
             dishProvider.importDataToIndexDishList(billProvider
@@ -71,6 +79,7 @@ class _Paid41State extends State<Paid41> {
     }
     bottomNavWidgets.add(
       BottomBarButton(
+          colorPrimary: colorBottomBarBtn,
           child: Icon(Icons.save, color: colorScheme.primary),
           callback: () {
             saveBill(billProvider);
@@ -107,6 +116,8 @@ class _Paid41State extends State<Paid41> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final colorBottomBar = colorScheme.secondaryContainer;
+
     BillProvider billProvider = context.watch<BillProvider>();
     DishProvider dishProvider = context.watch<DishProvider>();
     BillRecord billRecord = billProvider.billRecords[widget.billId]!;
@@ -129,180 +140,183 @@ class _Paid41State extends State<Paid41> {
         NumberFormat.currency(locale: timeZone).format(change);
 
     return Scaffold(
-      body: SafeArea(
-          child: Column(children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 24.0),
-                child: RichText(
-                  text: TextSpan(children: [
-                    TextSpan(
-                        text: 'Date: ',
-                        style: TextStyle(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold)),
-                    TextSpan(
-                        text: '${billRecord.dateTime}',
-                        style: TextStyle(
-                            color: colorScheme.secondary,
-                            fontWeight: FontWeight.bold))
-                  ]),
-                ),
+      body: Column(
+        children: [
+          Expanded(
+            child: SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 24.0),
+                    child: RichText(
+                      text: TextSpan(children: [
+                        TextSpan(
+                            text: 'Date: ',
+                            style: TextStyle(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.bold)),
+                        TextSpan(
+                            text: '${billRecord.dateTime}',
+                            style: TextStyle(
+                                color: colorScheme.secondary,
+                                fontWeight: FontWeight.bold))
+                      ]),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
+                    child: RichText(
+                      text: TextSpan(children: [
+                        TextSpan(
+                            text: 'Table name: ',
+                            style: TextStyle(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.bold)),
+                        TextSpan(
+                            text: tableName,
+                            style: TextStyle(
+                                color: colorScheme.secondary,
+                                fontWeight: FontWeight.bold))
+                      ]),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
+                    child: RichText(
+                      text: TextSpan(children: [
+                        TextSpan(
+                            text: 'Tax(5%): ',
+                            style: TextStyle(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.bold)),
+                        TextSpan(
+                            text: taxString,
+                            style: TextStyle(
+                                color: colorScheme.secondary,
+                                fontWeight: FontWeight.bold))
+                      ]),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
+                    child: RichText(
+                      text: TextSpan(children: [
+                        TextSpan(
+                            text: 'Total: ',
+                            style: TextStyle(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.bold)),
+                        TextSpan(
+                            text: totalString,
+                            style: TextStyle(
+                                color: colorScheme.secondary,
+                                fontWeight: FontWeight.bold))
+                      ]),
+                    ),
+                  ),
+                  Padding(
+                      padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
+                      child: Row(
+                        children: [
+                          Text('Amount paid: ',
+                              style: TextStyle(
+                                  color: colorScheme.primary,
+                                  fontWeight: FontWeight.bold)),
+                          Expanded(
+                              child: SizedBox(
+                            height: 48,
+                            child: TextField(
+                                onChanged: (text) {
+                                  changeMoney(text);
+                                },
+                                onSubmitted: (text) {
+                                  changeMoney(text);
+                                },
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  DecimalFormatter(),
+                                ],
+                                controller: _controller,
+                                decoration: InputDecoration(
+                                    border: const UnderlineInputBorder(),
+                                    filled: true,
+                                    fillColor: colorScheme.secondaryContainer,
+                                    focusColor: colorScheme.secondary)),
+                          ))
+                        ],
+                      )),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
+                    child: RichText(
+                      text: TextSpan(children: [
+                        TextSpan(
+                            text: 'Change: ',
+                            style: TextStyle(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.bold)),
+                        TextSpan(
+                            text: changeString,
+                            style: TextStyle(
+                                color: colorScheme.secondary,
+                                fontWeight: FontWeight.bold))
+                      ]),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
+                    child: RichText(
+                      text: TextSpan(children: [
+                        TextSpan(
+                            text: 'Type: ',
+                            style: TextStyle(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.bold)),
+                        TextSpan(
+                            text: typeCustomer,
+                            style: TextStyle(
+                                color: colorScheme.secondary,
+                                fontWeight: FontWeight.bold))
+                      ]),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
+                    child: RichText(
+                      text: TextSpan(children: [
+                        TextSpan(
+                            text: 'Bill Id: ',
+                            style: TextStyle(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.bold)),
+                        TextSpan(
+                            text: '${widget.billId}',
+                            style: TextStyle(
+                                color: colorScheme.secondary,
+                                fontWeight: FontWeight.bold))
+                      ]),
+                    ),
+                  ),
+                ],
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
-                child: RichText(
-                  text: TextSpan(children: [
-                    TextSpan(
-                        text: 'Table name: ',
-                        style: TextStyle(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold)),
-                    TextSpan(
-                        text: tableName,
-                        style: TextStyle(
-                            color: colorScheme.secondary,
-                            fontWeight: FontWeight.bold))
-                  ]),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
-                child: RichText(
-                  text: TextSpan(children: [
-                    TextSpan(
-                        text: 'Tax(5%): ',
-                        style: TextStyle(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold)),
-                    TextSpan(
-                        text: taxString,
-                        style: TextStyle(
-                            color: colorScheme.secondary,
-                            fontWeight: FontWeight.bold))
-                  ]),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
-                child: RichText(
-                  text: TextSpan(children: [
-                    TextSpan(
-                        text: 'Total: ',
-                        style: TextStyle(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold)),
-                    TextSpan(
-                        text: totalString,
-                        style: TextStyle(
-                            color: colorScheme.secondary,
-                            fontWeight: FontWeight.bold))
-                  ]),
-                ),
-              ),
-              Padding(
-                  padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
-                  child: Row(
-                    children: [
-                      Text('Amount paid: ',
-                          style: TextStyle(
-                              color: colorScheme.primary,
-                              fontWeight: FontWeight.bold)),
-                      Expanded(
-                          child: SizedBox(
-                        height: 48,
-                        child: TextField(
-                            onChanged: (text) {
-                              changeMoney(text);
-                            },
-                            onSubmitted: (text) {
-                              changeMoney(text);
-                            },
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              DecimalFormatter(),
-                            ],
-                            controller: _controller,
-                            decoration: InputDecoration(
-                                border: const UnderlineInputBorder(),
-                                filled: true,
-                                fillColor: colorScheme.secondaryContainer,
-                                focusColor: colorScheme.secondary)),
-                      ))
-                    ],
-                  )),
-              Padding(
-                padding: EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
-                child: RichText(
-                  text: TextSpan(children: [
-                    TextSpan(
-                        text: 'Change: ',
-                        style: TextStyle(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold)),
-                    TextSpan(
-                        text: changeString,
-                        style: TextStyle(
-                            color: colorScheme.secondary,
-                            fontWeight: FontWeight.bold))
-                  ]),
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
-                child: RichText(
-                  text: TextSpan(children: [
-                    TextSpan(
-                        text: 'Type: ',
-                        style: TextStyle(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold)),
-                    TextSpan(
-                        text: typeCustomer,
-                        style: TextStyle(
-                            color: colorScheme.secondary,
-                            fontWeight: FontWeight.bold))
-                  ]),
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
-                child: RichText(
-                  text: TextSpan(children: [
-                    TextSpan(
-                        text: 'Bill Id: ',
-                        style: TextStyle(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold)),
-                    TextSpan(
-                        text: '${widget.billId}',
-                        style: TextStyle(
-                            color: colorScheme.secondary,
-                            fontWeight: FontWeight.bold))
-                  ]),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-        Container(
-          height: 56,
-          decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
-              border: Border(
-                  top: BorderSide(width: 1.0, color: colorScheme.primary))),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-            child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: bottomNavigationBar(
-                    billProvider, dishProvider, colorScheme)),
-          ),
-        )
-      ])),
+          Container(
+            height: 56,
+            decoration: BoxDecoration(
+                color: colorBottomBar,
+                border: Border(
+                    top: BorderSide(width: 1.0, color: colorScheme.primary))),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+              child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: bottomNavigationBar(
+                      billProvider, dishProvider, colorScheme)),
+            ),
+          )
+        ],
+      ),
     );
   }
 }

@@ -25,7 +25,9 @@ class SettingButton extends StatelessWidget {
           borderRadius: BorderRadius.all(Radius.circular(sizeRadius)),
           boxShadow: [
             BoxShadow(
-                color: Colors.grey, blurRadius: 1.0, offset: Offset(1.0, 1.0))
+                color: colorScheme.primary,
+                blurRadius: 1.0,
+                offset: Offset(1.0, 1.0))
           ]),
 
       child: Row(
@@ -35,14 +37,15 @@ class SettingButton extends StatelessWidget {
             borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(sizeRadius),
                 bottomLeft: Radius.circular(sizeRadius)),
-            child: Material(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
               color: (isChecked)
                   ? colorScheme.onPrimaryContainer
                   : colorScheme.onPrimary,
-              child: InkWell(
-                splashColor: (!isChecked)
-                    ? colorScheme.onPrimaryContainer
-                    : colorScheme.onPrimary,
+              child: GestureDetector(
+                // splashColor: (!isChecked)
+                //     ? colorScheme.onPrimaryContainer
+                //     : colorScheme.onPrimary,
                 child: SizedBox(
                   width: 270, // width * 0.85 - 2
                   height: 80,
@@ -51,7 +54,7 @@ class SettingButton extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.all(8.0),
+                        padding: const EdgeInsets.fromLTRB(8, 0, 0, 0),
                         child: Icon(
                           Icons.assignment,
                           color: colorScheme.primary,
@@ -61,7 +64,7 @@ class SettingButton extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: SizedBox(
-                          width: 182, // width(222) - icon_size - 10
+                          width: 216, // width(222) - icon_size - 10
                           height: 70,
                           child: Text(
                             nameBill,

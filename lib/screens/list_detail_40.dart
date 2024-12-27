@@ -95,6 +95,13 @@ class _ListDetail40State extends State<ListDetail40> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final colorBottomBarBtn = [
+      colorScheme.primary,
+      colorScheme.secondaryContainer,
+      colorScheme.onSecondary
+    ];
+    final colorBottomBar = colorScheme.secondaryContainer;
+
     BillProvider billProvider = context.watch<BillProvider>();
     DishProvider dishProvider = context.watch<DishProvider>();
 
@@ -168,41 +175,43 @@ class _ListDetail40State extends State<ListDetail40> {
     categoryId = 0;
 
     return Scaffold(
-      body: SafeArea(
-          child: Column(
+      body: Column(
         children: [
           Expanded(
-            child: Column(children: [
-              Expanded(
-                child: ListView(
-                  children: itemDishBuilder,
-                ),
-              ),
-              infoPrice(colorScheme,
-                  billProvider.billRecords[billId]?.amountPaid ?? 0, total),
-              Padding(
-                padding: EdgeInsets.all(16),
-                child: Container(
-                  height: 70,
-                  decoration: BoxDecoration(
-                      border: Border.all(width: 1, color: colorScheme.primary)),
-                  child: Row(
-                    children: [
-                      Expanded(
-                          child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: listAssignment,
-                      ))
-                    ],
+            child: SafeArea(
+              child: Column(children: [
+                Expanded(
+                  child: ListView(
+                    children: itemDishBuilder,
                   ),
                 ),
-              )
-            ]),
+                infoPrice(colorScheme,
+                    billProvider.billRecords[billId]?.amountPaid ?? 0, total),
+                Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Container(
+                    height: 70,
+                    decoration: BoxDecoration(
+                        border:
+                            Border.all(width: 1, color: colorScheme.primary)),
+                    child: Row(
+                      children: [
+                        Expanded(
+                            child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: listAssignment,
+                        ))
+                      ],
+                    ),
+                  ),
+                )
+              ]),
+            ),
           ),
           Container(
             height: 56,
             decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
+                color: colorBottomBar,
                 border: Border(
                     top: BorderSide(width: 1.0, color: colorScheme.primary))),
             child: Padding(
@@ -211,6 +220,7 @@ class _ListDetail40State extends State<ListDetail40> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     BottomBarButton(
+                        colorPrimary: colorBottomBarBtn,
                         child: Icon(Icons.arrow_back),
                         callback: () {
                           Navigator.pop(context);
@@ -218,6 +228,7 @@ class _ListDetail40State extends State<ListDetail40> {
                           dishProvider.clearRam();
                         }),
                     BottomBarButton(
+                        colorPrimary: colorBottomBarBtn,
                         child: Icon(
                           Icons.home,
                           color: colorScheme.primary,
@@ -227,6 +238,7 @@ class _ListDetail40State extends State<ListDetail40> {
                           Navigator.popUntil(context, (route) => route.isFirst);
                         }),
                     BottomBarButton(
+                        colorPrimary: colorBottomBarBtn,
                         child: Icon(
                           Icons.build,
                           color: colorScheme.primary,
@@ -242,6 +254,7 @@ class _ListDetail40State extends State<ListDetail40> {
                               ));
                         }),
                     BottomBarButton(
+                        colorPrimary: colorBottomBarBtn,
                         child: Icon(
                           Icons.check,
                           color: colorScheme.primary,
@@ -265,7 +278,7 @@ class _ListDetail40State extends State<ListDetail40> {
             ),
           )
         ],
-      )),
+      ),
     );
   }
 }

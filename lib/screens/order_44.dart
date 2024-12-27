@@ -50,6 +50,13 @@ class _Order44 extends State<Order44> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final colorBottomBarBtn = [
+      colorScheme.primary,
+      colorScheme.secondaryContainer,
+      colorScheme.onSecondary
+    ];
+    final colorBottomBar = colorScheme.secondaryContainer;
+
     // final currentWidth = MediaQuery.of(context).size.width;
     DishProvider dishProvider = context.watch<DishProvider>();
     BillProvider billProvider = context.watch<BillProvider>();
@@ -120,14 +127,13 @@ class _Order44 extends State<Order44> {
               AnimatedCrossFade(
                 firstChild: SizedBox(),
                 secondChild: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
                     child: TextField(
                         controller: _controller,
                         decoration: InputDecoration(
-                            border: OutlineInputBorder(),
-                            labelText: 'Search Dish',
-                            filled: true,
-                            fillColor: colorScheme.primaryContainer),
+                          border: OutlineInputBorder(),
+                          labelText: 'Search Dish',
+                        ),
                         onSubmitted: (text) {
                           setState(() {
                             _showWidgetB = !_showWidgetB;
@@ -142,7 +148,7 @@ class _Order44 extends State<Order44> {
               Container(
                 height: 56,
                 decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
+                    color: colorBottomBar,
                     border: Border(
                         top: BorderSide(
                             width: 1.0, color: colorScheme.primary))),
@@ -153,6 +159,7 @@ class _Order44 extends State<Order44> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         BottomBarButton(
+                            colorPrimary: colorBottomBarBtn,
                             child: Icon(
                               Icons.arrow_back,
                               color: colorScheme.primary,
@@ -161,6 +168,11 @@ class _Order44 extends State<Order44> {
                               Navigator.pop(context);
                             }),
                         BottomBarButton(
+                            colorPrimary: [
+                              colorScheme.error,
+                              colorScheme.errorContainer,
+                              colorScheme.onError
+                            ],
                             child: Icon(
                               Icons.delete,
                               color: colorScheme.error,
@@ -168,8 +180,9 @@ class _Order44 extends State<Order44> {
                             callback: () {
                               dishProvider.clearRamWithNotify();
                             }),
-                        SizedBox(width: 48),
+                        SizedBox(width: 42),
                         BottomBarButton(
+                            colorPrimary: colorBottomBarBtn,
                             child: Icon(
                               Icons.search,
                               color: colorScheme.primary,

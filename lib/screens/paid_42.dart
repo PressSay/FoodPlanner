@@ -168,6 +168,12 @@ class _Paid42State extends State<Paid42> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final colorBottomBarBtn = [
+      colorScheme.primary,
+      colorScheme.secondaryContainer,
+      colorScheme.onSecondary
+    ];
+    final colorBottomBar = colorScheme.secondaryContainer;
     BillProvider billProvider = context.watch<BillProvider>();
     // int billId = billProvider.billRecord.id;
     int billId = widget.billId;
@@ -218,22 +224,23 @@ class _Paid42State extends State<Paid42> {
     itemBuilder.addAll(qrCode(colorScheme, logoPath, logoText));
 
     return Scaffold(
-      body: SafeArea(
-          child: Column(
+      body: Column(
         children: [
           Expanded(
-            child: ListView(children: [
-              Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: itemBuilder)),
-            ]),
+            child: SafeArea(
+              child: ListView(children: [
+                Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: itemBuilder)),
+              ]),
+            ),
           ),
           Container(
             height: 56,
             decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
+                color: colorBottomBar,
                 border: Border(
                     top: BorderSide(width: 1.0, color: colorScheme.primary))),
             child: Padding(
@@ -242,6 +249,7 @@ class _Paid42State extends State<Paid42> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     BottomBarButton(
+                        colorPrimary: colorBottomBarBtn,
                         child: Icon(
                           Icons.arrow_back,
                           color: colorScheme.primary,
@@ -250,12 +258,14 @@ class _Paid42State extends State<Paid42> {
                           Navigator.pop(context);
                         }),
                     BottomBarButton(
+                        colorPrimary: colorBottomBarBtn,
                         child: Icon(Icons.home, color: colorScheme.primary),
                         callback: () {
                           Navigator.popUntil(context, (route) => route.isFirst);
                         }),
                     SizedBox(width: 42),
                     BottomBarButton(
+                        colorPrimary: colorBottomBarBtn,
                         child: Icon(
                           Icons.print,
                           color: colorScheme.primary,
@@ -285,7 +295,7 @@ class _Paid42State extends State<Paid42> {
             ),
           )
         ],
-      )),
+      ),
     );
   }
 }

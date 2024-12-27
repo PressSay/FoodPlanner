@@ -2,21 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/screens/list_detail_40.dart';
 import 'package:menu_qr/services/providers/bill_provider.dart';
-import 'package:menu_qr/widgets/setting_button.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
+import 'package:menu_qr/widgets/setting_button_online.dart';
 import 'package:provider/provider.dart';
 
-class ListScreen47 extends StatefulWidget {
-  const ListScreen47({super.key});
+class ListOnline48 extends StatefulWidget {
+  const ListOnline48({super.key});
 
   @override
-  State<ListScreen47> createState() => _ListScreen47State();
+  State<ListOnline48> createState() => _ListOnline48State();
 }
 
-class _ListScreen47State extends State<ListScreen47> {
+class _ListOnline48State extends State<ListOnline48> {
   String filterTitleBillId = "";
   final TextEditingController _controller = TextEditingController();
   bool _showWidgetB = false;
+  bool _showWidgetC = false;
+
   Map<int, bool> checkedBillIdList = {};
   Map<int, BillRecord> billRecords = {};
 
@@ -33,6 +35,7 @@ class _ListScreen47State extends State<ListScreen47> {
     BillProvider billProvider = context.watch<BillProvider>();
     List<Widget> itemBuilder = [];
 
+    // this List Will be online
     Map<int, BillRecord> filteredBillRecords = (filterTitleBillId.isEmpty)
         ? (Map.from(billProvider.billRecords)..removeWhere((k, v) => v.isLeft))
         : (Map.from(billProvider.billRecords)
@@ -43,8 +46,8 @@ class _ListScreen47State extends State<ListScreen47> {
       Widget billButton = Center(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
-          child: SettingButton(
-              nameBill: '${v.dateTime}',
+          child: SettingButtonOnline(
+              content: '${v.dateTime}',
               colorScheme: colorScheme,
               isChecked: checkedBillIdList[k] ?? false,
               callbackCheck: () {
@@ -54,6 +57,11 @@ class _ListScreen47State extends State<ListScreen47> {
                     billRecords.addAll({k: v});
                   }
                   checkedBillIdList[k] = !checkedBillIdList[k]!;
+                });
+              },
+              callbackRebuild: () {
+                setState(() {
+                  _showWidgetC = !_showWidgetC;
                 });
               },
               callbackDelete: () {
@@ -76,15 +84,69 @@ class _ListScreen47State extends State<ListScreen47> {
             ),
           )),
           AnimatedCrossFade(
-            firstChild: SizedBox(), // Thay thế CategoryBar bằng SizedBox
+            firstChild: SizedBox(),
             secondChild: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                        style: ButtonStyle(
+                            shape:
+                                WidgetStateProperty.all<RoundedRectangleBorder>(
+                                    RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6.0),
+                            )),
+                            minimumSize: WidgetStateProperty.all(Size(80, 80))),
+                        onPressed: () {},
+                        child: Icon(
+                          Icons.flag,
+                          size: 30,
+                        )),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(8.0, 0, 8.0, 0),
+                      child: ElevatedButton(
+                          style: ButtonStyle(
+                              shape: WidgetStateProperty.all<
+                                      RoundedRectangleBorder>(
+                                  RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6.0),
+                              )),
+                              minimumSize:
+                                  WidgetStateProperty.all(Size(80, 80))),
+                          onPressed: () {},
+                          child: Icon(Icons.local_shipping, size: 30)),
+                    ),
+                    ElevatedButton(
+                        style: ButtonStyle(
+                            shape:
+                                WidgetStateProperty.all<RoundedRectangleBorder>(
+                                    RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6.0),
+                            )),
+                            minimumSize: WidgetStateProperty.all(Size(80, 80))),
+                        onPressed: () {},
+                        child: Icon(
+                          Icons.check_circle_outline,
+                          size: 30,
+                        )),
+                  ],
+                )),
+            crossFadeState: _showWidgetC
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+          ),
+          AnimatedCrossFade(
+            firstChild: SizedBox(),
+            secondChild: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
               child: TextField(
                 controller: _controller,
                 decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Search BillId',
-                ),
+                    border: OutlineInputBorder(),
+                    labelText: 'Search BillId',
+                    fillColor: colorScheme.primaryContainer),
                 onSubmitted: (text) {
                   setState(() {
                     _showWidgetB = !_showWidgetB;

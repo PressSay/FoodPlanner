@@ -31,6 +31,13 @@ class _Table35 extends State<Table35> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final colorBottomBarBtn = [
+      colorScheme.primary,
+      colorScheme.secondaryContainer,
+      colorScheme.onSecondary
+    ];
+    final colorBottomBar = colorScheme.secondaryContainer;
+
     DishProvider dishProvider = context.watch<DishProvider>();
     BillProvider billProvider = context.watch<BillProvider>();
     Map<int, TableRecord> filteredTableRecords =
@@ -77,25 +84,25 @@ class _Table35 extends State<Table35> {
           children: itemBuilderRow.toList()));
     }
     return Scaffold(
-      body: SafeArea(
-          child: Column(
+      body: Column(
         children: [
           Expanded(
-            child: ListView(
+            child: SafeArea(
+                child: ListView(
               children: itemBuilder,
-            ),
+            )),
           ),
           AnimatedCrossFade(
               firstChild: SizedBox(),
               secondChild: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
                   child: TextField(
                       controller: _controller,
                       decoration: InputDecoration(
-                          border: OutlineInputBorder(),
-                          labelText: 'Search Table',
-                          filled: true,
-                          fillColor: colorScheme.primaryContainer),
+                        border: OutlineInputBorder(),
+                        labelText: 'Search Table',
+                        filled: true,
+                      ),
                       onSubmitted: (text) {
                         setState(() {
                           _showWidgetB = !_showWidgetB;
@@ -109,7 +116,7 @@ class _Table35 extends State<Table35> {
           Container(
             height: 56,
             decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
+                color: colorBottomBar,
                 border: Border(
                     top: BorderSide(width: 1.0, color: colorScheme.primary))),
             child: Padding(
@@ -118,6 +125,7 @@ class _Table35 extends State<Table35> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     BottomBarButton(
+                        colorPrimary: colorBottomBarBtn,
                         child: Icon(
                           Icons.arrow_back,
                           color: colorScheme.primary,
@@ -126,6 +134,7 @@ class _Table35 extends State<Table35> {
                           Navigator.pop(context);
                         }),
                     BottomBarButton(
+                        colorPrimary: colorBottomBarBtn,
                         child: Icon(
                           Icons.home,
                           color: colorScheme.primary,
@@ -135,6 +144,7 @@ class _Table35 extends State<Table35> {
                         }),
                     SizedBox(width: 42),
                     BottomBarButton(
+                        colorPrimary: colorBottomBarBtn,
                         child: Icon(
                           Icons.search,
                           color: colorScheme.primary,
@@ -149,7 +159,7 @@ class _Table35 extends State<Table35> {
             ),
           )
         ],
-      )),
+      ),
     );
   }
 }

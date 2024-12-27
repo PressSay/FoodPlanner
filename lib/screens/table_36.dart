@@ -120,16 +120,22 @@ class _Table36State extends State<Table36> {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final colorBottomBarBtn = [
+      colorScheme.primary,
+      colorScheme.secondaryContainer,
+      colorScheme.onSecondary
+    ];
+    final colorBottomBar = colorScheme.secondaryContainer;
     DishProvider dishProvider = context.watch<DishProvider>();
     BillProvider billProvider = context.watch<BillProvider>();
     TableRecord tableRecord = tableRecords[widget.tableId]!;
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      body: SafeArea(
-          child: Column(
+      body: Column(
         children: [
           Expanded(
+              child: SafeArea(
             child: Center(
                 child: Column(children: [
               Padding(
@@ -159,11 +165,11 @@ class _Table36State extends State<Table36> {
               Padding(padding: EdgeInsets.all(12)),
               warningText(tableRecords[widget.tableId]!.isLock, colorScheme)
             ])),
-          ),
+          )),
           Container(
             height: 56,
             decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
+                color: colorBottomBar,
                 border: Border(
                     top: BorderSide(width: 1.0, color: colorScheme.primary))),
             child: Padding(
@@ -172,6 +178,7 @@ class _Table36State extends State<Table36> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     BottomBarButton(
+                        colorPrimary: colorBottomBarBtn,
                         child: Icon(
                           Icons.arrow_back,
                           color: colorScheme.primary,
@@ -180,6 +187,7 @@ class _Table36State extends State<Table36> {
                           Navigator.pop(context);
                         }),
                     BottomBarButton(
+                        colorPrimary: colorBottomBarBtn,
                         child: Icon(Icons.home, color: colorScheme.primary),
                         callback: () {
                           Navigator.popUntil(context, (route) => route.isFirst);
@@ -190,7 +198,7 @@ class _Table36State extends State<Table36> {
             ),
           )
         ],
-      )),
+      ),
     );
   }
 }

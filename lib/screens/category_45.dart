@@ -17,6 +17,13 @@ class _Category45 extends State<Category45> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final colorBottomBarBtn = [
+      colorScheme.primary,
+      colorScheme.secondaryContainer,
+      colorScheme.onSecondary
+    ];
+    final colorBottomBar = colorScheme.secondaryContainer;
+
     Map<int, CategoryRecord> filterCategoryRecoreds = (filterTitleCategory
             .isEmpty)
         ? categoryRecords
@@ -47,14 +54,15 @@ class _Category45 extends State<Category45> {
       ));
     });
     return Scaffold(
-      body: SafeArea(
-          child: Column(
+      body: Column(
         children: [
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(0, 15, 0, 0),
-              child: ListView(
-                children: itemCategoryBuilder,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(0, 15, 0, 0),
+                child: ListView(
+                  children: itemCategoryBuilder,
+                ),
               ),
             ),
           ),
@@ -84,7 +92,7 @@ class _Category45 extends State<Category45> {
           Container(
             height: 56,
             decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
+                color: colorBottomBar,
                 border: Border(
                     top: BorderSide(width: 1.0, color: colorScheme.primary))),
             child: Padding(
@@ -93,6 +101,7 @@ class _Category45 extends State<Category45> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     BottomBarButton(
+                        colorPrimary: colorBottomBarBtn,
                         child: Icon(
                           Icons.arrow_back,
                           color: colorScheme.primary,
@@ -101,6 +110,7 @@ class _Category45 extends State<Category45> {
                           Navigator.pop(context);
                         }),
                     BottomBarButton(
+                        colorPrimary: colorBottomBarBtn,
                         child: Icon(
                           Icons.search,
                           color: colorScheme.primary,
@@ -115,7 +125,7 @@ class _Category45 extends State<Category45> {
             ),
           )
         ],
-      )),
+      ),
     );
   }
 }

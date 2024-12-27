@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:menu_qr/screens/list_47.dart';
+import 'package:menu_qr/screens/list_48.dart';
 import 'package:menu_qr/screens/list_detail_40.dart';
+import 'package:menu_qr/screens/setting_17.dart';
 import 'package:menu_qr/screens/table_35.dart';
 import 'package:menu_qr/widgets/bar_button.dart';
 import 'package:menu_qr/widgets/menu_button.dart';
@@ -53,7 +55,7 @@ class _Home18 extends State<Home18> {
       Container(
           height: heightScreen * 0.7,
           decoration: BoxDecoration(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(8.0)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               border: Border(
                   top: BorderSide(width: 1.0, color: colorScheme.primary))),
           child: ListView(children: [
@@ -76,7 +78,13 @@ class _Home18 extends State<Home18> {
                   MenuButton(
                       iconData: Icons.adb,
                       text: "Order online List",
-                      navigateFunc: () {})
+                      navigateFunc: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                maintainState: true,
+                                builder: (context) => ListOnline48()));
+                      })
                 ])),
             Padding(
                 padding: EdgeInsets.fromLTRB(30, 0, 30, 20),
@@ -115,7 +123,13 @@ class _Home18 extends State<Home18> {
                   MenuButton(
                     iconData: Icons.settings,
                     text: "Setting",
-                    navigateFunc: () {},
+                    navigateFunc: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (BuildContext context) => Setting17(),
+                          ));
+                    },
                   ),
                   Padding(padding: EdgeInsets.all(20)),
                   MenuButton(

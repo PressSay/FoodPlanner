@@ -62,6 +62,13 @@ class _Confirm38 extends State<Confirm38> {
   Widget build(BuildContext context) {
     total = 0;
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final colorBottomBarBtn = [
+      colorScheme.primary,
+      colorScheme.secondaryContainer,
+      colorScheme.onSecondary
+    ];
+    final colorBottomBar = colorScheme.secondaryContainer;
+
     DishProvider dishProvider = context.watch<DishProvider>();
     BillProvider billProvider = context.watch<BillProvider>();
 
@@ -114,95 +121,94 @@ class _Confirm38 extends State<Confirm38> {
     }
     categoryId = 0;
     return Scaffold(
-      body: SafeArea(
-          child: Column(
+      body: Column(
         children: [
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: ListView(
-                    children: itemDishBuilder,
+            child: SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: ListView(
+                      children: itemDishBuilder,
+                    ),
                   ),
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                      border: Border(
-                          top: BorderSide(
-                              width: 1.0, color: colorScheme.primary),
-                          bottom: BorderSide(
-                              width: 1.0, color: colorScheme.primary))),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Padding(
-                          padding: EdgeInsets.fromLTRB(16, 10, 16, 10),
-                          child: Row(children: [
-                            Text(
-                              "Discount:",
-                              style: TextStyle(
-                                  fontSize: 18,
-                                  color: colorScheme.primary,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                            Padding(padding: EdgeInsets.all(4)),
-                            Text(
-                                NumberFormat.currency(locale: timeZone)
-                                    .format(0.0),
+                  Container(
+                    decoration: BoxDecoration(
+                        border: Border(
+                            top: BorderSide(
+                                width: 1.0, color: colorScheme.primary))),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Padding(
+                            padding: EdgeInsets.fromLTRB(16, 10, 16, 10),
+                            child: Row(children: [
+                              Text(
+                                "Discount:",
                                 style: TextStyle(
-                                    fontSize: 16,
-                                    color: colorScheme.secondary,
-                                    fontWeight: FontWeight.bold))
-                          ])),
-                      Padding(
-                          padding: EdgeInsets.fromLTRB(16, 0, 16, 10),
-                          child: Row(children: [
-                            Text(
-                              "Tax(5%):",
-                              style: TextStyle(
-                                  fontSize: 18,
-                                  color: colorScheme.primary,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                            Padding(padding: EdgeInsets.all(4)),
-                            Text(
-                                NumberFormat.currency(locale: timeZone)
-                                    .format(total * 0.05),
+                                    fontSize: 18,
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              Padding(padding: EdgeInsets.all(4)),
+                              Text(
+                                  NumberFormat.currency(locale: timeZone)
+                                      .format(0.0),
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      color: colorScheme.secondary,
+                                      fontWeight: FontWeight.bold))
+                            ])),
+                        Padding(
+                            padding: EdgeInsets.fromLTRB(16, 0, 16, 10),
+                            child: Row(children: [
+                              Text(
+                                "Tax(5%):",
                                 style: TextStyle(
-                                    fontSize: 16,
-                                    color: colorScheme.secondary,
-                                    fontWeight: FontWeight.bold))
-                          ])),
-                      Padding(
-                          padding: EdgeInsets.fromLTRB(16, 0, 16, 10),
-                          child: Row(children: [
-                            Text(
-                              "Toltal:",
-                              style: TextStyle(
-                                  fontSize: 18,
-                                  color: colorScheme.primary,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                            Padding(padding: EdgeInsets.all(4)),
-                            Text(
-                                NumberFormat.currency(locale: 'vi_VN')
-                                    .format(total),
+                                    fontSize: 18,
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              Padding(padding: EdgeInsets.all(4)),
+                              Text(
+                                  NumberFormat.currency(locale: timeZone)
+                                      .format(total * 0.05),
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      color: colorScheme.secondary,
+                                      fontWeight: FontWeight.bold))
+                            ])),
+                        Padding(
+                            padding: EdgeInsets.fromLTRB(16, 0, 16, 10),
+                            child: Row(children: [
+                              Text(
+                                "Toltal:",
                                 style: TextStyle(
-                                    fontSize: 16,
-                                    color: colorScheme.secondary,
-                                    fontWeight: FontWeight.bold))
-                          ])),
-                    ],
-                  ),
-                )
-              ],
+                                    fontSize: 18,
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              Padding(padding: EdgeInsets.all(4)),
+                              Text(
+                                  NumberFormat.currency(locale: 'vi_VN')
+                                      .format(total),
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      color: colorScheme.secondary,
+                                      fontWeight: FontWeight.bold))
+                            ])),
+                      ],
+                    ),
+                  )
+                ],
+              ),
             ),
           ),
           Container(
             height: 56,
             decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
+                color: colorBottomBar,
                 border: Border(
                     top: BorderSide(width: 1.0, color: colorScheme.primary))),
             child: Padding(
@@ -211,6 +217,7 @@ class _Confirm38 extends State<Confirm38> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     BottomBarButton(
+                        colorPrimary: colorBottomBarBtn,
                         child: Icon(
                           Icons.arrow_back,
                           color: colorScheme.primary,
@@ -219,6 +226,7 @@ class _Confirm38 extends State<Confirm38> {
                           Navigator.pop(context);
                         }),
                     BottomBarButton(
+                        colorPrimary: colorBottomBarBtn,
                         child: Icon(
                           Icons.home,
                           color: colorScheme.primary,
@@ -227,9 +235,11 @@ class _Confirm38 extends State<Confirm38> {
                           Navigator.popUntil(context, (route) => route.isFirst);
                         }),
                     BottomBarButton(
+                        colorPrimary: colorBottomBarBtn,
                         child: Icon(Icons.qr_code, color: colorScheme.primary),
                         callback: () {}),
                     BottomBarButton(
+                        colorPrimary: colorBottomBarBtn,
                         child: Icon(
                           Icons.list_alt,
                           color: colorScheme.primary,
@@ -250,7 +260,7 @@ class _Confirm38 extends State<Confirm38> {
             ),
           )
         ],
-      )),
+      ),
     );
   }
 }

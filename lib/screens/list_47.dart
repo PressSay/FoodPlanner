@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/screens/list_detail_40.dart';
 import 'package:menu_qr/services/providers/bill_provider.dart';
-import 'package:menu_qr/widgets/setting_button.dart';
+import 'package:menu_qr/widgets/order_setting_button.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:provider/provider.dart';
 
@@ -42,9 +42,9 @@ class _ListScreen47State extends State<ListScreen47> {
     filteredBillRecords.forEach((k, v) {
       Widget billButton = Center(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
-          child: SettingButton(
-              nameBill: '${v.dateTime}',
+          padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
+          child: OrderSettingButton(
+              content: '${v.dateTime}',
               colorScheme: colorScheme,
               isChecked: checkedBillIdList[k] ?? false,
               callbackCheck: () {

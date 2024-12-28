@@ -3,7 +3,7 @@ import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/screens/list_detail_40.dart';
 import 'package:menu_qr/services/providers/bill_provider.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
-import 'package:menu_qr/widgets/setting_button_online.dart';
+import 'package:menu_qr/widgets/order_setting_button_online.dart';
 import 'package:provider/provider.dart';
 
 class ListOnline48 extends StatefulWidget {
@@ -45,8 +45,8 @@ class _ListOnline48State extends State<ListOnline48> {
     filteredBillRecords.forEach((k, v) {
       Widget billButton = Center(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
-          child: SettingButtonOnline(
+          padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
+          child: OrderSettingButtonOnl(
               content: '${v.dateTime}',
               colorScheme: colorScheme,
               isChecked: checkedBillIdList[k] ?? false,

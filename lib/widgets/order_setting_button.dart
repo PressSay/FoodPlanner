@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
 
-class SettingButtonOnline extends StatelessWidget {
-  const SettingButtonOnline(
+class OrderSettingButton extends StatelessWidget {
+  const OrderSettingButton(
       {super.key,
       required this.colorScheme,
       required this.isChecked,
       required this.callbackCheck,
-      required this.callbackRebuild,
       required this.callbackDelete,
       required this.content});
   final ColorScheme colorScheme;
   final double sizeRadius = 8;
   final Function callbackCheck;
-  final Function callbackRebuild;
   final Function callbackDelete;
   final bool isChecked;
   final String content;
@@ -49,7 +47,7 @@ class SettingButtonOnline extends StatelessWidget {
                 //     ? colorScheme.onPrimaryContainer
                 //     : colorScheme.onPrimary,
                 child: SizedBox(
-                  width: 222, // width * 0.7 - 2
+                  width: 270, // width * 0.85 - 2
                   height: 80,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -66,7 +64,7 @@ class SettingButtonOnline extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: SizedBox(
-                          width: 164, // width(222) - icon_size - 10
+                          width: 216, // width(222) - icon_size - 10
                           height: 70,
                           child: Text(
                             content,
@@ -84,25 +82,6 @@ class SettingButtonOnline extends StatelessWidget {
                   callbackCheck();
                 },
               ),
-            ),
-          ),
-          Material(
-            color: colorScheme.onSecondary,
-            child: InkWell(
-              splashColor: colorScheme.onSecondaryContainer,
-              child: SizedBox(
-                width: 46, // width * 0.15 - 2
-                height: 80,
-                child: Center(
-                  child: Icon(
-                    Icons.build,
-                    color: colorScheme.secondary,
-                  ),
-                ),
-              ),
-              onTap: () {
-                callbackRebuild();
-              },
             ),
           ),
           ClipRRect(

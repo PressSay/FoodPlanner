@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:menu_qr/screens/menu_29.dart';
+import 'package:menu_qr/screens/menu_setting_29.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:menu_qr/widgets/menu_button.dart';
 

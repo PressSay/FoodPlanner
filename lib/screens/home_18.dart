@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:menu_qr/screens/list_47.dart';
 import 'package:menu_qr/screens/list_48.dart';
-import 'package:menu_qr/screens/list_detail_40.dart';
 import 'package:menu_qr/screens/setting_17.dart';
 import 'package:menu_qr/screens/table_35.dart';
 import 'package:menu_qr/widgets/bar_button.dart';

@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 
-class SettingButton extends StatelessWidget {
-  const SettingButton(
+class OrderSettingButtonOnl extends StatelessWidget {
+  const OrderSettingButtonOnl(
       {super.key,
       required this.colorScheme,
+      required this.isChecked,
+      required this.callbackCheck,
       required this.callbackRebuild,
       required this.callbackDelete,
       required this.content});
   final ColorScheme colorScheme;
   final double sizeRadius = 8;
+  final Function callbackCheck;
   final Function callbackRebuild;
   final Function callbackDelete;
+  final bool isChecked;
   final String content;
 
   @override
@@ -31,27 +35,35 @@ class SettingButton extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-              decoration: BoxDecoration(
-                  borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(sizeRadius),
-                      bottomLeft: Radius.circular(sizeRadius)),
-                  color: colorScheme.onPrimary),
-              width: 222, // width * 0.7 - 2
-              height: 80,
-              child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 0, 0, 0),
-                      child: Icon(
-                        Icons.assignment,
-                        color: colorScheme.primary,
-                        size: 30,
+          ClipRRect(
+            borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(sizeRadius),
+                bottomLeft: Radius.circular(sizeRadius)),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              color: (isChecked)
+                  ? colorScheme.onPrimaryContainer
+                  : colorScheme.onPrimary,
+              child: GestureDetector(
+                // splashColor: (!isChecked)
+                //     ? colorScheme.onPrimaryContainer
+                //     : colorScheme.onPrimary,
+                child: SizedBox(
+                  width: 222, // width * 0.7 - 2
+                  height: 80,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 0, 0, 0),
+                        child: Icon(
+                          Icons.assignment,
+                          color: colorScheme.primary,
+                          size: 30,
+                        ),
                       ),
-                    ),
-                    Padding(
+                      Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: SizedBox(
                           width: 164, // width(222) - icon_size - 10
@@ -63,8 +75,17 @@ class SettingButton extends StatelessWidget {
                             overflow: TextOverflow.clip,
                             softWrap: true,
                           ),
-                        ))
-                  ])),
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+                onTap: () {
+                  callbackCheck();
+                },
+              ),
+            ),
+          ),
           Material(
             color: colorScheme.onSecondary,
             child: InkWell(

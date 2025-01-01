@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/screens/list_detail_40.dart';
+import 'package:menu_qr/services/alert.dart';
+import 'package:menu_qr/services/databases/bill_record_helper.dart';
+import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/providers/bill_provider.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:menu_qr/widgets/order_setting_button_online.dart';
 import 'package:provider/provider.dart';
+import 'package:sqflite/sqflite.dart';
 
 class ListOnline48 extends StatefulWidget {
   const ListOnline48({super.key});
@@ -14,13 +18,35 @@ class ListOnline48 extends StatefulWidget {
 }
 
 class _ListOnline48State extends State<ListOnline48> {
-  String filterTitleBillId = "";
   final TextEditingController _controller = TextEditingController();
+  final DataHelper dataHelper = DataHelper();
+  final BillRecordHelper billRecordHelper = BillRecordHelper();
+
+  String filterTitleBillId = "";
   bool _showWidgetB = false;
   bool _showWidgetC = false;
 
+  Alert? alert;
   Map<int, bool> checkedBillIdList = {};
+  Map<int, BillRecord> billRecordsArg = {};
   Map<int, BillRecord> billRecords = {};
+
+  void getBillRecords() async {
+    Database db = await dataHelper.database;
+    Map<int, BillRecord> tmpBillRecords =
+        await billRecordHelper.billRecords(db, 'isLeft = ?', [0]);
+    setState(() {
+      billRecords.clear();
+      billRecords.addAll(tmpBillRecords);
+    });
+  }
+
+  @override
+  void initState() {
+    alert = Alert(context: context);
+    getBillRecords();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,13 +58,11 @@ class _ListOnline48State extends State<ListOnline48> {
     ];
     final colorBottomBar = colorScheme.secondaryContainer;
 
-    BillProvider billProvider = context.watch<BillProvider>();
     List<Widget> itemBuilder = [];
-
     // this List Will be online
     Map<int, BillRecord> filteredBillRecords = (filterTitleBillId.isEmpty)
-        ? (Map.from(billProvider.billRecords)..removeWhere((k, v) => v.isLeft))
-        : (Map.from(billProvider.billRecords)
+        ? (Map.from(billRecords)..removeWhere((k, v) => v.isLeft))
+        : (Map.from(billRecords)
           ..removeWhere(
               (k, v) => !'${v.dateTime}'.contains(filterTitleBillId)));
 
@@ -54,7 +78,7 @@ class _ListOnline48State extends State<ListOnline48> {
                 setState(() {
                   if (!checkedBillIdList.containsKey(k)) {
                     checkedBillIdList.addAll({k: false});
-                    billRecords.addAll({k: v});
+                    billRecordsArg.addAll({k: v});
                   }
                   checkedBillIdList[k] = !checkedBillIdList[k]!;
                 });
@@ -65,9 +89,15 @@ class _ListOnline48State extends State<ListOnline48> {
                 });
               },
               callbackDelete: () {
-                billProvider.removeBillRecordAtId(k);
-                billRecords.removeWhere((k1, v1) => k == k1);
-                checkedBillIdList.removeWhere((k1, v1) => k == k1);
+                alert!.showAlert('Delete Bill', 'Are you Sure?', true,
+                    () async {
+                  Database db = await dataHelper.database;
+                  billRecordHelper.deleteBillRecord(k, db);
+                  setState(() {
+                    billRecords.remove(k);
+                  });
+                  checkedBillIdList.remove(k);
+                });
               }),
         ),
       );
@@ -161,7 +191,7 @@ class _ListOnline48State extends State<ListOnline48> {
             duration: const Duration(milliseconds: 200),
           ),
           Container(
-            height: 56,
+            height: 68,
             decoration: BoxDecoration(
                 color: colorBottomBar,
                 border: Border(
@@ -169,7 +199,8 @@ class _ListOnline48State extends State<ListOnline48> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
               child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     BottomBarButton(
                         colorPrimary: colorBottomBarBtn,
@@ -215,7 +246,7 @@ class _ListOnline48State extends State<ListOnline48> {
                               MaterialPageRoute(
                                 builder: (BuildContext context) => ListDetail40(
                                   billRecords: billRecords,
-                                  isViewFromTable: false,
+                                  onlyView: false,
                                 ),
                               ));
                         }),

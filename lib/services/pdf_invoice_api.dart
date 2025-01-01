@@ -39,7 +39,7 @@ class PdfInvoiceApi {
     pdf.addPage(MultiPage(
       build: (context) => [
         buildTitle(info[0], desc),
-        buildContext(info, billRecord.id, billRecord.dateTime),
+        buildContext(info, billRecord.id!, billRecord.dateTime),
         SizedBox(height: 1 * PdfPageFormat.cm),
         buildInvoice(filteredDishRecords, timeZone),
         Divider(),
@@ -64,8 +64,10 @@ class PdfInvoiceApi {
         ],
       );
 
-  static Widget buildContext(List<String> info, int billId, DateTime billDate) {
+  static Widget buildContext(List<String> info, int billId, int billDate) {
     List<double> stdSizePad = [1.0 * PdfPageFormat.mm, 2.0 * PdfPageFormat.mm];
+    final dateTime = DateTime.fromMillisecondsSinceEpoch(billDate);
+    final formattedDate = DateFormat('dd/MM/yyyy HH:mm:ss').format(dateTime);
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Padding(
@@ -89,7 +91,7 @@ class PdfInvoiceApi {
           text: TextSpan(children: [
             TextSpan(
                 text: 'Date: ', style: TextStyle(fontWeight: FontWeight.bold)),
-            TextSpan(text: '$billDate')
+            TextSpan(text: formattedDate)
           ]),
         ),
       ),

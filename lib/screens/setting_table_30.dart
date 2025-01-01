@@ -1,90 +1,70 @@
 import 'package:flutter/material.dart';
-import 'package:menu_qr/models/category_record.dart';
-import 'package:menu_qr/models/menu_record.dart';
-import 'package:menu_qr/screens/dish_setting_31.dart';
+import 'package:menu_qr/models/table_record.dart';
 import 'package:menu_qr/services/alert.dart';
-import 'package:menu_qr/services/databases/category_record_helper.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
-import 'package:menu_qr/services/databases/menu_record_helper.dart';
+import 'package:menu_qr/services/databases/table_record_helper.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:menu_qr/widgets/setting_button.dart';
 import 'package:sqflite/sqflite.dart';
 
-class Category30 extends StatefulWidget {
-  const Category30({super.key, required this.menuRecord});
-  final MenuRecord menuRecord;
-
+class Table30 extends StatefulWidget {
+  const Table30({super.key});
   @override
-  State<Category30> createState() => _Category30State();
+  State<Table30> createState() => _Table30State();
 }
 
-class _Category30State extends State<Category30> {
-  Alert? alert;
-  String filterTitleCategory = "";
-  String titleMenu = "";
-  String titleCategory = "";
-  String desc = "";
-
+class _Table30State extends State<Table30> {
+  List<TableRecord> tableRecords = [];
+  String filterTitleTable = "";
   bool _showWidgetB = false;
-  final DataHelper dataHelper = DataHelper();
-  final MenuRecordHelper menuRecordHelper = MenuRecordHelper();
-  final CategoryRecordHelper categoryRecordHelper = CategoryRecordHelper();
-  final TextEditingController _controllerMenu = TextEditingController();
-  final TextEditingController _controllerCategory = TextEditingController();
+  Alert? alert;
+
+  int tableId = 0;
+  final TextEditingController _controllerTableOld = TextEditingController();
+  final TextEditingController _controllerDescOld = TextEditingController();
+  final TextEditingController _controllerTable = TextEditingController();
   final TextEditingController _controllerDesc = TextEditingController();
-  final List<CategoryRecord> categoryRecords = [];
+
+  final DataHelper dataHelper = DataHelper();
+  final TableRecordHelper tableHelper = TableRecordHelper();
+
+  void getTableRecords() async {
+    Database db = await dataHelper.database;
+    List<TableRecord> tmpTableRecords = await tableHelper.tableRecords(db);
+    setState(() {
+      tableRecords.clear();
+      tableRecords.addAll(tmpTableRecords);
+    });
+  }
+
+  void updateTableRecord() async {
+    TableRecord newE = TableRecord(
+        id: tableId,
+        name: _controllerTableOld.text,
+        desc: _controllerDescOld.text,
+        isLock: false);
+    Database db = await dataHelper.database;
+    tableHelper.updateTableRecord(newE, db);
+    alert!.showAlert('Update Table', 'success!', false, null);
+  }
+
+  void insertTableRecord() async {
+    if (_controllerTable.text.isEmpty || _controllerTable.text.isEmpty) {
+      alert!.showAlert('Insert Table', 'failed!', false, null);
+      return;
+    }
+    TableRecord newE = TableRecord(
+        name: _controllerTable.text, desc: _controllerDesc.text, isLock: false);
+    Database db = await dataHelper.database;
+    tableHelper.insertTableRecord(newE, db);
+    alert!.showAlert('Insert Table', 'success!', false, null);
+  }
 
   @override
   void initState() {
     alert = Alert(context: context);
-    getCategoryRecords();
-    _controllerMenu.text = widget.menuRecord.title;
-    return super.initState();
-  }
-
-  void getCategoryRecords() async {
-    Database db = await dataHelper.database;
-    List<CategoryRecord> categoryRecords =
-        await categoryRecordHelper.categoryRecords(db, '', [], null);
-    setState(() {
-      categoryRecords.clear();
-      categoryRecords.addAll(categoryRecords);
-    });
-  }
-
-  void deletedCategoryRecord(int categoryId) async {
-    Database db = await dataHelper.database;
-    alert!.showAlert('Delete Category', 'Are You Sure?', true, () {
-      categoryRecordHelper.deleteCategoryRecord(categoryId, db);
-    });
-  }
-
-  void updateMenu() async {
-    if (titleMenu.isEmpty) {
-      alert!.showAlert('Update Menu', 'failed!', false, null);
-      return;
-    }
-    Database db = await dataHelper.database;
-    MenuRecord updateE = widget.menuRecord;
-    updateE.title = titleMenu;
-    menuRecordHelper.updateMenuRecord(updateE, db);
-    alert!.showAlert('Update Menu', 'success!', false, null);
-  }
-
-  void insertCategoryRecord() async {
-    if (titleCategory.isEmpty || desc.isEmpty) {
-      alert!.showAlert('Save Category', 'failed!', false, null);
-      return;
-    }
-    Database db = await dataHelper.database;
-    CategoryRecord newE = CategoryRecord(
-        menuId: widget.menuRecord.id!, title: titleCategory, desc: desc);
-    int lastId = await categoryRecordHelper.insertCategoryRecord(newE, db) ?? 0;
-    if (lastId != 0) {
-      newE.id = lastId;
-      categoryRecords.add(newE);
-      alert!.showAlert('Save Category', 'success!', false, null);
-    }
+    getTableRecords();
+    super.initState();
   }
 
   @override
@@ -97,34 +77,35 @@ class _Category30State extends State<Category30> {
     ];
     final colorBottomBar = colorScheme.secondaryContainer;
 
-    List<CategoryRecord> filteredCategoryRecords = (filterTitleCategory.isEmpty)
-        ? categoryRecords
-        : categoryRecords
-            .where((e) => e.title.contains(filterTitleCategory))
+    List<TableRecord> filteredTableRecords = (filterTitleTable.isEmpty)
+        ? tableRecords
+        : tableRecords
+            .where((e) => filterTitleTable.contains(filterTitleTable))
             .toList();
-    List<Widget> itemBuilder = [];
 
-    for (CategoryRecord e in filteredCategoryRecords) {
+    List<Widget> itemBuilder = [];
+    for (TableRecord e in filteredTableRecords) {
       itemBuilder.add(Center(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
           child: SettingButton(
               colorScheme: colorScheme,
               callbackRebuild: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (BuildContext context) => Dish31(
-                              categoryRecord: e,
-                            )));
+                _controllerDescOld.text = e.desc;
+                _controllerDescOld.text = e.name;
+                tableId = e.id!;
               },
               callbackDelete: () {
-                deletedCategoryRecord(e.id!);
+                alert!.showAlert('Delete Table Record', 'Are You Sure', true,
+                    () async {
+                  Database db = await dataHelper.database;
+                  tableHelper.deleteTableRecord(e.id!, db);
+                });
                 setState(() {
-                  categoryRecords.removeWhere((e1) => e1.id == e.id);
+                  tableRecords.removeWhere((e1) => e1.id == e.id);
                 });
               },
-              content: e.title),
+              content: e.name),
         ),
       ));
     }
@@ -146,6 +127,23 @@ class _Category30State extends State<Category30> {
               child: ListView(
                 children: [
                   Padding(
+                      padding: EdgeInsets.fromLTRB(0, 20, 0, 0),
+                      child: Center(
+                        child: SizedBox(
+                            width: 288,
+                            child: TextField(
+                                minLines: 3,
+                                maxLines: null,
+                                style: TextStyle(color: colorScheme.primary),
+                                controller: _controllerDescOld,
+                                decoration: InputDecoration(
+                                  border: OutlineInputBorder(
+                                      borderRadius:
+                                          BorderRadius.all(Radius.circular(4))),
+                                  labelText: 'Description Table Old',
+                                ))),
+                      )),
+                  Padding(
                     padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
                     child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -166,22 +164,19 @@ class _Category30State extends State<Category30> {
                                       start: BorderSide(
                                           color: colorScheme.primary))),
                               child: Icon(
-                                Icons.menu,
+                                Icons.table_bar,
                                 size: 20,
                               )),
                           SizedBox(
                               width: 192,
                               height: 48,
                               child: TextField(
-                                  onChanged: (value) {
-                                    titleMenu = value;
-                                  },
                                   style: TextStyle(color: colorScheme.primary),
-                                  controller: _controllerMenu,
+                                  controller: _controllerTableOld,
                                   decoration: InputDecoration(
                                     border: OutlineInputBorder(
                                         borderRadius: BorderRadius.only()),
-                                    labelText: 'Menu',
+                                    labelText: 'Table Old',
                                   ))),
                           ClipRRect(
                             borderRadius: BorderRadius.only(
@@ -202,7 +197,7 @@ class _Category30State extends State<Category30> {
                                   ),
                                 ),
                                 onTap: () {
-                                  updateMenu();
+                                  updateTableRecord();
                                 },
                               ),
                             ),
@@ -230,24 +225,22 @@ class _Category30State extends State<Category30> {
                                         start: BorderSide(
                                             color: colorScheme.primary))),
                                 child: Icon(
-                                  Icons.category,
+                                  Icons.table_bar,
                                   size: 20,
                                 )),
                             SizedBox(
                                 width: 240,
                                 height: 48,
                                 child: TextField(
-                                    onChanged: (value) =>
-                                        {titleCategory = value},
                                     style:
                                         TextStyle(color: colorScheme.primary),
-                                    controller: _controllerCategory,
+                                    controller: _controllerTable,
                                     decoration: InputDecoration(
                                       border: OutlineInputBorder(
                                           borderRadius: BorderRadius.only(
                                               topRight: Radius.circular(4),
                                               bottomRight: Radius.circular(4))),
-                                      labelText: 'Category',
+                                      labelText: 'Table',
                                     )))
                           ])),
                   Padding(
@@ -256,9 +249,6 @@ class _Category30State extends State<Category30> {
                         child: SizedBox(
                             width: 288,
                             child: TextField(
-                                onChanged: (value) {
-                                  desc = value;
-                                },
                                 minLines: 3,
                                 maxLines: null,
                                 style: TextStyle(color: colorScheme.primary),
@@ -267,7 +257,7 @@ class _Category30State extends State<Category30> {
                                   border: OutlineInputBorder(
                                       borderRadius:
                                           BorderRadius.all(Radius.circular(4))),
-                                  labelText: 'Description Category',
+                                  labelText: 'Description Table',
                                 ))),
                       )),
                 ],
@@ -279,15 +269,15 @@ class _Category30State extends State<Category30> {
             secondChild: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
                 child: TextField(
-                    controller: _controllerMenu,
+                    controller: _controllerDescOld,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(),
-                      labelText: 'Search Category',
+                      labelText: 'Search Table',
                     ),
                     onSubmitted: (text) {
                       setState(() {
                         _showWidgetB = !_showWidgetB;
-                        filterTitleCategory = text;
+                        filterTitleTable = text;
                       });
                     })),
             crossFadeState: _showWidgetB
@@ -334,7 +324,7 @@ class _Category30State extends State<Category30> {
                         callback: () {
                           setState(() {
                             _showWidgetB = !_showWidgetB;
-                            filterTitleCategory = "";
+                            filterTitleTable = "";
                           });
                         }),
                     BottomBarButton(
@@ -344,7 +334,7 @@ class _Category30State extends State<Category30> {
                           color: colorScheme.primary,
                         ),
                         callback: () {
-                          insertCategoryRecord();
+                          insertTableRecord();
                         })
                   ]),
             ),

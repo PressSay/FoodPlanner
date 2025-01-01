@@ -24,8 +24,8 @@ class _Table35 extends State<Table35> {
 
   void saveBillToRam(int tableId, nameTable, BillProvider billProvider,
       List<PreOrderedDishRecord> indexDishListSorted) {
-    billProvider.setBillRecord(0, 0, 0, tableId, nameTable, false, false);
-    billProvider.saveIndexListSortedForBill(indexDishListSorted);
+    billProvider.setBillRecord(
+        0, 0, 0, tableId, nameTable, false, false, indexDishListSorted);
   }
 
   @override
@@ -114,7 +114,7 @@ class _Table35 extends State<Table35> {
                   : CrossFadeState.showFirst,
               duration: const Duration(milliseconds: 200)),
           Container(
-            height: 56,
+            height: 68,
             decoration: BoxDecoration(
                 color: colorBottomBar,
                 border: Border(
@@ -122,7 +122,8 @@ class _Table35 extends State<Table35> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
               child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     BottomBarButton(
                         colorPrimary: colorBottomBarBtn,

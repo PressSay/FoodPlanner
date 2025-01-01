@@ -3,12 +3,16 @@ import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/table_record.dart';
 import 'package:menu_qr/screens/list_detail_40.dart';
 import 'package:menu_qr/screens/paid_41.dart';
+import 'package:menu_qr/services/alert.dart';
+import 'package:menu_qr/services/databases/bill_record_helper.dart';
 import 'package:menu_qr/services/databases/data.dart';
+import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/providers/bill_provider.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:menu_qr/widgets/table_cofirm.dart';
 import 'package:provider/provider.dart';
+import 'package:sqflite/sqflite.dart';
 
 class Table36 extends StatefulWidget {
   const Table36({super.key, required this.isList, required this.tableId});
@@ -20,7 +24,17 @@ class Table36 extends StatefulWidget {
 
 class _Table36State extends State<Table36> {
   final TextEditingController _controller = TextEditingController();
+  final DataHelper dataHelper = DataHelper();
+  final BillRecordHelper billRecordHelper = BillRecordHelper();
+
+  Alert? alert;
   String desc = "";
+
+  @override
+  void initState() {
+    alert = Alert(context: context);
+    super.initState();
+  }
 
   void saveInfoTable(int tableId) {
     if (desc.isNotEmpty) {
@@ -28,24 +42,27 @@ class _Table36State extends State<Table36> {
     }
   }
 
-  void viewBillInTable(int tableId, BillProvider billProvider) {
-    Map<int, BillRecord> billRecords = Map.from(billProvider.billRecords)
-      ..removeWhere((k, v) {
-        return !(v.tableId == tableId && !v.isLeft);
-      });
+  void viewBillInTable(int tableId, BillProvider billProvider) async {
+    Database db = await dataHelper.database;
+    Map<int, BillRecord> billRecords =
+        await billRecordHelper.billRecords(db, 'tableId = ', [tableId]);
+    navigateListDetail40(billRecords);
+  }
+
+  void navigateListDetail40(Map<int, BillRecord> billRecords) {
     Navigator.push(
         context,
         MaterialPageRoute(
             builder: (context) => ListDetail40(
                   billRecords: billRecords,
-                  isViewFromTable: true,
+                  onlyView: widget.isList,
                 )));
   }
 
-  void saveBillToSQL(BillProvider billProvider, DishProvider dishProvider) {
+  void saveBillToSQL(
+      BillProvider billProvider, DishProvider dishProvider) async {
     // remember reassign value billId for billProvider,
     // this allow to back and select dish again
-    billProvider.billRecord.id = billProvider.lastBillId + 1;
     BillRecord newBillRecord = BillRecord(
         id: billProvider.billRecord.id,
         amountPaid: billProvider.billRecord.amountPaid,
@@ -55,13 +72,32 @@ class _Table36State extends State<Table36> {
         isLeft: billProvider.billRecord.isLeft,
         type: billProvider.billRecord.type,
         dateTime: billProvider.billRecord.dateTime);
+    Database db = await dataHelper.database;
+    int lastId =
+        await billRecordHelper.insertBillRecord(newBillRecord, db) ?? 0;
+    if (lastId == 0) {
+      alert!.showAlert('Insert Bill', 'failed', false, null);
+      return;
+    }
+    newBillRecord.id = lastId;
     newBillRecord.preOrderedDishRecords =
-        billProvider.preOrderedDishRecords.toList();
-    billProvider.billRecords
-        .addAll({billProvider.billRecord.id: newBillRecord});
-    billProvider.increaseLastBillId();
+        await billRecordHelper.insertDishesAtBillId(
+            db, billProvider.billRecord.preOrderedDishRecords!, lastId);
     dishProvider.clearRam();
+    navigateToPaid41(newBillRecord);
     return;
+  }
+
+  void navigateToPaid41(BillRecord billRecord) {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (BuildContext context) => Paid41(
+            billRecord: billRecord,
+            isRebuild: false,
+            isImmediate: false,
+          ),
+        ));
   }
 
   Widget warningViewBtn(bool isLock, Function callback) {
@@ -94,7 +130,6 @@ class _Table36State extends State<Table36> {
               saveInfoTable(tableId);
               saveBillToSQL(billProvider, dishProvider);
               dishProvider.clearRam();
-              billProvider.resetBillIdInRam();
               Navigator.popUntil(context, (route) => route.isFirst);
             },
             text: (isLock) ? "Add" : "Confirm"),
@@ -104,14 +139,6 @@ class _Table36State extends State<Table36> {
           callBack: () {
             saveInfoTable(tableId);
             saveBillToSQL(billProvider, dishProvider);
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (BuildContext context) => Paid41(
-                    billId: billProvider.billRecord.id,
-                    isRebuild: false,
-                  ),
-                ));
           },
           text: 'Prepaid'));
     }
@@ -167,7 +194,7 @@ class _Table36State extends State<Table36> {
             ])),
           )),
           Container(
-            height: 56,
+            height: 68,
             decoration: BoxDecoration(
                 color: colorBottomBar,
                 border: Border(
@@ -175,7 +202,8 @@ class _Table36State extends State<Table36> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
               child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     BottomBarButton(
                         colorPrimary: colorBottomBarBtn,

@@ -1,20 +1,54 @@
 import 'package:flutter/material.dart';
+import 'package:menu_qr/models/dish_record.dart';
+import 'package:menu_qr/services/alert.dart';
+import 'package:menu_qr/services/databases/data_helper.dart';
+import 'package:menu_qr/services/databases/dish_record_helper.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:menu_qr/widgets/dish_view.dart';
+import 'package:sqflite/sqflite.dart';
 
 class Dish32 extends StatefulWidget {
-  const Dish32({super.key});
-
+  const Dish32({super.key, required this.dishRecord});
+  final DishRecord dishRecord;
   @override
   State<Dish32> createState() => _Dish32State();
 }
 
 class _Dish32State extends State<Dish32> {
-  String filterTitleMenu = "";
-  bool _showWidgetB = false;
-  final TextEditingController _controller = TextEditingController();
+  Alert? _alert;
+  String imagePath = "";
+
   final TextEditingController _controllerDescDish = TextEditingController();
   final TextEditingController _controllerDishTitle = TextEditingController();
+  final TextEditingController _controllerDishPrice = TextEditingController();
+
+  final DataHelper dataHelper = DataHelper();
+  final DishRecordHelper dishRecordHelper = DishRecordHelper();
+
+  @override
+  void initState() {
+    _alert = Alert(context: context);
+    _controllerDishTitle.text = widget.dishRecord.title;
+    _controllerDescDish.text = widget.dishRecord.desc;
+    _controllerDishPrice.text = widget.dishRecord.price.toString();
+    imagePath = (widget.dishRecord.imagePath.isEmpty)
+        ? "assets/images/hinh-cafe-kem-banh-quy-2393351094.webp"
+        : widget.dishRecord.imagePath;
+    super.initState();
+  }
+
+  void updateDish() async {
+    if (widget.dishRecord.title.isEmpty ||
+        widget.dishRecord.desc.isEmpty ||
+        widget.dishRecord.price == 0 ||
+        widget.dishRecord.imagePath.isEmpty) {
+      _alert!.showAlert('Update Dish', 'failed!', false, null);
+      return;
+    }
+    Database db = await dataHelper.database;
+    dishRecordHelper.updateDishRecord(widget.dishRecord, db);
+    _alert!.showAlert('Update Category', 'success!', false, null);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,26 +60,25 @@ class _Dish32State extends State<Dish32> {
     ];
     final colorBottomBar = colorScheme.secondaryContainer;
 
+    Widget dishView = Center(
+        child: Padding(
+            padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
+            child: DishView(
+              id: widget.dishRecord.id!,
+              categoryId: widget.dishRecord.categoryId,
+              imagePath: imagePath,
+              title: widget.dishRecord.title,
+              desc: widget.dishRecord.desc,
+              price: widget.dishRecord.price,
+            )));
+
     return Scaffold(
       body: Column(
         children: [
           Expanded(
               child: SafeArea(
             child: ListView(
-              children: [
-                Center(
-                  child: Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
-                      child: DishView(
-                          id: 0,
-                          categoryId: 0,
-                          imagePath:
-                              'assets/images/hinh-cafe-kem-banh-quy-2393351094.webp',
-                          title: 'abc',
-                          desc: 'abc',
-                          price: 12000)),
-                )
-              ],
+              children: [dishView],
             ),
           )),
           Expanded(
@@ -83,6 +116,9 @@ class _Dish32State extends State<Dish32> {
                                 width: 160,
                                 height: 48,
                                 child: TextField(
+                                    onChanged: (value) {
+                                      widget.dishRecord.title = value;
+                                    },
                                     style:
                                         TextStyle(color: colorScheme.primary),
                                     controller: _controllerDishTitle,
@@ -95,6 +131,10 @@ class _Dish32State extends State<Dish32> {
                                 width: 80,
                                 height: 48,
                                 child: TextField(
+                                    onChanged: (value) {
+                                      widget.dishRecord.price =
+                                          double.parse(value);
+                                    },
                                     style:
                                         TextStyle(color: colorScheme.primary),
                                     controller: _controllerDishTitle,
@@ -112,6 +152,9 @@ class _Dish32State extends State<Dish32> {
                         child: SizedBox(
                             width: 288,
                             child: TextField(
+                                onChanged: (value) {
+                                  widget.dishRecord.desc = value;
+                                },
                                 minLines: 3,
                                 maxLines: null,
                                 style: TextStyle(color: colorScheme.primary),
@@ -152,29 +195,8 @@ class _Dish32State extends State<Dish32> {
               ),
             ),
           ),
-          AnimatedCrossFade(
-            firstChild: SizedBox(),
-            secondChild: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-                child: TextField(
-                    controller: _controller,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Search Menu',
-                    ),
-                    onSubmitted: (text) {
-                      setState(() {
-                        _showWidgetB = !_showWidgetB;
-                        filterTitleMenu = text;
-                      });
-                    })),
-            crossFadeState: _showWidgetB
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 200),
-          ),
           Container(
-            height: 56,
+            height: 68,
             decoration: BoxDecoration(
                 color: colorBottomBar,
                 border: Border(
@@ -182,7 +204,7 @@ class _Dish32State extends State<Dish32> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
               child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     BottomBarButton(
@@ -203,25 +225,16 @@ class _Dish32State extends State<Dish32> {
                         callback: () {
                           Navigator.popUntil(context, (route) => route.isFirst);
                         }),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.search,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          setState(() {
-                            _showWidgetB = !_showWidgetB;
-                            filterTitleMenu = "";
-                          });
-                        }),
+                    SizedBox(width: 48),
                     BottomBarButton(
                         colorPrimary: colorBottomBarBtn,
                         child: Icon(
                           Icons.save,
                           color: colorScheme.primary,
                         ),
-                        callback: () {})
+                        callback: () {
+                          updateDish();
+                        })
                   ]),
             ),
           )

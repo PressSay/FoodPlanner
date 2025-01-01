@@ -1,16 +1,37 @@
 class DishRecord {
-  int id;
-  int? categoryId;
+  int? id;
+  int categoryId;
   String imagePath;
   String title;
   String desc;
   double price;
 
   DishRecord(
-      {required this.id,
+      {this.id,
+      required this.categoryId,
       required this.imagePath,
       required this.title,
       required this.desc,
-      required this.price,
-      this.categoryId});
+      required this.price});
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'desc': desc,
+      'price': price,
+      'imagePath': imagePath,
+      'categoryId': categoryId
+    };
+  }
+
+  factory DishRecord.fromMap(Map<String, dynamic> map) {
+    return DishRecord(
+        id: map['id']?.toInt() ?? 0,
+        title: map['title'] ?? '',
+        desc: map['desc'] ?? false,
+        price: map['price'],
+        imagePath: map['imagePath'],
+        categoryId: map['categoryId']);
+  }
 }

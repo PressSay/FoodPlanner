@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/screens/list_detail_40.dart';
+import 'package:menu_qr/services/alert.dart';
+import 'package:menu_qr/services/databases/bill_record_helper.dart';
+import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/providers/bill_provider.dart';
 import 'package:menu_qr/widgets/order_setting_button.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:provider/provider.dart';
+import 'package:sqflite/sqflite.dart';
 
 class ListScreen47 extends StatefulWidget {
   const ListScreen47({super.key});
@@ -14,11 +18,32 @@ class ListScreen47 extends StatefulWidget {
 }
 
 class _ListScreen47State extends State<ListScreen47> {
-  String filterTitleBillId = "";
   final TextEditingController _controller = TextEditingController();
+  final DataHelper dataHelper = DataHelper();
+  final BillRecordHelper billRecordHelper = BillRecordHelper();
+
+  Alert? alert;
+  String filterTitleBillId = "";
   bool _showWidgetB = false;
   Map<int, bool> checkedBillIdList = {};
   Map<int, BillRecord> billRecords = {};
+
+  void getBillRecords() async {
+    Database db = await dataHelper.database;
+    Map<int, BillRecord> tmpBillRecords =
+        await billRecordHelper.billRecords(db, 'isLeft = ?', [0]);
+    setState(() {
+      billRecords.clear();
+      billRecords.addAll(tmpBillRecords);
+    });
+  }
+
+  @override
+  void initState() {
+    alert = Alert(context: context);
+    getBillRecords();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,12 +55,10 @@ class _ListScreen47State extends State<ListScreen47> {
     ];
     final colorBottomBar = colorScheme.secondaryContainer;
 
-    BillProvider billProvider = context.watch<BillProvider>();
     List<Widget> itemBuilder = [];
-
     Map<int, BillRecord> filteredBillRecords = (filterTitleBillId.isEmpty)
-        ? (Map.from(billProvider.billRecords)..removeWhere((k, v) => v.isLeft))
-        : (Map.from(billProvider.billRecords)
+        ? (Map.from(billRecords)..removeWhere((k, v) => v.isLeft))
+        : (Map.from(billRecords)
           ..removeWhere(
               (k, v) => !'${v.dateTime}'.contains(filterTitleBillId)));
 
@@ -46,20 +69,25 @@ class _ListScreen47State extends State<ListScreen47> {
           child: OrderSettingButton(
               content: '${v.dateTime}',
               colorScheme: colorScheme,
-              isChecked: checkedBillIdList[k] ?? false,
+              isChecked: checkedBillIdList[v.id!] ?? false,
               callbackCheck: () {
+                if (!checkedBillIdList.containsKey(v.id!)) {
+                  checkedBillIdList.addAll({v.id!: false});
+                }
                 setState(() {
-                  if (!checkedBillIdList.containsKey(k)) {
-                    checkedBillIdList.addAll({k: false});
-                    billRecords.addAll({k: v});
-                  }
                   checkedBillIdList[k] = !checkedBillIdList[k]!;
                 });
               },
               callbackDelete: () {
-                billProvider.removeBillRecordAtId(k);
-                billRecords.removeWhere((k1, v1) => k == k1);
-                checkedBillIdList.removeWhere((k1, v1) => k == k1);
+                alert!.showAlert('Delete Bill', 'Are you Sure?', true,
+                    () async {
+                  Database db = await dataHelper.database;
+                  billRecordHelper.deleteBillRecord(k, db);
+                  setState(() {
+                    billRecords.remove(k);
+                  });
+                  checkedBillIdList.remove(k);
+                });
               }),
         ),
       );
@@ -99,7 +127,7 @@ class _ListScreen47State extends State<ListScreen47> {
             duration: const Duration(milliseconds: 200),
           ),
           Container(
-            height: 56,
+            height: 68,
             decoration: BoxDecoration(
                 color: colorBottomBar,
                 border: Border(
@@ -107,7 +135,8 @@ class _ListScreen47State extends State<ListScreen47> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
               child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     BottomBarButton(
                         colorPrimary: colorBottomBarBtn,
@@ -138,22 +167,19 @@ class _ListScreen47State extends State<ListScreen47> {
                           color: colorScheme.primary,
                         ),
                         callback: () {
-                          billRecords.removeWhere((k, v) {
-                            return !checkedBillIdList[k]!;
-                          });
-                          checkedBillIdList.removeWhere((k, v) {
-                            return !checkedBillIdList[k]!;
-                          });
-                          if (billRecords.isEmpty ||
-                              checkedBillIdList.isEmpty) {
+                          Map<int, BillRecord> billRecordsArg =
+                              Map.from(billRecords)
+                                ..removeWhere(
+                                    (k, v) => !(checkedBillIdList[k] ?? false));
+                          if (billRecordsArg.isEmpty) {
                             return;
                           }
                           Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (BuildContext context) => ListDetail40(
-                                  billRecords: billRecords,
-                                  isViewFromTable: false,
+                                  billRecords: billRecordsArg,
+                                  onlyView: false,
                                 ),
                               ));
                         }),

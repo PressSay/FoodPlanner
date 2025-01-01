@@ -5,13 +5,11 @@ import 'package:menu_qr/models/dish_record.dart';
 import 'package:menu_qr/services/databases/data.dart';
 import 'package:menu_qr/services/pdf_api.dart';
 import 'package:menu_qr/services/pdf_invoice_api.dart';
-import 'package:menu_qr/services/providers/bill_provider.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
-import 'package:provider/provider.dart';
 
 class Paid42 extends StatefulWidget {
-  const Paid42({super.key, required this.billId, required this.isRebuild});
-  final int billId;
+  const Paid42({super.key, required this.billRecord, required this.isRebuild});
+  final BillRecord billRecord;
   final bool isRebuild;
 
   @override
@@ -174,19 +172,17 @@ class _Paid42State extends State<Paid42> {
       colorScheme.onSecondary
     ];
     final colorBottomBar = colorScheme.secondaryContainer;
-    BillProvider billProvider = context.watch<BillProvider>();
     // int billId = billProvider.billRecord.id;
-    int billId = widget.billId;
+    int billId = widget.billRecord.id!;
     String logoPath = 'assets/images/wislam.png';
     String logoText = 'https://wislam.ct.ws';
     String qrImage = logoPath;
     String qrText = logoText;
 
     // amountPaid = billProvider.billRecord.amountPaid;
-    BillRecord? billRecord = billProvider.billRecords[billId];
-    amountPaid = billRecord?.amountPaid ?? 0;
+    amountPaid = widget.billRecord.amountPaid;
     total = 0;
-    billRecord?.preOrderedDishRecords?.forEach((element) {
+    widget.billRecord.preOrderedDishRecords?.forEach((element) {
       int dishId = element.dishId;
       DishRecord dishRecord = dishRecords[dishId]!;
       total += (element.amount * dishRecord.price);
@@ -238,7 +234,7 @@ class _Paid42State extends State<Paid42> {
             ),
           ),
           Container(
-            height: 56,
+            height: 68,
             decoration: BoxDecoration(
                 color: colorBottomBar,
                 border: Border(
@@ -246,7 +242,8 @@ class _Paid42State extends State<Paid42> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
               child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     BottomBarButton(
                         colorPrimary: colorBottomBarBtn,
@@ -273,12 +270,12 @@ class _Paid42State extends State<Paid42> {
                         callback: () async {
                           final pdfFile = await PdfInvoiceApi.generate(
                               colorScheme,
-                              billRecord!,
-                              billRecord.preOrderedDishRecords ?? [],
+                              widget.billRecord,
+                              widget.billRecord.preOrderedDishRecords ?? [],
                               [
                                 'My Name Shop',
                                 'My Address Shop',
-                                billProvider.billRecord.nameTable,
+                                widget.billRecord.nameTable,
                                 taxString,
                                 totalString,
                                 amountPaidString,

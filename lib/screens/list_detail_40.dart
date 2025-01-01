@@ -4,30 +4,71 @@ import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/pre_ordered_dish.dart';
 import 'package:menu_qr/screens/paid_41.dart';
 import 'package:menu_qr/screens/paid_42.dart';
+import 'package:menu_qr/services/alert.dart';
+import 'package:menu_qr/services/databases/bill_record_helper.dart';
 import 'package:menu_qr/services/databases/data.dart';
-import 'package:menu_qr/services/providers/bill_provider.dart';
+import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:menu_qr/widgets/assignment_button.dart';
 import 'package:menu_qr/widgets/dish_cofirm.dart';
 import 'package:provider/provider.dart';
+import 'package:sqflite/sqflite.dart';
 
 class ListDetail40 extends StatefulWidget {
   const ListDetail40(
-      {super.key, required this.billRecords, required this.isViewFromTable});
-  final Map<int, BillRecord> billRecords;
-  final bool isViewFromTable;
+      {super.key, required this.billRecords, required this.onlyView});
+  final Map<int, BillRecord> billRecords; // billRecords must not empty
+  final bool onlyView;
   @override
   State<ListDetail40> createState() => _ListDetail40State();
 }
 
 class _ListDetail40State extends State<ListDetail40> {
   String timeZone = 'vi_VN';
-  int billId = 0; // lam sao de chinh gia tri default nay day
+  BillRecord? billRecord; // lam sao de chinh gia tri default nay day
   int categoryId = 0;
   double total = 0;
   bool isInitBillId = true;
   bool isInitDishes = true;
+  Alert? alert;
+
+  final DataHelper dataHelper = DataHelper();
+  final BillRecordHelper billRecordHelper = BillRecordHelper();
+
+  @override
+  void initState() {
+    alert = Alert(context: context);
+    super.initState();
+  }
+
+  Widget rebuildBtn(ColorScheme colorScheme, List<Color> colorBottomBarBtn) {
+    return (!widget.onlyView)
+        ? BottomBarButton(
+            colorPrimary: colorBottomBarBtn,
+            child: Icon(
+              Icons.build,
+              color: colorScheme.primary,
+            ),
+            callback: () async {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (BuildContext context) => Paid41(
+                      billRecord: billRecord!,
+                      isRebuild: true,
+                      isImmediate: false,
+                    ),
+                  ));
+            })
+        : SizedBox(width: 48);
+  }
+
+  void checkComplete(BillRecord billRecord) async {
+    Database db = await dataHelper.database;
+    billRecord.isLeft = true;
+    billRecordHelper.updateBillRecord(billRecord, db);
+  }
 
   Widget infoPrice(ColorScheme colorScheme, double paid, double total) {
     return Container(
@@ -102,27 +143,26 @@ class _ListDetail40State extends State<ListDetail40> {
     ];
     final colorBottomBar = colorScheme.secondaryContainer;
 
-    BillProvider billProvider = context.watch<BillProvider>();
     DishProvider dishProvider = context.watch<DishProvider>();
 
     List<Widget> listAssignment = [];
 
     widget.billRecords.forEach((k, v) {
       if (isInitBillId) {
-        billId = k;
+        billRecord = v;
         isInitBillId = !isInitBillId;
       }
       listAssignment.add(AssignmentButton(
           callBack: () {
-            if (billId == k) {
+            if (billRecord!.id! == k) {
               return;
             }
             setState(() {
-              billId = k;
+              billRecord = v;
               isInitDishes = true;
             });
           },
-          active: v.id == billId,
+          active: v.id == (billRecord?.id! ?? 0),
           colors: [
             colorScheme.primary,
             colorScheme.onPrimaryContainer,
@@ -133,8 +173,10 @@ class _ListDetail40State extends State<ListDetail40> {
 
     // nếu đúng thì khi xóa một DishCofirm hệ thống rebuild sẽ không chạy lại lệnh này
     if (isInitDishes) {
-      dishProvider.importDataToIndexDishListSorted(
-          widget.billRecords[billId]?.preOrderedDishRecords?.toList() ?? []);
+      dishProvider.importDataToIndexDishListSorted(widget
+              .billRecords[billRecord!.id!]?.preOrderedDishRecords
+              ?.toList() ??
+          []);
       isInitDishes = false;
     }
 
@@ -143,8 +185,8 @@ class _ListDetail40State extends State<ListDetail40> {
     List<PreOrderedDishRecord> dishRecordSorted =
         dishProvider.indexDishListSorted;
     for (var e in dishRecordSorted) {
-      if (dishRecords[e.dishId]!.categoryId! != categoryId) {
-        categoryId = dishRecords[e.dishId]!.categoryId!;
+      if (e.categoryId != categoryId) {
+        categoryId = e.categoryId;
         itemDishBuilder.add(Center(
           child: SizedBox(
               width: 345,
@@ -162,13 +204,18 @@ class _ListDetail40State extends State<ListDetail40> {
       }
       total += e.price * e.amount;
       itemDishBuilder.add(DishCofirm(
+        onlyView: widget.onlyView,
         imagePath: e.imagePath,
         title: e.titleDish,
         price: e.price,
         amount: e.amount,
         callBackDel: () {
-          dishProvider.deleteAmountSorted(e.dishId);
-          billProvider.removeDishIdAtBillId(e.dishId, billId);
+          alert!.showAlert('Delete Dish', 'Are You Sure?', true, () async {
+            Database db = await dataHelper.database;
+            billRecordHelper.deteleDishIdAtBillId(
+                billRecord!.id!, e.dishId, db);
+            dishProvider.deleteAmountSorted(e.dishId);
+          });
         },
       ));
     }
@@ -185,8 +232,7 @@ class _ListDetail40State extends State<ListDetail40> {
                     children: itemDishBuilder,
                   ),
                 ),
-                infoPrice(colorScheme,
-                    billProvider.billRecords[billId]?.amountPaid ?? 0, total),
+                infoPrice(colorScheme, billRecord!.amountPaid, total),
                 Padding(
                   padding: EdgeInsets.all(16),
                   child: Container(
@@ -209,7 +255,7 @@ class _ListDetail40State extends State<ListDetail40> {
             ),
           ),
           Container(
-            height: 56,
+            height: 68,
             decoration: BoxDecoration(
                 color: colorBottomBar,
                 border: Border(
@@ -217,14 +263,15 @@ class _ListDetail40State extends State<ListDetail40> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
               child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     BottomBarButton(
                         colorPrimary: colorBottomBarBtn,
                         child: Icon(Icons.arrow_back),
                         callback: () {
                           Navigator.pop(context);
-                          if (widget.isViewFromTable) return;
+                          if (widget.onlyView) return;
                           dishProvider.clearRam();
                         }),
                     BottomBarButton(
@@ -234,25 +281,10 @@ class _ListDetail40State extends State<ListDetail40> {
                           color: colorScheme.primary,
                         ),
                         callback: () {
-                          billProvider.resetBillIdInRam();
                           Navigator.popUntil(context, (route) => route.isFirst);
+                          if (widget.onlyView) return;
                         }),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.build,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (BuildContext context) => Paid41(
-                                  billId: billId,
-                                  isRebuild: true,
-                                ),
-                              ));
-                        }),
+                    rebuildBtn(colorScheme, colorBottomBarBtn),
                     BottomBarButton(
                         colorPrimary: colorBottomBarBtn,
                         child: Icon(
@@ -260,16 +292,17 @@ class _ListDetail40State extends State<ListDetail40> {
                           color: colorScheme.primary,
                         ),
                         callback: () {
-                          billProvider.checkLeftBillId(billId);
+                          // check customer was left
+                          checkComplete(billRecord!);
+                          //
                           setState(() {
-                            widget.billRecords
-                                .removeWhere((k, v) => k == billId);
+                            widget.billRecords.remove(billRecord!.id);
                           });
                           Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (BuildContext context) => Paid42(
-                                  billId: billId,
+                                  billRecord: billRecord!,
                                   isRebuild: true,
                                 ),
                               ));

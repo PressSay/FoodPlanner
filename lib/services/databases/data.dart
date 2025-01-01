@@ -7,11 +7,15 @@ int lastCategoryId = 2;
 
 Map<int, CategoryRecord> categoryRecords = {
   1: CategoryRecord(
-      id: 1, title: "Thức uống yêu thích", desc: "Thức uống nhiều người kêu"),
+      id: 1,
+      title: "Thức uống yêu thích",
+      desc: "Thức uống nhiều người kêu",
+      menuId: 1),
   2: CategoryRecord(
       id: 2,
       title: "Thức uống luxury",
-      desc: "Thức uống cao cấp được những người giàu săn đón"),
+      desc: "Thức uống cao cấp được những người giàu săn đón",
+      menuId: 1),
 };
 
 Map<int, DishRecord> dishRecords = {

@@ -4,17 +4,26 @@ import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/dish_record.dart';
 import 'package:menu_qr/screens/order_44.dart';
 import 'package:menu_qr/screens/paid_42.dart';
+import 'package:menu_qr/services/alert.dart';
+import 'package:menu_qr/services/databases/bill_record_helper.dart';
 import 'package:menu_qr/services/databases/data.dart';
+import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/providers/bill_provider.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:menu_qr/services/throusand_separator_formatter.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:provider/provider.dart';
+import 'package:sqflite/sqflite.dart';
 
 class Paid41 extends StatefulWidget {
-  const Paid41({super.key, required this.billId, required this.isRebuild});
-  final int billId;
+  const Paid41(
+      {super.key,
+      required this.billRecord,
+      required this.isRebuild,
+      required this.isImmediate});
+  final BillRecord billRecord;
   final bool isRebuild;
+  final bool isImmediate;
 
   @override
   State<Paid41> createState() => _Paid41State();
@@ -27,8 +36,18 @@ class _Paid41State extends State<Paid41> {
   double amountPaid = 0;
   double change = 0;
   String timeZone = "vi_VN";
+  Alert? alert;
 
-  List<Widget> bottomNavigationBar(BillProvider billProvider,
+  final DataHelper dataHelper = DataHelper();
+  final BillRecordHelper billRecordHelper = BillRecordHelper();
+
+  @override
+  void initState() {
+    alert = Alert(context: context);
+    super.initState();
+  }
+
+  List<Widget> bottomNavigationBar(
       DishProvider dishProvider, ColorScheme colorScheme) {
     final colorBottomBarBtn = [
       colorScheme.primary,
@@ -52,7 +71,6 @@ class _Paid41State extends State<Paid41> {
           colorPrimary: colorBottomBarBtn,
           child: Icon(Icons.home, color: colorScheme.primary),
           callback: () {
-            billProvider.resetBillIdInRam();
             Navigator.popUntil(context, (route) => route.isFirst);
           }),
     );
@@ -65,13 +83,13 @@ class _Paid41State extends State<Paid41> {
           colorPrimary: colorBottomBarBtn,
           child: Icon(Icons.build, color: colorScheme.primary),
           callback: () {
-            dishProvider.importDataToIndexDishList(billProvider
-                .billRecords[widget.billId]!.preOrderedDishRecords!);
+            dishProvider.importDataToIndexDishList(
+                widget.billRecord.preOrderedDishRecords!);
             Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (BuildContext context) => Order44(
-                      billId: widget.billId,
+                      billRecord: widget.billRecord,
                       isRebuild: true,
                       isImmediate: true),
                 ));
@@ -82,7 +100,7 @@ class _Paid41State extends State<Paid41> {
           colorPrimary: colorBottomBarBtn,
           child: Icon(Icons.save, color: colorScheme.primary),
           callback: () {
-            saveBill(billProvider);
+            saveBill();
             if (widget.isRebuild) {
               Navigator.pop(context);
               return;
@@ -91,7 +109,7 @@ class _Paid41State extends State<Paid41> {
                 context,
                 MaterialPageRoute(
                   builder: (BuildContext context) => Paid42(
-                    billId: widget.billId,
+                    billRecord: widget.billRecord,
                     isRebuild: !widget.isRebuild,
                   ),
                 ));
@@ -101,33 +119,35 @@ class _Paid41State extends State<Paid41> {
   }
 
   void changeMoney(text) {
+    double moneyCustomer =
+        (text.isEmpty) ? 0.0 : double.parse(text.replaceAll(',', ''));
     setState(() {
-      double moneyCustomer =
-          (text.isEmpty) ? 0.0 : double.parse(text.replaceAll(',', ''));
       change = moneyCustomer - total;
     });
   }
 
-  void saveBill(BillProvider billProvider) {
-    billProvider.savePaidMoneyAtBillId(widget.billId, total + change);
-    return;
+  void saveBill() async {
+    widget.billRecord.amountPaid = total + change;
+    if (widget.isImmediate) widget.billRecord.isLeft = true;
+    Database db = await dataHelper.database;
+    billRecordHelper.updateBillRecord(widget.billRecord, db);
+    alert!.showAlert('Update Bill', 'success', false, null);
   }
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final colorBottomBar = colorScheme.secondaryContainer;
+    final DishProvider dishProvider = context.watch<DishProvider>();
+    final int tableId = widget.billRecord.tableId!;
+    final String typeCustomer =
+        (widget.billRecord.type) ? "Buy take away" : "Sit in place";
+    final String tableName =
+        (tableId == 0) ? 'None' : widget.billRecord.nameTable;
 
-    BillProvider billProvider = context.watch<BillProvider>();
-    DishProvider dishProvider = context.watch<DishProvider>();
-    BillRecord billRecord = billProvider.billRecords[widget.billId]!;
-    int tableId = billRecord.tableId;
-    String typeCustomer = (billRecord.type) ? "Buy take away" : "Sit in place";
-    String tableName = (tableId == 0) ? 'None' : tableRecords[tableId]!.name;
-
-    amountPaid = billRecord.amountPaid;
+    amountPaid = widget.billRecord.amountPaid;
     total = 0;
-    for (var element in billRecord.preOrderedDishRecords!) {
+    for (var element in widget.billRecord.preOrderedDishRecords!) {
       int dishId = element.dishId;
       DishRecord dishRecord = dishRecords[dishId]!;
       total += (element.amount * dishRecord.price);
@@ -157,7 +177,7 @@ class _Paid41State extends State<Paid41> {
                                 color: colorScheme.primary,
                                 fontWeight: FontWeight.bold)),
                         TextSpan(
-                            text: '${billRecord.dateTime}',
+                            text: '${widget.billRecord.dateTime}',
                             style: TextStyle(
                                 color: colorScheme.secondary,
                                 fontWeight: FontWeight.bold))
@@ -290,7 +310,7 @@ class _Paid41State extends State<Paid41> {
                                 color: colorScheme.primary,
                                 fontWeight: FontWeight.bold)),
                         TextSpan(
-                            text: '${widget.billId}',
+                            text: '${widget.billRecord.id!}',
                             style: TextStyle(
                                 color: colorScheme.secondary,
                                 fontWeight: FontWeight.bold))
@@ -302,7 +322,7 @@ class _Paid41State extends State<Paid41> {
             ),
           ),
           Container(
-            height: 56,
+            height: 68,
             decoration: BoxDecoration(
                 color: colorBottomBar,
                 border: Border(
@@ -310,9 +330,9 @@ class _Paid41State extends State<Paid41> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
               child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: bottomNavigationBar(
-                      billProvider, dishProvider, colorScheme)),
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: bottomNavigationBar(dishProvider, colorScheme)),
             ),
           )
         ],

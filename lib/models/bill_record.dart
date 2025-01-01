@@ -1,14 +1,15 @@
 import 'package:menu_qr/models/pre_ordered_dish.dart';
 
 class BillRecord {
-  int id;
+  int? id;
+  // sau khi đã hoàn thành giao dịch thì tableId chỉ là liên kết lỏng lẻo
+  int? tableId;
   double amountPaid;
   double discount;
-  int tableId; // sau khi đã hoàn thành giao dịch thì tableId chỉ là liên kết lỏng lẻo
   String nameTable;
   bool isLeft;
   bool type; // if true buy take away
-  DateTime dateTime;
+  int dateTime;
   List<PreOrderedDishRecord>? preOrderedDishRecords;
 
   // // For dicountNext
@@ -17,13 +18,38 @@ class BillRecord {
   // // QR will save bill id and secret code
   // String secretCode;
   BillRecord(
-      {required this.id,
+      {this.id,
+      this.tableId,
       required this.amountPaid,
       required this.discount,
-      required this.tableId,
       required this.nameTable,
       required this.isLeft,
       required this.type,
       required this.dateTime,
       this.preOrderedDishRecords});
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'tableId': tableId,
+      'amountPaid': amountPaid,
+      'discount': discount,
+      'nameTable': nameTable,
+      'isLeft': isLeft ? 1 : 0,
+      'type': type ? 1 : 0,
+      'dateTime': dateTime
+    };
+  }
+
+  factory BillRecord.fromMap(Map<String, dynamic> map) {
+    return BillRecord(
+        id: map['id']?.toInt() ?? 0,
+        tableId: map['tableId']?.toInt() ?? 0,
+        amountPaid: map['amountPaid'] ?? 0,
+        discount: map['discount'] ?? 0,
+        nameTable: map['nameTable'] ?? '',
+        isLeft: map['isLeft'] == 1,
+        type: map['type'] == 1,
+        dateTime: map['dateTime'] ?? 0);
+  }
 }

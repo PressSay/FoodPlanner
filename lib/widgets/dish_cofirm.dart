@@ -4,11 +4,13 @@ import 'package:intl/intl.dart';
 class DishCofirm extends StatelessWidget {
   const DishCofirm(
       {super.key,
+      required this.onlyView,
       required this.imagePath,
       required this.title,
       required this.price,
       required this.amount,
       required this.callBackDel});
+  final bool onlyView;
   final String imagePath;
   final String title;
   final double price;
@@ -19,6 +21,23 @@ class DishCofirm extends StatelessWidget {
 
   String formatNumber(int number) {
     return number.toString().padLeft(2, '0');
+  }
+
+  Widget deleteBtn(ColorScheme colorScheme) {
+    return (onlyView)
+        ? SizedBox()
+        : Expanded(
+            child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+            IconButton(
+                onPressed: () {
+                  callBackDel();
+                },
+                icon: Icon(
+                  Icons.delete,
+                  color: colorScheme.primary,
+                )),
+            Padding(padding: EdgeInsets.all(4))
+          ]));
   }
 
   @override
@@ -126,20 +145,7 @@ class DishCofirm extends StatelessWidget {
                                   color: colorScheme.primary,
                                   fontWeight: FontWeight.bold))))
                 ]),
-                Expanded(
-                    child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                      IconButton(
-                          onPressed: () {
-                            callBackDel();
-                          },
-                          icon: Icon(
-                            Icons.delete,
-                            color: colorScheme.primary,
-                          )),
-                      Padding(padding: EdgeInsets.all(4))
-                    ]))
+                deleteBtn(colorScheme)
               ]))
         ]))
       ]),

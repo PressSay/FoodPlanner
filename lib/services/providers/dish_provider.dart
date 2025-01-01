@@ -4,6 +4,9 @@ import 'package:menu_qr/models/pre_ordered_dish.dart';
 /// Mix-in [DiagnosticableTreeMixin] to have access to [debugFillProperties] for the devtool
 // ignore: prefer_mixin
 class DishProvider extends ChangeNotifier {
+  int _categoryId = 0;
+  int _menuId = 0;
+
   final Map<int, PreOrderedDishRecord> _indexDishList = {};
   final List<PreOrderedDishRecord> _indexDishListSorted = [];
 
@@ -13,6 +16,18 @@ class DishProvider extends ChangeNotifier {
   void addIndexDishListSorted(PreOrderedDishRecord preOrderedDishRecord) {
     _indexDishListSorted.add(preOrderedDishRecord);
   }
+
+  void setCateogryId(int categoryId) {
+    _categoryId = categoryId;
+  }
+
+  void setMenuId(int menuId) {
+    _menuId = menuId;
+  }
+
+  int get categoryId => _categoryId;
+
+  int get menuId => _menuId;
 
   void clearIndexDishListSorted() {
     _indexDishListSorted.clear();
@@ -43,9 +58,9 @@ class DishProvider extends ChangeNotifier {
         id: PreOrderedDishRecord(
             amount: 0,
             billId: 0,
+            categoryId: 0,
             titleDish: title,
             dishId: id,
-            categoryId: categoryId,
             price: price,
             imagePath: imagePath)
       });
@@ -61,9 +76,9 @@ class DishProvider extends ChangeNotifier {
         id: PreOrderedDishRecord(
             amount: 0,
             billId: 0,
+            categoryId: categoryId,
             titleDish: title,
             dishId: id,
-            categoryId: categoryId,
             price: price,
             imagePath: imagePath)
       });

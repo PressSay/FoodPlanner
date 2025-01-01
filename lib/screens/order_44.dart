@@ -1,25 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:menu_qr/models/bill_record.dart';
+import 'package:menu_qr/models/category_record.dart';
 import 'package:menu_qr/models/dish_record.dart';
+import 'package:menu_qr/models/menu_record.dart';
 import 'package:menu_qr/models/pre_ordered_dish.dart';
 import 'package:menu_qr/screens/category_45.dart';
 import 'package:menu_qr/screens/confirm_38.dart';
-import 'package:menu_qr/services/providers/bill_provider.dart';
+import 'package:menu_qr/services/alert.dart';
+import 'package:menu_qr/services/databases/bill_record_helper.dart';
+import 'package:menu_qr/services/databases/category_record_helper.dart';
+import 'package:menu_qr/services/databases/data_helper.dart';
+import 'package:menu_qr/services/databases/dish_record_helper.dart';
+import 'package:menu_qr/services/databases/menu_record_helper.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:menu_qr/widgets/dish_button.dart';
 import 'package:menu_qr/widgets/category_bar.dart';
 import 'package:provider/provider.dart';
-import 'package:menu_qr/services/databases/data.dart';
+import 'package:sqflite/sqflite.dart';
 
 class Order44 extends StatefulWidget {
   const Order44(
       {super.key,
       required this.isImmediate,
       required this.isRebuild,
-      this.billId});
+      this.billRecord});
   final bool isImmediate;
   final bool isRebuild;
-  final int? billId;
+  final BillRecord? billRecord;
   final iconSize = 24;
 
   @override
@@ -27,24 +35,69 @@ class Order44 extends StatefulWidget {
 }
 
 class _Order44 extends State<Order44> {
+  Alert? alert;
   String filterTitleDish = "";
   bool _showWidgetB = false;
+  bool isInitMenuIdAndCategoryId = false;
+  int categoryIdInScreen = 0;
+
   final TextEditingController _controller = TextEditingController();
 
-  void saveRebuildDishes(DishProvider dishProvider, BillProvider billProvider) {
+  late final DishProvider dishProvider;
+  final DataHelper dataHelper = DataHelper();
+  final MenuRecordHelper menuRecordHelper = MenuRecordHelper();
+  final CategoryRecordHelper categoryRecordHelper = CategoryRecordHelper();
+  final DishRecordHelper dishRecordHelper = DishRecordHelper();
+  final BillRecordHelper billRecordHelper = BillRecordHelper();
+
+  final List<DishRecord> dishRecords = [];
+
+  @override
+  void initState() {
+    alert = Alert(context: context);
+    dishProvider = context.watch<DishProvider>();
+    getDishRecords();
+    super.initState();
+  }
+
+  void getDishRecords() async {
+    Database db = await dataHelper.database;
+    if (!isInitMenuIdAndCategoryId) {
+      List<MenuRecord> menuRecordSeleted =
+          await menuRecordHelper.menuRecords(db, 'isSelected = ?', [1], 1);
+      if (menuRecordSeleted.isEmpty) {
+        alert!.showAlert('Dish', 'no dish to show', false, null);
+        isInitMenuIdAndCategoryId = false;
+        return;
+      }
+      List<CategoryRecord> categoryRecords = await categoryRecordHelper
+          .categoryRecords(db, 'menuId = ?', [menuRecordSeleted[0].id!], 1);
+      dishProvider.setMenuId(menuRecordSeleted[0].id!);
+      dishProvider.setCateogryId(categoryRecords[0].id!);
+      isInitMenuIdAndCategoryId = false;
+    }
+    List<DishRecord> tmpDishRecords = await dishRecordHelper
+        .dishRecords(db, 'categoryId = ?', [dishProvider.categoryId]);
+    setState(() {
+      dishRecords.clear();
+      dishRecords.addAll(tmpDishRecords);
+    });
+    categoryIdInScreen = dishProvider.categoryId;
+  }
+
+  void saveRebuildDishes(DishProvider dishProvider) async {
     List<PreOrderedDishRecord> dishRecordSorted = dishProvider
         .indexDishList.entries
         .map((element) => element.value)
         .toList();
     dishRecordSorted.sort((a, b) {
-      return dishRecords[a.dishId]!.categoryId! -
-          dishRecords[b.dishId]!.categoryId!;
+      return a.categoryId - b.categoryId;
     });
     dishProvider.importDataToIndexDishListSorted(dishRecordSorted);
-    billProvider.saveDishesAtBillId(
-        dishProvider.indexDishListSorted, widget.billId!);
-
-    ///
+    // storage to database
+    Database db = await dataHelper.database;
+    billRecordHelper.insertDishesAtBillId(
+        db, dishProvider.indexDishListSorted, widget.billRecord!.id!);
   }
 
   @override
@@ -57,26 +110,27 @@ class _Order44 extends State<Order44> {
     ];
     final colorBottomBar = colorScheme.secondaryContainer;
 
+    if (categoryIdInScreen != dishProvider.categoryId) {
+      getDishRecords();
+    }
     // final currentWidth = MediaQuery.of(context).size.width;
-    DishProvider dishProvider = context.watch<DishProvider>();
-    BillProvider billProvider = context.watch<BillProvider>();
     // Add item to listview
-    Map<int, DishRecord> dishRecordsFiltered =
-        (filterTitleDish.isEmpty) ? dishRecords : Map.from(dishRecords)
-          ..removeWhere((k, v) => !v.title.contains(filterTitleDish));
+    List<DishRecord> dishRecordsFiltered = (filterTitleDish.isEmpty)
+        ? dishRecords
+        : dishRecords.where((e) => e.title.contains(filterTitleDish)).toList();
     List<Widget> itemDishBuilder = [];
 
-    dishRecordsFiltered.forEach((key, value) {
+    for (var value in dishRecordsFiltered) {
       itemDishBuilder.add(Padding(
           padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
           child: DishButton(
-              id: key,
-              categoryId: value.categoryId!,
+              id: value.id!,
+              categoryId: value.categoryId,
               imagePath: value.imagePath,
               title: value.title,
               desc: value.desc,
               price: value.price)));
-    });
+    }
 
     return PopScope(
         canPop: true,
@@ -110,7 +164,7 @@ class _Order44 extends State<Order44> {
                         return;
                       }
                       if (widget.isRebuild) {
-                        saveRebuildDishes(dishProvider, billProvider);
+                        saveRebuildDishes(dishProvider);
                         Navigator.pop(context);
                         return;
                       }
@@ -146,7 +200,7 @@ class _Order44 extends State<Order44> {
                 duration: const Duration(milliseconds: 200),
               ),
               Container(
-                height: 56,
+                height: 68,
                 decoration: BoxDecoration(
                     color: colorBottomBar,
                     border: Border(
@@ -155,7 +209,7 @@ class _Order44 extends State<Order44> {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
                   child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         BottomBarButton(

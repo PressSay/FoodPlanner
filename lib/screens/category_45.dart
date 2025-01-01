@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:menu_qr/models/category_record.dart';
+import 'package:menu_qr/services/databases/category_record_helper.dart';
+import 'package:menu_qr/services/databases/data_helper.dart';
+import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
-import 'package:menu_qr/services/databases/data.dart';
+import 'package:provider/provider.dart';
+import 'package:sqflite/sqflite.dart';
 
 class Category45 extends StatefulWidget {
   const Category45({super.key});
@@ -13,6 +17,28 @@ class Category45 extends StatefulWidget {
 class _Category45 extends State<Category45> {
   bool _showWidgetB = false;
   final TextEditingController _controller = TextEditingController();
+  final DataHelper dataHelper = DataHelper();
+  final CategoryRecordHelper categoryRecordHelper = CategoryRecordHelper();
+  late final DishProvider dishProvider;
+  final List<CategoryRecord> categoryRecords = [];
+
+  void getCategoryRecords() async {
+    Database db = await dataHelper.database;
+    List<CategoryRecord> tmpCategoryRecords = await categoryRecordHelper
+        .categoryRecords(db, 'menuId = ?', [dishProvider.categoryId], null);
+    setState(() {
+      categoryRecords.clear();
+      categoryRecords.addAll(tmpCategoryRecords);
+    });
+  }
+
+  @override
+  void initState() {
+    dishProvider = context.watch<DishProvider>();
+    getCategoryRecords();
+    super.initState();
+  }
+
   String filterTitleCategory = "";
   @override
   Widget build(BuildContext context) {
@@ -24,14 +50,14 @@ class _Category45 extends State<Category45> {
     ];
     final colorBottomBar = colorScheme.secondaryContainer;
 
-    Map<int, CategoryRecord> filterCategoryRecoreds = (filterTitleCategory
-            .isEmpty)
+    List<CategoryRecord> filterCategoryRecoreds = (filterTitleCategory.isEmpty)
         ? categoryRecords
-        : Map.from(categoryRecords)
-      ..removeWhere((k, v) => !v.title.contains(filterTitleCategory));
+        : categoryRecords
+            .where((e) => e.title.contains(filterTitleCategory))
+            .toList();
+
     List<Widget> itemCategoryBuilder = [];
-    filterCategoryRecoreds.forEach((key, value) {
-      String title = value.title;
+    for (var value in filterCategoryRecoreds) {
       itemCategoryBuilder.add(Padding(
         padding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -47,12 +73,14 @@ class _Category45 extends State<Category45> {
                           bottomStart: Radius.circular(20)),
                     )),
                     minimumSize: WidgetStateProperty.all(Size(50, 50))),
-                onPressed: () {},
-                child: Text('$key. $title')),
+                onPressed: () {
+                  dishProvider.setCateogryId(value.id!);
+                },
+                child: Text('${value.id!} . ${value.title}')),
           )
         ]),
       ));
-    });
+    }
     return Scaffold(
       body: Column(
         children: [
@@ -90,7 +118,7 @@ class _Category45 extends State<Category45> {
             duration: const Duration(milliseconds: 200),
           ),
           Container(
-            height: 56,
+            height: 68,
             decoration: BoxDecoration(
                 color: colorBottomBar,
                 border: Border(
@@ -98,7 +126,8 @@ class _Category45 extends State<Category45> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
               child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     BottomBarButton(
                         colorPrimary: colorBottomBarBtn,

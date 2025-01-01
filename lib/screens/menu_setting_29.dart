@@ -1,8 +1,18 @@
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:excel/excel.dart' as excl;
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:menu_qr/models/menu_record.dart';
 import 'package:menu_qr/screens/category_setting_30.dart';
+import 'package:menu_qr/screens/setting_table_30.dart';
+import 'package:menu_qr/services/alert.dart';
+import 'package:menu_qr/services/databases/data_helper.dart';
+import 'package:menu_qr/services/databases/menu_record_helper.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:menu_qr/widgets/order_setting_button_online.dart';
-import 'package:menu_qr/widgets/setting_button.dart';
+import 'package:sqflite/sqflite.dart';
 
 class Menu29 extends StatefulWidget {
   const Menu29({super.key});
@@ -13,55 +23,164 @@ class Menu29 extends StatefulWidget {
 
 class _Menu29State extends State<Menu29> {
   String filterTitleMenu = "";
+  String titleMenu = "";
+
   bool _showWidgetB = false;
+  Alert? alert;
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _controllerMenu = TextEditingController();
+  final DataHelper dataHelper = DataHelper();
+  final MenuRecordHelper menuRecordHelper = MenuRecordHelper();
+  final List<MenuRecord> menuRecords = [];
+  final List<MenuRecord> selectedMenuRecords = [];
 
   @override
-  Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final colorBottomBarBtn = [
-      colorScheme.primary,
-      colorScheme.secondaryContainer,
-      colorScheme.onSecondary
-    ];
-    final colorBottomBar = colorScheme.secondaryContainer;
+  void initState() {
+    alert = Alert(context: context);
+    getMenuRecords();
+    return super.initState();
+  }
 
-    return Scaffold(
-      body: Column(
-        children: [
-          Expanded(
-              child: SafeArea(
-            child: ListView(
+  void saveMenu() async {
+    if (titleMenu.isEmpty) {
+      alert!.showAlert('Save Menu', 'failed!', false, null);
+      return;
+    }
+    MenuRecord menuRecord = MenuRecord(title: titleMenu, isSelected: false);
+    Database db = await dataHelper.database;
+    int lastId = await menuRecordHelper.insertMenuRecord(menuRecord, db) ?? 0;
+    if (lastId != 0) {
+      menuRecord.id = lastId;
+      setState(() {
+        menuRecords.add(menuRecord);
+      });
+      alert!.showAlert('Save Menu', 'success!', false, null);
+    }
+  }
+
+  void getMenuRecords() async {
+    Database db = await dataHelper.database;
+    List<MenuRecord> tmpSelectedMenuRecords =
+        await menuRecordHelper.menuRecords(db, 'isSelected = ?', [1], null);
+    selectedMenuRecords.clear();
+    selectedMenuRecords.addAll(tmpSelectedMenuRecords);
+    List<MenuRecord> tmpMenuRecords =
+        await menuRecordHelper.menuRecords(db, '', [], null);
+    setState(() {
+      menuRecords.clear();
+      menuRecords.addAll(tmpMenuRecords);
+    });
+  }
+
+  void reSelectMenuRecord(MenuRecord menuRecord) async {
+    Database db = await dataHelper.database;
+    List<int> indexRemove = [];
+    for (int i = 0; i < selectedMenuRecords.length; i++) {
+      MenuRecord newE = selectedMenuRecords[i];
+      newE.isSelected = false;
+      await menuRecordHelper.updateMenuRecord(newE, db);
+      indexRemove.add(i);
+    }
+    for (int index in indexRemove) {
+      selectedMenuRecords.removeAt(index);
+    }
+    await menuRecordHelper.updateMenuRecord(menuRecord, db);
+    selectedMenuRecords.add(menuRecord);
+  }
+
+  void deleteMenu(int menuId) {
+    alert!.showAlert('Delete Menu', 'Are You Sure?', true, () async {
+      Database db = await dataHelper.database;
+      menuRecordHelper.deleteMenuRecord(menuId, db);
+    });
+  }
+
+  void importData(Uint8List bytes) {
+    // var bytes = pickedFile.files.first.bytes;
+    var excel = excl.Excel.decodeBytes(bytes);
+
+    int tableNumericalOrder = 1; // 3 tables
+    for (var table in excel.tables.keys) {
+      bool checkedFormat = false;
+
+      for (var row in excel.tables[table]!.rows) {
+        if (!checkedFormat) {
+          int pFC = 0;
+          bool haveBreak = false;
+          List<String>? formalColumn;
+          if (tableNumericalOrder == 1) {
+            formalColumn = [
+              "mã số", // Cần sửa lại so sánh sao cho khớp
+              "tên món ăn",
+              "giá",
+              "mô tả",
+              "đường dẫn ảnh",
+              "thể loại",
+              "mô tả thể loại"
+            ];
+          } else if (tableNumericalOrder == 2) {
+            formalColumn = [
+              "mã số món ăn",
+              "mã số bill",
+              "số lượng",
+              "mã số bàn",
+              "tên bàn",
+              "đã thanh toán",
+              "ngày giờ",
+              "giảm giá",
+              "là loại mang đi",
+              "số tiền đã trả"
+            ];
+          } else {
+            formalColumn = [
+              "mã số bàn",
+              "tên bàn",
+              "mô tả",
+            ];
+          }
+          for (var column in row) {
+            String data = column?.value.toString() ?? "";
+            if (formalColumn[pFC].compareTo(data) == 0) {
+              pFC++;
+              continue;
+            } else {
+              haveBreak = !haveBreak;
+              break;
+            }
+          }
+          if (!haveBreak) checkedFormat = !checkedFormat;
+          if (!checkedFormat) {
+            alert!.showAlert('Format excel', 'wrong format', false, null);
+            return;
+          }
+          // import data below
+          if (checkedFormat) {
+            // for (excl.Data? column in row) {
+            //   if (tableNumericalOrder == 1) {
+            //   } else if (tableNumericalOrder == 2) {
+            //   } else {}
+            // }
+          }
+        }
+      }
+      tableNumericalOrder += 1;
+    }
+  }
+
+  Widget editArea(ColorScheme colorScheme) {
+    return Container(
+        height: 188,
+        decoration: BoxDecoration(
+            border: Border(
+                top: BorderSide(width: 1.0, color: colorScheme.primary))),
+        child: ListView(
+          children: [
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Center(
-                  child: Padding(
+                Padding(
                     padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
-                    child: OrderSettingButtonOnl(
-                        colorScheme: colorScheme,
-                        isChecked: true,
-                        callbackCheck: () {},
-                        callbackRebuild: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (BuildContext context) =>
-                                      Category30()));
-                        },
-                        callbackDelete: () {},
-                        content: "Hello"),
-                  ),
-                )
-              ],
-            ),
-          )),
-          Container(
-              decoration: BoxDecoration(
-                  border: Border(
-                      top: BorderSide(width: 1.0, color: colorScheme.primary))),
-              child: Center(
-                child: Padding(
-                    padding: EdgeInsets.fromLTRB(0, 30, 0, 30),
                     child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -88,6 +207,9 @@ class _Menu29State extends State<Menu29> {
                               width: 240,
                               height: 48,
                               child: TextField(
+                                  onChanged: (value) {
+                                    titleMenu = value;
+                                  },
                                   style: TextStyle(color: colorScheme.primary),
                                   controller: _controllerMenu,
                                   decoration: InputDecoration(
@@ -98,7 +220,107 @@ class _Menu29State extends State<Menu29> {
                                     labelText: 'Menu',
                                   )))
                         ])),
-              )),
+                Padding(
+                    padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
+                    child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  maintainState: true,
+                                  builder: (context) => Table30()));
+                        },
+                        child: Text('Table'))),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 20, 0, 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                          onPressed: () async {
+                            FilePickerResult? pickedFile =
+                                await FilePicker.platform.pickFiles(
+                              type: FileType.custom,
+                              allowedExtensions: ['xlsx'],
+                              allowMultiple: false,
+                            );
+                            if (pickedFile != null) {
+                              String file =
+                                  pickedFile.files.firstOrNull?.path ?? "";
+                              var bytes = await File(file).readAsBytes();
+                              importData(bytes);
+                            }
+                          },
+                          child: Text('Import')),
+                      SizedBox(width: 18),
+                      ElevatedButton(onPressed: () {}, child: Text('Export')),
+                    ],
+                  ),
+                )
+              ],
+            ),
+          ],
+        ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final colorBottomBarBtn = [
+      colorScheme.primary,
+      colorScheme.secondaryContainer,
+      colorScheme.onSecondary
+    ];
+    final colorBottomBar = colorScheme.secondaryContainer;
+
+    List<MenuRecord> filteredMenuRecords = (filterTitleMenu.isEmpty)
+        ? menuRecords
+        : menuRecords.where((e) => e.title.contains(filterTitleMenu)).toList();
+    List<Widget> itemBuilderMenu = [];
+
+    for (MenuRecord e in filteredMenuRecords) {
+      itemBuilderMenu.add(Center(
+          child: Padding(
+              padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
+              child: OrderSettingButtonOnl(
+                  colorScheme: colorScheme,
+                  isChecked: e.isSelected,
+                  callbackCheck: () {
+                    setState(() {
+                      e.isSelected = true;
+                      for (MenuRecord e1 in selectedMenuRecords) {
+                        if (e1.isSelected && e.id == e1.id) {
+                          e.isSelected = false;
+                        }
+                      }
+                    });
+                    reSelectMenuRecord(e);
+                  },
+                  callbackRebuild: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (BuildContext context) =>
+                                Category30(menuRecord: e)));
+                  },
+                  callbackDelete: () {
+                    deleteMenu(e.id!);
+                    setState(() {
+                      menuRecords.removeWhere((e1) => e1.id == e.id);
+                    });
+                  },
+                  content: e.title))));
+    }
+
+    return Scaffold(
+      body: Column(
+        children: [
+          Expanded(
+              child: SafeArea(
+            child: ListView(children: itemBuilderMenu),
+          )),
+          editArea(colorScheme),
           AnimatedCrossFade(
             firstChild: SizedBox(),
             secondChild: Padding(
@@ -121,7 +343,7 @@ class _Menu29State extends State<Menu29> {
             duration: const Duration(milliseconds: 200),
           ),
           Container(
-            height: 56,
+            height: 68,
             decoration: BoxDecoration(
                 color: colorBottomBar,
                 border: Border(
@@ -129,7 +351,7 @@ class _Menu29State extends State<Menu29> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
               child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     BottomBarButton(
@@ -168,7 +390,9 @@ class _Menu29State extends State<Menu29> {
                           Icons.add,
                           color: colorScheme.primary,
                         ),
-                        callback: () {})
+                        callback: () {
+                          saveMenu();
+                        })
                   ]),
             ),
           )

@@ -61,15 +61,15 @@ Map<int, TableRecord> tableRecords = {
       id: 1,
       name: "Bàn dãy cuối bàn số 1",
       desc: "Bàn có người ăn chùa",
-      isLock: true),
+      numOfPeople: 0),
   2: TableRecord(
-      id: 2, name: "Bàn VIP", desc: "Bàn dành cho khách VIP", isLock: true),
-  3: TableRecord(id: 3, name: "Bàn tròn", desc: "Bàn tròn lớn", isLock: false),
-  4: TableRecord(id: 4, name: "Bàn góc", desc: "Bàn góc cạnh", isLock: false),
+      id: 2, name: "Bàn VIP", desc: "Bàn dành cho khách VIP", numOfPeople: 0),
+  3: TableRecord(id: 3, name: "Bàn tròn", desc: "Bàn tròn lớn", numOfPeople: 0),
+  4: TableRecord(id: 4, name: "Bàn góc", desc: "Bàn góc cạnh", numOfPeople: 0),
   5: TableRecord(
-      id: 5, name: "Bàn ngoài trời", desc: "Bàn có view đẹp", isLock: false),
+      id: 5, name: "Bàn ngoài trời", desc: "Bàn có view đẹp", numOfPeople: 0),
   6: TableRecord(
-      id: 6, name: "Bàn gia đình", desc: "Bàn rộng rãi", isLock: false),
-  7: TableRecord(id: 7, name: "Bàn bar", desc: "Bàn cao", isLock: false),
+      id: 6, name: "Bàn gia đình", desc: "Bàn rộng rãi", numOfPeople: 0),
+  7: TableRecord(id: 7, name: "Bàn bar", desc: "Bàn cao", numOfPeople: 0),
   // 8: TableRecord(id: 8, name: "Bàn họp", desc: "Bàn dành cho cuộc họp")
 };

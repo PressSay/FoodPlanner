@@ -27,9 +27,9 @@ class DishRecord {
 
   factory DishRecord.fromMap(Map<String, dynamic> map) {
     return DishRecord(
-        id: map['id']?.toInt() ?? 0,
-        title: map['title'] ?? '',
-        desc: map['desc'] ?? false,
+        id: map['id'],
+        title: map['title'],
+        desc: map['desc'],
         price: map['price'],
         imagePath: map['imagePath'],
         categoryId: map['categoryId']);

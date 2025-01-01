@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:menu_qr/models/table_record.dart';
 import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
-import 'package:menu_qr/services/databases/table_record_helper.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:menu_qr/widgets/setting_button.dart';
-import 'package:sqflite/sqflite.dart';
 
 class Table30 extends StatefulWidget {
   const Table30({super.key});
@@ -14,23 +12,22 @@ class Table30 extends StatefulWidget {
 }
 
 class _Table30State extends State<Table30> {
-  List<TableRecord> tableRecords = [];
   String filterTitleTable = "";
   bool _showWidgetB = false;
   Alert? alert;
-
   int tableId = 0;
+  int numOfPeople = 0;
+
+  final List<TableRecord> tableRecords = [];
   final TextEditingController _controllerTableOld = TextEditingController();
   final TextEditingController _controllerDescOld = TextEditingController();
   final TextEditingController _controllerTable = TextEditingController();
   final TextEditingController _controllerDesc = TextEditingController();
 
   final DataHelper dataHelper = DataHelper();
-  final TableRecordHelper tableHelper = TableRecordHelper();
 
   void getTableRecords() async {
-    Database db = await dataHelper.database;
-    List<TableRecord> tmpTableRecords = await tableHelper.tableRecords(db);
+    final List<TableRecord> tmpTableRecords = await dataHelper.tableRecords();
     setState(() {
       tableRecords.clear();
       tableRecords.addAll(tmpTableRecords);
@@ -38,13 +35,12 @@ class _Table30State extends State<Table30> {
   }
 
   void updateTableRecord() async {
-    TableRecord newE = TableRecord(
+    final TableRecord newE = TableRecord(
         id: tableId,
         name: _controllerTableOld.text,
         desc: _controllerDescOld.text,
-        isLock: false);
-    Database db = await dataHelper.database;
-    tableHelper.updateTableRecord(newE, db);
+        numOfPeople: numOfPeople);
+    dataHelper.updateTableRecord(newE);
     alert!.showAlert('Update Table', 'success!', false, null);
   }
 
@@ -53,10 +49,11 @@ class _Table30State extends State<Table30> {
       alert!.showAlert('Insert Table', 'failed!', false, null);
       return;
     }
-    TableRecord newE = TableRecord(
-        name: _controllerTable.text, desc: _controllerDesc.text, isLock: false);
-    Database db = await dataHelper.database;
-    tableHelper.insertTableRecord(newE, db);
+    final TableRecord newE = TableRecord(
+        name: _controllerTable.text,
+        desc: _controllerDesc.text,
+        numOfPeople: 0);
+    dataHelper.insertTableRecord(newE);
     alert!.showAlert('Insert Table', 'success!', false, null);
   }
 
@@ -82,7 +79,6 @@ class _Table30State extends State<Table30> {
         : tableRecords
             .where((e) => filterTitleTable.contains(filterTitleTable))
             .toList();
-
     List<Widget> itemBuilder = [];
     for (TableRecord e in filteredTableRecords) {
       itemBuilder.add(Center(
@@ -94,12 +90,12 @@ class _Table30State extends State<Table30> {
                 _controllerDescOld.text = e.desc;
                 _controllerDescOld.text = e.name;
                 tableId = e.id!;
+                numOfPeople = e.numOfPeople;
               },
               callbackDelete: () {
                 alert!.showAlert('Delete Table Record', 'Are You Sure', true,
                     () async {
-                  Database db = await dataHelper.database;
-                  tableHelper.deleteTableRecord(e.id!, db);
+                  dataHelper.deleteTableRecord(e.id!);
                 });
                 setState(() {
                   tableRecords.removeWhere((e1) => e1.id == e.id);

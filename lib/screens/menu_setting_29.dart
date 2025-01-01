@@ -4,15 +4,14 @@ import 'dart:typed_data';
 import 'package:excel/excel.dart' as excl;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import 'package:menu_qr/models/menu_record.dart';
 import 'package:menu_qr/screens/category_setting_30.dart';
 import 'package:menu_qr/screens/setting_table_30.dart';
 import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
-import 'package:menu_qr/services/databases/menu_record_helper.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:menu_qr/widgets/order_setting_button_online.dart';
-import 'package:sqflite/sqflite.dart';
 
 class Menu29 extends StatefulWidget {
   const Menu29({super.key});
@@ -29,8 +28,8 @@ class _Menu29State extends State<Menu29> {
   Alert? alert;
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _controllerMenu = TextEditingController();
+
   final DataHelper dataHelper = DataHelper();
-  final MenuRecordHelper menuRecordHelper = MenuRecordHelper();
   final List<MenuRecord> menuRecords = [];
   final List<MenuRecord> selectedMenuRecords = [];
 
@@ -42,30 +41,20 @@ class _Menu29State extends State<Menu29> {
   }
 
   void saveMenu() async {
-    if (titleMenu.isEmpty) {
-      alert!.showAlert('Save Menu', 'failed!', false, null);
-      return;
-    }
-    MenuRecord menuRecord = MenuRecord(title: titleMenu, isSelected: false);
-    Database db = await dataHelper.database;
-    int lastId = await menuRecordHelper.insertMenuRecord(menuRecord, db) ?? 0;
+    final MenuRecord menuRecord =
+        MenuRecord(title: titleMenu, isSelected: false);
+    final int lastId = await dataHelper.insertMenuRecord(menuRecord) ?? 0;
     if (lastId != 0) {
       menuRecord.id = lastId;
       setState(() {
         menuRecords.add(menuRecord);
       });
-      alert!.showAlert('Save Menu', 'success!', false, null);
     }
   }
 
   void getMenuRecords() async {
-    Database db = await dataHelper.database;
-    List<MenuRecord> tmpSelectedMenuRecords =
-        await menuRecordHelper.menuRecords(db, 'isSelected = ?', [1], null);
-    selectedMenuRecords.clear();
-    selectedMenuRecords.addAll(tmpSelectedMenuRecords);
-    List<MenuRecord> tmpMenuRecords =
-        await menuRecordHelper.menuRecords(db, '', [], null);
+    final List<MenuRecord> tmpMenuRecords =
+        await dataHelper.menuRecords(null, null, null);
     setState(() {
       menuRecords.clear();
       menuRecords.addAll(tmpMenuRecords);
@@ -73,25 +62,23 @@ class _Menu29State extends State<Menu29> {
   }
 
   void reSelectMenuRecord(MenuRecord menuRecord) async {
-    Database db = await dataHelper.database;
-    List<int> indexRemove = [];
+    final List<int> indexRemove = [];
     for (int i = 0; i < selectedMenuRecords.length; i++) {
-      MenuRecord newE = selectedMenuRecords[i];
+      final MenuRecord newE = selectedMenuRecords[i];
       newE.isSelected = false;
-      await menuRecordHelper.updateMenuRecord(newE, db);
+      await dataHelper.updateMenuRecord(newE);
       indexRemove.add(i);
     }
     for (int index in indexRemove) {
       selectedMenuRecords.removeAt(index);
     }
-    await menuRecordHelper.updateMenuRecord(menuRecord, db);
+    await dataHelper.updateMenuRecord(menuRecord);
     selectedMenuRecords.add(menuRecord);
   }
 
   void deleteMenu(int menuId) {
     alert!.showAlert('Delete Menu', 'Are You Sure?', true, () async {
-      Database db = await dataHelper.database;
-      menuRecordHelper.deleteMenuRecord(menuId, db);
+      dataHelper.deleteMenuRecord(menuId);
     });
   }
 
@@ -239,16 +226,16 @@ class _Menu29State extends State<Menu29> {
                     children: [
                       ElevatedButton(
                           onPressed: () async {
-                            FilePickerResult? pickedFile =
+                            final FilePickerResult? pickedFile =
                                 await FilePicker.platform.pickFiles(
                               type: FileType.custom,
                               allowedExtensions: ['xlsx'],
                               allowMultiple: false,
                             );
                             if (pickedFile != null) {
-                              String file =
+                              final String file =
                                   pickedFile.files.firstOrNull?.path ?? "";
-                              var bytes = await File(file).readAsBytes();
+                              final bytes = await File(file).readAsBytes();
                               importData(bytes);
                             }
                           },
@@ -316,10 +303,7 @@ class _Menu29State extends State<Menu29> {
     return Scaffold(
       body: Column(
         children: [
-          Expanded(
-              child: SafeArea(
-            child: ListView(children: itemBuilderMenu),
-          )),
+          Expanded(child: SafeArea(child: ListView(children: itemBuilderMenu))),
           editArea(colorScheme),
           AnimatedCrossFade(
             firstChild: SizedBox(),
@@ -391,7 +375,14 @@ class _Menu29State extends State<Menu29> {
                           color: colorScheme.primary,
                         ),
                         callback: () {
+                          if (titleMenu.isEmpty) {
+                            alert!
+                                .showAlert('Save Menu', 'failed!', false, null);
+                            return;
+                          }
                           saveMenu();
+                          alert!
+                              .showAlert('Save Menu', 'success!', false, null);
                         })
                   ]),
             ),

@@ -43,13 +43,13 @@ class BillRecord {
 
   factory BillRecord.fromMap(Map<String, dynamic> map) {
     return BillRecord(
-        id: map['id']?.toInt() ?? 0,
-        tableId: map['tableId']?.toInt() ?? 0,
-        amountPaid: map['amountPaid'] ?? 0,
-        discount: map['discount'] ?? 0,
-        nameTable: map['nameTable'] ?? '',
-        isLeft: map['isLeft'] == 1,
-        type: map['type'] == 1,
-        dateTime: map['dateTime'] ?? 0);
+        id: map['id'],
+        tableId: map['tableId'],
+        amountPaid: map['amountPaid'],
+        discount: map['discount'],
+        nameTable: map['nameTable'],
+        isLeft: map['isLeft'],
+        type: map['type'],
+        dateTime: map['dateTime']);
   }
 }

@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:menu_qr/models/pre_ordered_dish.dart';
 import 'package:menu_qr/models/table_record.dart';
 import 'package:menu_qr/screens/table_36.dart';
+import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/providers/bill_provider.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
-import 'package:menu_qr/services/databases/data.dart';
 import 'package:menu_qr/widgets/table_button.dart';
 import 'package:provider/provider.dart';
 
@@ -18,9 +18,26 @@ class Table35 extends StatefulWidget {
 
 class _Table35 extends State<Table35> {
   final TextEditingController _controller = TextEditingController();
+  final DataHelper dataHelper = DataHelper();
+  final int numEleInRow = 2;
+  final List<TableRecord> tableRecords = [];
+
   String filterTitleTable = "";
   bool _showWidgetB = false;
-  int numEleInRow = 2;
+
+  void getTableRecords() async {
+    final List<TableRecord> tmpTableRecords = await dataHelper.tableRecords();
+    setState(() {
+      tableRecords.clear();
+      tableRecords.addAll(tmpTableRecords);
+    });
+  }
+
+  @override
+  void initState() {
+    getTableRecords();
+    super.initState();
+  }
 
   void saveBillToRam(int tableId, nameTable, BillProvider billProvider,
       List<PreOrderedDishRecord> indexDishListSorted) {
@@ -37,16 +54,16 @@ class _Table35 extends State<Table35> {
       colorScheme.onSecondary
     ];
     final colorBottomBar = colorScheme.secondaryContainer;
+    final DishProvider dishProvider = context.watch<DishProvider>();
+    final BillProvider billProvider = context.watch<BillProvider>();
 
-    DishProvider dishProvider = context.watch<DishProvider>();
-    BillProvider billProvider = context.watch<BillProvider>();
-    Map<int, TableRecord> filteredTableRecords =
-        (filterTitleTable.isEmpty) ? tableRecords : Map.of(tableRecords)
-          ..removeWhere((k, v) => !v.name.contains(filterTitleTable));
+    List<TableRecord> filteredTableRecords = (filterTitleTable.isEmpty)
+        ? tableRecords
+        : tableRecords.where((e) => e.name.contains(filterTitleTable)).toList();
     List<Widget> itemBuilder = [Padding(padding: EdgeInsets.all(12))];
-    int counterEle = 0;
     List<Widget> itemBuilderRow = [];
-    filteredTableRecords.forEach((key, value) {
+    int counterEle = 0;
+    for (var value in filteredTableRecords) {
       if (counterEle == numEleInRow) {
         counterEle %= numEleInRow;
         itemBuilder.add(Row(
@@ -59,7 +76,7 @@ class _Table35 extends State<Table35> {
           nameTable: value.name,
           callBack: () {
             if (!widget.isList) {
-              saveBillToRam(key, value.name, billProvider,
+              saveBillToRam(value.id!, value.name, billProvider,
                   dishProvider.indexDishListSorted);
             }
             Navigator.push(
@@ -67,7 +84,7 @@ class _Table35 extends State<Table35> {
                 MaterialPageRoute(
                   builder: (BuildContext context) => Table36(
                     isList: !widget.isList,
-                    tableId: key,
+                    tableRecord: value,
                   ),
                 ));
           });
@@ -76,7 +93,7 @@ class _Table35 extends State<Table35> {
         itemBuilderRow.add(Padding(padding: EdgeInsets.all(20)));
       }
       counterEle += 1;
-    });
+    }
     if (counterEle < numEleInRow) {
       itemBuilderRow.add(SizedBox(width: 120));
       itemBuilder.add(Row(

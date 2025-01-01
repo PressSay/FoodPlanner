@@ -2,24 +2,27 @@ class TableRecord {
   int? id;
   String name;
   String desc;
-  bool isLock;
+  int numOfPeople;
   TableRecord(
-      {this.id, required this.name, required this.desc, required this.isLock});
+      {this.id,
+      required this.name,
+      required this.desc,
+      required this.numOfPeople});
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'name': name,
       'desc': desc,
-      'isLock': isLock ? 1 : 0,
+      'numOfPeople': numOfPeople,
     };
   }
 
   factory TableRecord.fromMap(Map<String, dynamic> map) {
     return TableRecord(
-        id: map['id']?.toInt() ?? 0,
-        name: map['name'] ?? '',
-        desc: map['desc'] ?? '',
-        isLock: map['isLock'] == 1);
+        id: map['id'],
+        name: map['name'],
+        desc: map['desc'],
+        numOfPeople: map['numOfPeople']);
   }
 }

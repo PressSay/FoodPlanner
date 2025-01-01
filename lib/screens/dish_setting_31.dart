@@ -2,18 +2,14 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
 import 'package:menu_qr/models/category_record.dart';
 import 'package:menu_qr/models/dish_record.dart';
 import 'package:menu_qr/screens/dish_setting_32.dart';
 import 'package:menu_qr/services/alert.dart';
-import 'package:menu_qr/services/databases/category_record_helper.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
-import 'package:menu_qr/services/databases/dish_record_helper.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:menu_qr/widgets/setting_button.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:sqflite/sqflite.dart';
 
 class Dish31 extends StatefulWidget {
   const Dish31({super.key, required this.categoryRecord});
@@ -38,11 +34,11 @@ class _Dish31State extends State<Dish31> {
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _controllerCategory = TextEditingController();
   final TextEditingController _controllerDescCategory = TextEditingController();
+  final TextEditingController _controllerDescDish = TextEditingController();
   final TextEditingController _controllerDishTitle = TextEditingController();
+  final TextEditingController _controllerDishPrice = TextEditingController();
 
   final DataHelper dataHelper = DataHelper();
-  final CategoryRecordHelper categoryRecordHelper = CategoryRecordHelper();
-  final DishRecordHelper dishRecordHelper = DishRecordHelper();
 
   final List<DishRecord> dishRecords = [];
 
@@ -66,16 +62,17 @@ class _Dish31State extends State<Dish31> {
     final newFile = File('${appStorage.path}/${file.name}');
 
     filePath = file.path!;
-    imagePath = newFile.path;
+    setState(() {
+      imagePath = newFile.path;
+    });
   }
 
   void getDishRecords() async {
-    Database db = await dataHelper.database;
-    List<DishRecord> dishRecords =
-        await dishRecordHelper.dishRecords(db, '', []);
+    final List<DishRecord> tmpDishRecords =
+        await dataHelper.dishRecords(null, null, null);
     setState(() {
       dishRecords.clear();
-      dishRecords.addAll(dishRecords);
+      dishRecords.addAll(tmpDishRecords);
     });
   }
 
@@ -86,8 +83,7 @@ class _Dish31State extends State<Dish31> {
     }
     widget.categoryRecord.desc = descCategory;
     widget.categoryRecord.title = titleCategory;
-    Database db = await dataHelper.database;
-    categoryRecordHelper.updateCategoryRecord(widget.categoryRecord, db);
+    dataHelper.updateCategoryRecord(widget.categoryRecord);
     alert!.showAlert('Update Category', 'success!', false, null);
   }
 
@@ -96,14 +92,13 @@ class _Dish31State extends State<Dish31> {
       alert!.showAlert('Save Dish', 'failed!', false, null);
       return;
     }
-    Database db = await dataHelper.database;
-    DishRecord newE = DishRecord(
+    final DishRecord newE = DishRecord(
         categoryId: widget.categoryRecord.id!,
         imagePath: imagePath,
         title: titleDish,
         desc: descDish,
         price: price);
-    int lastId = await dishRecordHelper.insertDishRecord(newE, db) ?? 0;
+    final int lastId = await dataHelper.insertDishRecord(newE) ?? 0;
     if (imagePath != "") {
       await File(filePath).copy(imagePath);
     }
@@ -117,9 +112,8 @@ class _Dish31State extends State<Dish31> {
   }
 
   void deleteDishRecord(DishRecord dishRecord) async {
-    Database db = await dataHelper.database;
     alert!.showAlert('Delete Dish', 'Are You Sure?', true, () {
-      dishRecordHelper.deleteDishRecord(dishRecord.id!, db);
+      dataHelper.deleteDishRecord(dishRecord.id!);
     });
     if (dishRecord.imagePath == "") {
       return;
@@ -323,7 +317,7 @@ class _Dish31State extends State<Dish31> {
                                     },
                                     style:
                                         TextStyle(color: colorScheme.primary),
-                                    controller: _controllerDishTitle,
+                                    controller: _controllerDishPrice,
                                     decoration: InputDecoration(
                                       border: OutlineInputBorder(
                                           borderRadius: BorderRadius.only(
@@ -344,7 +338,7 @@ class _Dish31State extends State<Dish31> {
                                 minLines: 3,
                                 maxLines: null,
                                 style: TextStyle(color: colorScheme.primary),
-                                controller: _controllerDescCategory,
+                                controller: _controllerDescDish,
                                 decoration: InputDecoration(
                                   border: OutlineInputBorder(
                                       borderRadius:
@@ -364,7 +358,9 @@ class _Dish31State extends State<Dish31> {
                                 bottomLeft: Radius.circular(20.0),
                               ),
                               child: Image.asset(
-                                imagePath,
+                                (imagePath.isEmpty)
+                                    ? "assets/images/hinh-cafe-kem-banh-quy-2393351094.webp"
+                                    : imagePath,
                                 fit: BoxFit.cover,
                                 width: 150, // width * 0.47
                                 height: 165, // height * 0.75

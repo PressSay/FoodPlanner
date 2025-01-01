@@ -13,10 +13,10 @@ class CategoryRecord {
 
   factory CategoryRecord.fromMap(Map<String, dynamic> map) {
     return CategoryRecord(
-      id: map['id']?.toInt() ?? 0,
-      menuId: map['menuId']?.toInt() ?? 0,
-      title: map['title'] ?? '',
-      desc: map['desc'] ?? '',
+      id: map['id'],
+      menuId: map['menuId'],
+      title: map['title'],
+      desc: map['desc'],
     );
   }
 }

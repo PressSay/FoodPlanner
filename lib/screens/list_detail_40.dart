@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/pre_ordered_dish.dart';
+import 'package:menu_qr/models/table_record.dart';
 import 'package:menu_qr/screens/paid_41.dart';
 import 'package:menu_qr/screens/paid_42.dart';
 import 'package:menu_qr/services/alert.dart';
-import 'package:menu_qr/services/databases/bill_record_helper.dart';
 import 'package:menu_qr/services/databases/data.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
@@ -13,7 +13,6 @@ import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:menu_qr/widgets/assignment_button.dart';
 import 'package:menu_qr/widgets/dish_cofirm.dart';
 import 'package:provider/provider.dart';
-import 'package:sqflite/sqflite.dart';
 
 class ListDetail40 extends StatefulWidget {
   const ListDetail40(
@@ -34,7 +33,6 @@ class _ListDetail40State extends State<ListDetail40> {
   Alert? alert;
 
   final DataHelper dataHelper = DataHelper();
-  final BillRecordHelper billRecordHelper = BillRecordHelper();
 
   @override
   void initState() {
@@ -65,9 +63,16 @@ class _ListDetail40State extends State<ListDetail40> {
   }
 
   void checkComplete(BillRecord billRecord) async {
-    Database db = await dataHelper.database;
+    final TableRecord? tableRecord =
+        await dataHelper.tableRecord(billRecord.tableId ?? 0);
     billRecord.isLeft = true;
-    billRecordHelper.updateBillRecord(billRecord, db);
+    dataHelper.updateBillRecord(billRecord);
+    if (tableRecord == null) {
+      return;
+    }
+    tableRecord.numOfPeople =
+        (tableRecord.numOfPeople > 0) ? tableRecord.numOfPeople - 1 : 0;
+    dataHelper.updateTableRecord(tableRecord);
   }
 
   Widget infoPrice(ColorScheme colorScheme, double paid, double total) {
@@ -142,11 +147,9 @@ class _ListDetail40State extends State<ListDetail40> {
       colorScheme.onSecondary
     ];
     final colorBottomBar = colorScheme.secondaryContainer;
-
-    DishProvider dishProvider = context.watch<DishProvider>();
+    final DishProvider dishProvider = context.watch<DishProvider>();
 
     List<Widget> listAssignment = [];
-
     widget.billRecords.forEach((k, v) {
       if (isInitBillId) {
         billRecord = v;
@@ -211,9 +214,7 @@ class _ListDetail40State extends State<ListDetail40> {
         amount: e.amount,
         callBackDel: () {
           alert!.showAlert('Delete Dish', 'Are You Sure?', true, () async {
-            Database db = await dataHelper.database;
-            billRecordHelper.deteleDishIdAtBillId(
-                billRecord!.id!, e.dishId, db);
+            dataHelper.deteleDishIdAtBillId(billRecord!.id!, e.dishId);
             dishProvider.deleteAmountSorted(e.dishId);
           });
         },

@@ -2,13 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/screens/list_detail_40.dart';
 import 'package:menu_qr/services/alert.dart';
-import 'package:menu_qr/services/databases/bill_record_helper.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
-import 'package:menu_qr/services/providers/bill_provider.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:menu_qr/widgets/order_setting_button_online.dart';
-import 'package:provider/provider.dart';
-import 'package:sqflite/sqflite.dart';
 
 class ListOnline48 extends StatefulWidget {
   const ListOnline48({super.key});
@@ -20,21 +16,19 @@ class ListOnline48 extends StatefulWidget {
 class _ListOnline48State extends State<ListOnline48> {
   final TextEditingController _controller = TextEditingController();
   final DataHelper dataHelper = DataHelper();
-  final BillRecordHelper billRecordHelper = BillRecordHelper();
 
   String filterTitleBillId = "";
   bool _showWidgetB = false;
   bool _showWidgetC = false;
 
   Alert? alert;
-  Map<int, bool> checkedBillIdList = {};
-  Map<int, BillRecord> billRecordsArg = {};
-  Map<int, BillRecord> billRecords = {};
+  final Map<int, bool> checkedBillIdList = {};
+  final Map<int, BillRecord> billRecordsArg = {};
+  final Map<int, BillRecord> billRecords = {};
 
   void getBillRecords() async {
-    Database db = await dataHelper.database;
-    Map<int, BillRecord> tmpBillRecords =
-        await billRecordHelper.billRecords(db, 'isLeft = ?', [0]);
+    final Map<int, BillRecord> tmpBillRecords =
+        await dataHelper.billRecords('isLeft = ?', [0], null);
     setState(() {
       billRecords.clear();
       billRecords.addAll(tmpBillRecords);
@@ -91,8 +85,7 @@ class _ListOnline48State extends State<ListOnline48> {
               callbackDelete: () {
                 alert!.showAlert('Delete Bill', 'Are you Sure?', true,
                     () async {
-                  Database db = await dataHelper.database;
-                  billRecordHelper.deleteBillRecord(k, db);
+                  dataHelper.deleteBillRecord(k);
                   setState(() {
                     billRecords.remove(k);
                   });

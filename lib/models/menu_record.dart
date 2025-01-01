@@ -15,8 +15,6 @@ class MenuRecord {
 
   factory MenuRecord.fromMap(Map<String, dynamic> map) {
     return MenuRecord(
-        id: map['id']?.toInt() ?? 0,
-        title: map['title'] ?? '',
-        isSelected: map['isSelected'] == 1);
+        id: map['id'], title: map['title'], isSelected: map['isSelected'] == 1);
   }
 }

@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:menu_qr/models/dish_record.dart';
 import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
-import 'package:menu_qr/services/databases/dish_record_helper.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:menu_qr/widgets/dish_view.dart';
-import 'package:sqflite/sqflite.dart';
 
 class Dish32 extends StatefulWidget {
   const Dish32({super.key, required this.dishRecord});
@@ -23,7 +21,6 @@ class _Dish32State extends State<Dish32> {
   final TextEditingController _controllerDishPrice = TextEditingController();
 
   final DataHelper dataHelper = DataHelper();
-  final DishRecordHelper dishRecordHelper = DishRecordHelper();
 
   @override
   void initState() {
@@ -45,8 +42,7 @@ class _Dish32State extends State<Dish32> {
       _alert!.showAlert('Update Dish', 'failed!', false, null);
       return;
     }
-    Database db = await dataHelper.database;
-    dishRecordHelper.updateDishRecord(widget.dishRecord, db);
+    dataHelper.updateDishRecord(widget.dishRecord);
     _alert!.showAlert('Update Category', 'success!', false, null);
   }
 

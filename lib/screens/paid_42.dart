@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:menu_qr/models/bill_record.dart';
-import 'package:menu_qr/models/dish_record.dart';
-import 'package:menu_qr/services/databases/data.dart';
 import 'package:menu_qr/services/pdf_api.dart';
 import 'package:menu_qr/services/pdf_invoice_api.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
@@ -173,19 +171,17 @@ class _Paid42State extends State<Paid42> {
     ];
     final colorBottomBar = colorScheme.secondaryContainer;
     // int billId = billProvider.billRecord.id;
-    int billId = widget.billRecord.id!;
-    String logoPath = 'assets/images/wislam.png';
-    String logoText = 'https://wislam.ct.ws';
-    String qrImage = logoPath;
-    String qrText = logoText;
+    final int billId = widget.billRecord.id!;
+    final String logoPath = 'assets/images/wislam.png';
+    final String logoText = 'https://wislam.ct.ws';
+    final String qrImage = logoPath;
+    final String qrText = logoText;
 
     // amountPaid = billProvider.billRecord.amountPaid;
     amountPaid = widget.billRecord.amountPaid;
     total = 0;
     widget.billRecord.preOrderedDishRecords?.forEach((element) {
-      int dishId = element.dishId;
-      DishRecord dishRecord = dishRecords[dishId]!;
-      total += (element.amount * dishRecord.price);
+      total += (element.amount * element.price);
     });
     tax = total * 0.05;
     double change = amountPaid - total;

@@ -7,17 +7,12 @@ import 'package:menu_qr/models/pre_ordered_dish.dart';
 import 'package:menu_qr/screens/category_45.dart';
 import 'package:menu_qr/screens/confirm_38.dart';
 import 'package:menu_qr/services/alert.dart';
-import 'package:menu_qr/services/databases/bill_record_helper.dart';
-import 'package:menu_qr/services/databases/category_record_helper.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
-import 'package:menu_qr/services/databases/dish_record_helper.dart';
-import 'package:menu_qr/services/databases/menu_record_helper.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:menu_qr/widgets/dish_button.dart';
 import 'package:menu_qr/widgets/category_bar.dart';
 import 'package:provider/provider.dart';
-import 'package:sqflite/sqflite.dart';
 
 class Order44 extends StatefulWidget {
   const Order44(
@@ -40,53 +35,45 @@ class _Order44 extends State<Order44> {
   bool _showWidgetB = false;
   bool isInitMenuIdAndCategoryId = false;
   int categoryIdInScreen = 0;
+  bool isInit = false;
 
   final TextEditingController _controller = TextEditingController();
-
-  late final DishProvider dishProvider;
   final DataHelper dataHelper = DataHelper();
-  final MenuRecordHelper menuRecordHelper = MenuRecordHelper();
-  final CategoryRecordHelper categoryRecordHelper = CategoryRecordHelper();
-  final DishRecordHelper dishRecordHelper = DishRecordHelper();
-  final BillRecordHelper billRecordHelper = BillRecordHelper();
-
   final List<DishRecord> dishRecords = [];
 
   @override
   void initState() {
     alert = Alert(context: context);
-    dishProvider = context.watch<DishProvider>();
-    getDishRecords();
     super.initState();
   }
 
-  void getDishRecords() async {
-    Database db = await dataHelper.database;
+  Future<List<DishRecord>> getDishRecords(DishProvider dishProvider) async {
     if (!isInitMenuIdAndCategoryId) {
-      List<MenuRecord> menuRecordSeleted =
-          await menuRecordHelper.menuRecords(db, 'isSelected = ?', [1], 1);
+      final List<MenuRecord> menuRecordSeleted =
+          await dataHelper.menuRecords('isSelected = ?', [1], 1);
       if (menuRecordSeleted.isEmpty) {
         alert!.showAlert('Dish', 'no dish to show', false, null);
         isInitMenuIdAndCategoryId = false;
-        return;
+        return [];
       }
-      List<CategoryRecord> categoryRecords = await categoryRecordHelper
-          .categoryRecords(db, 'menuId = ?', [menuRecordSeleted[0].id!], 1);
+      final List<CategoryRecord> categoryRecords = await dataHelper
+          .categoryRecords('menuId = ?', [menuRecordSeleted[0].id!], 1);
       dishProvider.setMenuId(menuRecordSeleted[0].id!);
       dishProvider.setCateogryId(categoryRecords[0].id!);
       isInitMenuIdAndCategoryId = false;
     }
-    List<DishRecord> tmpDishRecords = await dishRecordHelper
-        .dishRecords(db, 'categoryId = ?', [dishProvider.categoryId]);
+    final List<DishRecord> tmpDishRecords = await dataHelper.dishRecords(
+        'categoryId = ?', [dishProvider.categoryId], null);
     setState(() {
       dishRecords.clear();
       dishRecords.addAll(tmpDishRecords);
     });
     categoryIdInScreen = dishProvider.categoryId;
+    return dishRecords;
   }
 
   void saveRebuildDishes(DishProvider dishProvider) async {
-    List<PreOrderedDishRecord> dishRecordSorted = dishProvider
+    final List<PreOrderedDishRecord> dishRecordSorted = dishProvider
         .indexDishList.entries
         .map((element) => element.value)
         .toList();
@@ -95,9 +82,8 @@ class _Order44 extends State<Order44> {
     });
     dishProvider.importDataToIndexDishListSorted(dishRecordSorted);
     // storage to database
-    Database db = await dataHelper.database;
-    billRecordHelper.insertDishesAtBillId(
-        db, dishProvider.indexDishListSorted, widget.billRecord!.id!);
+    dataHelper.insertDishesAtBillId(
+        dishProvider.indexDishListSorted, widget.billRecord!.id!);
   }
 
   @override
@@ -109,10 +95,12 @@ class _Order44 extends State<Order44> {
       colorScheme.onSecondary
     ];
     final colorBottomBar = colorScheme.secondaryContainer;
+    final DishProvider dishProvider = context.watch<DishProvider>();
 
-    if (categoryIdInScreen != dishProvider.categoryId) {
-      getDishRecords();
-    }
+    // if (categoryIdInScreen != dishProvider.categoryId || !isInit) {
+    //   getDishRecords(dishProvider);
+    //   isInit = true;
+    // }
     // final currentWidth = MediaQuery.of(context).size.width;
     // Add item to listview
     List<DishRecord> dishRecordsFiltered = (filterTitleDish.isEmpty)
@@ -148,9 +136,17 @@ class _Order44 extends State<Order44> {
                   children: [
                     Padding(padding: EdgeInsets.all(10)),
                     Expanded(
-                        child: ListView(
-                      children: itemDishBuilder,
-                    )),
+                        child: FutureBuilder<List<DishRecord>>(
+                            future: getDishRecords(dishProvider),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return Text("Loading breeds...");
+                              }
+                              return ListView(
+                                children: itemDishBuilder,
+                              );
+                            })),
                     Padding(padding: EdgeInsets.all(8)),
                     CategoryBar(categoryFunc: () {
                       Navigator.push(

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:menu_qr/models/category_record.dart';
-import 'package:menu_qr/services/databases/category_record_helper.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:provider/provider.dart';
-import 'package:sqflite/sqflite.dart';
 
 class Category45 extends StatefulWidget {
   const Category45({super.key});
@@ -18,14 +16,12 @@ class _Category45 extends State<Category45> {
   bool _showWidgetB = false;
   final TextEditingController _controller = TextEditingController();
   final DataHelper dataHelper = DataHelper();
-  final CategoryRecordHelper categoryRecordHelper = CategoryRecordHelper();
   late final DishProvider dishProvider;
   final List<CategoryRecord> categoryRecords = [];
 
   void getCategoryRecords() async {
-    Database db = await dataHelper.database;
-    List<CategoryRecord> tmpCategoryRecords = await categoryRecordHelper
-        .categoryRecords(db, 'menuId = ?', [dishProvider.categoryId], null);
+    final List<CategoryRecord> tmpCategoryRecords = await dataHelper
+        .categoryRecords('menuId = ?', [dishProvider.categoryId], null);
     setState(() {
       categoryRecords.clear();
       categoryRecords.addAll(tmpCategoryRecords);

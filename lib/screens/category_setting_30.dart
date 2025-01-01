@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import 'package:menu_qr/models/category_record.dart';
 import 'package:menu_qr/models/menu_record.dart';
 import 'package:menu_qr/screens/dish_setting_31.dart';
 import 'package:menu_qr/services/alert.dart';
-import 'package:menu_qr/services/databases/category_record_helper.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
-import 'package:menu_qr/services/databases/menu_record_helper.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:menu_qr/widgets/setting_button.dart';
-import 'package:sqflite/sqflite.dart';
 
 class Category30 extends StatefulWidget {
   const Category30({super.key, required this.menuRecord});
@@ -27,35 +25,33 @@ class _Category30State extends State<Category30> {
 
   bool _showWidgetB = false;
   final DataHelper dataHelper = DataHelper();
-  final MenuRecordHelper menuRecordHelper = MenuRecordHelper();
-  final CategoryRecordHelper categoryRecordHelper = CategoryRecordHelper();
   final TextEditingController _controllerMenu = TextEditingController();
   final TextEditingController _controllerCategory = TextEditingController();
   final TextEditingController _controllerDesc = TextEditingController();
   final List<CategoryRecord> categoryRecords = [];
+  final Logger lg = Logger();
 
   @override
   void initState() {
     alert = Alert(context: context);
-    getCategoryRecords();
     _controllerMenu.text = widget.menuRecord.title;
+    getCategoryRecords();
     return super.initState();
   }
 
   void getCategoryRecords() async {
-    Database db = await dataHelper.database;
-    List<CategoryRecord> categoryRecords =
-        await categoryRecordHelper.categoryRecords(db, '', [], null);
+    final List<CategoryRecord> tmpCategoryRecords =
+        await dataHelper.categoryRecords(null, null, null);
     setState(() {
       categoryRecords.clear();
-      categoryRecords.addAll(categoryRecords);
+      categoryRecords.addAll(tmpCategoryRecords);
     });
+    lg.d('success ${categoryRecords.isEmpty}');
   }
 
   void deletedCategoryRecord(int categoryId) async {
-    Database db = await dataHelper.database;
     alert!.showAlert('Delete Category', 'Are You Sure?', true, () {
-      categoryRecordHelper.deleteCategoryRecord(categoryId, db);
+      dataHelper.deleteCategoryRecord(categoryId);
     });
   }
 
@@ -64,10 +60,9 @@ class _Category30State extends State<Category30> {
       alert!.showAlert('Update Menu', 'failed!', false, null);
       return;
     }
-    Database db = await dataHelper.database;
-    MenuRecord updateE = widget.menuRecord;
+    final MenuRecord updateE = widget.menuRecord;
     updateE.title = titleMenu;
-    menuRecordHelper.updateMenuRecord(updateE, db);
+    dataHelper.updateMenuRecord(updateE);
     alert!.showAlert('Update Menu', 'success!', false, null);
   }
 
@@ -76,10 +71,9 @@ class _Category30State extends State<Category30> {
       alert!.showAlert('Save Category', 'failed!', false, null);
       return;
     }
-    Database db = await dataHelper.database;
-    CategoryRecord newE = CategoryRecord(
+    final CategoryRecord newE = CategoryRecord(
         menuId: widget.menuRecord.id!, title: titleCategory, desc: desc);
-    int lastId = await categoryRecordHelper.insertCategoryRecord(newE, db) ?? 0;
+    final int lastId = await dataHelper.insertCategoryRecord(newE) ?? 0;
     if (lastId != 0) {
       newE.id = lastId;
       categoryRecords.add(newE);

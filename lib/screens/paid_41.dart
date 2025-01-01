@@ -5,15 +5,12 @@ import 'package:menu_qr/models/dish_record.dart';
 import 'package:menu_qr/screens/order_44.dart';
 import 'package:menu_qr/screens/paid_42.dart';
 import 'package:menu_qr/services/alert.dart';
-import 'package:menu_qr/services/databases/bill_record_helper.dart';
 import 'package:menu_qr/services/databases/data.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
-import 'package:menu_qr/services/providers/bill_provider.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:menu_qr/services/throusand_separator_formatter.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:provider/provider.dart';
-import 'package:sqflite/sqflite.dart';
 
 class Paid41 extends StatefulWidget {
   const Paid41(
@@ -39,7 +36,6 @@ class _Paid41State extends State<Paid41> {
   Alert? alert;
 
   final DataHelper dataHelper = DataHelper();
-  final BillRecordHelper billRecordHelper = BillRecordHelper();
 
   @override
   void initState() {
@@ -129,8 +125,7 @@ class _Paid41State extends State<Paid41> {
   void saveBill() async {
     widget.billRecord.amountPaid = total + change;
     if (widget.isImmediate) widget.billRecord.isLeft = true;
-    Database db = await dataHelper.database;
-    billRecordHelper.updateBillRecord(widget.billRecord, db);
+    dataHelper.updateBillRecord(widget.billRecord);
     alert!.showAlert('Update Bill', 'success', false, null);
   }
 

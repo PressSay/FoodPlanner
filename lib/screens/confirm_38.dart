@@ -5,14 +5,12 @@ import 'package:menu_qr/models/dish_record.dart';
 import 'package:menu_qr/models/pre_ordered_dish.dart';
 import 'package:menu_qr/screens/paid_41.dart';
 import 'package:menu_qr/screens/table_35.dart';
-import 'package:menu_qr/services/databases/bill_record_helper.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:menu_qr/widgets/dish_cofirm.dart';
 import 'package:provider/provider.dart';
 import 'package:menu_qr/services/databases/data.dart';
-import 'package:sqflite/sqflite.dart';
 
 class Confirm38 extends StatefulWidget {
   const Confirm38({super.key, required this.isImmediate});
@@ -28,7 +26,6 @@ class _Confirm38 extends State<Confirm38> {
   bool isAddedDishRecordSorted = false;
 
   final DataHelper dataHelper = DataHelper();
-  final BillRecordHelper billRecordHelper = BillRecordHelper();
 
   void saveBillImmediately(DishProvider dishProvider) async {
     BillRecord newBillRecord = BillRecord(
@@ -39,11 +36,9 @@ class _Confirm38 extends State<Confirm38> {
         isLeft: false,
         type: widget.isImmediate,
         dateTime: DateTime.now().millisecondsSinceEpoch);
-    Database db = await dataHelper.database;
-    int lastId =
-        await billRecordHelper.insertBillRecord(newBillRecord, db) ?? 0;
-    newBillRecord.preOrderedDishRecords = await billRecordHelper
-        .insertDishesAtBillId(db, dishProvider.indexDishListSorted, lastId);
+    int lastId = await dataHelper.insertBillRecord(newBillRecord) ?? 0;
+    newBillRecord.preOrderedDishRecords = await dataHelper.insertDishesAtBillId(
+        dishProvider.indexDishListSorted, lastId);
     newBillRecord.id = lastId;
     dishProvider.clearRam();
     navigateToPaid41Immediately(newBillRecord);
@@ -70,8 +65,7 @@ class _Confirm38 extends State<Confirm38> {
       colorScheme.onSecondary
     ];
     final colorBottomBar = colorScheme.secondaryContainer;
-
-    DishProvider dishProvider = context.watch<DishProvider>();
+    final DishProvider dishProvider = context.watch<DishProvider>();
 
     List<Widget> itemDishBuilder = [Padding(padding: EdgeInsets.all(8))];
     List<MapEntry<int, PreOrderedDishRecord>> dishRecordSorted =

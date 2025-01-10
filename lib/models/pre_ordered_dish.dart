@@ -2,7 +2,7 @@ class PreOrderedDishRecord {
   int dishId; // sau khi đã hoàn thành giao dịch thì dishId chỉ là liên kết lỏng lẻo
   int billId;
   int categoryId; // dùng để sắp xếp
-  String? titleCategory; // dùng để hiển thị
+  String titleCategory; // dùng để hiển thị
   String titleDish;
   int amount;
   double price;
@@ -12,7 +12,7 @@ class PreOrderedDishRecord {
       {required this.dishId,
       required this.billId,
       required this.categoryId,
-      this.titleCategory,
+      required this.titleCategory,
       required this.titleDish,
       required this.amount,
       required this.price,
@@ -36,7 +36,7 @@ class PreOrderedDishRecord {
       dishId: map['dishId'],
       billId: map['billId'],
       categoryId: map['categoryId'],
-      titleCategory: map['title'],
+      titleCategory: map['titleCategory'],
       titleDish: map['titleDish'],
       amount: map['amount'],
       price: map['price'],

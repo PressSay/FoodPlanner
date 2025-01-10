@@ -34,6 +34,7 @@ class BillProvider extends ChangeNotifier {
         billId: e.billId,
         categoryId: e.categoryId,
         amount: e.amount,
+        titleCategory: e.titleCategory,
         titleDish: e.titleDish,
         price: e.price,
         imagePath: e.imagePath,

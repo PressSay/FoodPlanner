@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/services/pdf_api.dart';
 import 'package:menu_qr/services/pdf_invoice_api.dart';
-import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 
 class Paid42 extends StatefulWidget {

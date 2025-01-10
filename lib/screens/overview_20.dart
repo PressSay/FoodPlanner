@@ -32,8 +32,6 @@ class _Overview20State extends State<Overview20> {
   var amountBill = 0;
   var revenue = 0.0;
   var agvPerBill = 0.0;
-  var investment = 0.0;
-  var profit = 0.0;
 
   String formatDate(DateTime date) {
     String year = date.year.toString();
@@ -70,7 +68,8 @@ class _Overview20State extends State<Overview20> {
     return number.toString(); // Trả về số gốc nếu quá lớn
   }
 
-  void getBillRecords(DateTime now) async {
+  void getBillRecords(DateTime now1) async {
+    final now = DateTime(now1.year, now1.month, now1.day);
     final tmpBillRecords = await dataHelper.billRecords(
         where: ("datetime >= ? AND datetime < ? "
             "ORDER BY datetime"),
@@ -130,14 +129,6 @@ class _Overview20State extends State<Overview20> {
       date = now;
       isInited = true;
     });
-  }
-
-  @override
-  void initState() {
-    // final now = DateTime(2025, 01, 08);
-    final now = DateTime.now();
-    getBillRecords(now);
-    super.initState();
   }
 
   Widget bottomTitleWidgets(double value, TitleMeta meta) {
@@ -328,6 +319,12 @@ class _Overview20State extends State<Overview20> {
   }
 
   @override
+  void initState() {
+    getBillRecords(DateTime.now());
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final List<Widget> itemBuilder = [];
@@ -383,56 +380,16 @@ class _Overview20State extends State<Overview20> {
             ]),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: RichText(
-            text: TextSpan(children: [
-              TextSpan(
-                  text: 'Investment: ',
-                  style: TextStyle(
-                      color: colorScheme.primary, fontWeight: FontWeight.bold)),
-              TextSpan(
-                  text: formatNumber(investment),
-                  style: TextStyle(
-                      color: colorScheme.secondary,
-                      fontWeight: FontWeight.bold))
-            ]),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: RichText(
-            text: TextSpan(children: [
-              TextSpan(
-                  text: 'Profit: ',
-                  style: TextStyle(
-                      color: colorScheme.primary, fontWeight: FontWeight.bold)),
-              TextSpan(
-                  text: formatNumber(profit),
-                  style: TextStyle(
-                      color: colorScheme.secondary,
-                      fontWeight: FontWeight.bold))
-            ]),
-          ),
-        ),
       ],
     ));
 
-    itemBuilder.add(Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                  context, MaterialPageRoute(builder: (context) => List23()));
-            },
-            child: Text('Bill List')),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
-          child: ElevatedButton(
-              onPressed: () {}, child: Text('Investment Import')),
-        ),
-      ],
+    itemBuilder.add(Center(
+      child: ElevatedButton(
+          onPressed: () {
+            Navigator.push(
+                context, MaterialPageRoute(builder: (context) => List23()));
+          },
+          child: Text('Bill List')),
     ));
 
     itemBuilder.add(Center(

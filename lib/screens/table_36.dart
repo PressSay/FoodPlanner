@@ -36,11 +36,9 @@ class _Table36State extends State<Table36> {
     super.initState();
   }
 
-  void saveInfoTable() async {
-    if (desc.isNotEmpty) {
-      widget.tableRecord.desc = desc;
-      dataHelper.updateTableRecord(widget.tableRecord);
-    }
+  Future<void> saveInfoTable() async {
+    widget.tableRecord.desc = desc;
+    dataHelper.updateTableRecord(widget.tableRecord);
   }
 
   void viewBillInTable(BillProvider billProvider) async {
@@ -81,9 +79,9 @@ class _Table36State extends State<Table36> {
     newBillRecord.id = lastId;
     newBillRecord.preOrderedDishRecords = await dataHelper.insertDishesAtBillId(
         billProvider.billRecord.preOrderedDishRecords!, lastId);
-    widget.tableRecord.numOfPeople += 1;
-    await dataHelper.updateTableRecord(widget.tableRecord);
     dishProvider.clearRam();
+    widget.tableRecord.numOfPeople += 1;
+    await saveInfoTable();
     if (wantNavigateToPaid41) {
       navigateToPaid41(newBillRecord);
     }
@@ -102,7 +100,7 @@ class _Table36State extends State<Table36> {
   }
 
   Widget warningViewBtn(int numOfPeople, Function callback) {
-    return (numOfPeople != 0)
+    return (numOfPeople > 0)
         ? TableConfirm(
             callBack: () {
               callback();
@@ -129,7 +127,6 @@ class _Table36State extends State<Table36> {
         TableConfirm(
             callBack: () {
               saveBillToSQL(billProvider, dishProvider, false);
-              saveInfoTable();
               dishProvider.clearRam();
               Navigator.popUntil(context, (route) => route.isFirst);
             },
@@ -139,7 +136,6 @@ class _Table36State extends State<Table36> {
       confirmPaidVar.add(TableConfirm(
           callBack: () {
             saveBillToSQL(billProvider, dishProvider, true);
-            saveInfoTable();
           },
           text: 'Prepaid'));
     }

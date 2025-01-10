@@ -30,7 +30,7 @@ class _List23State extends State<List23> {
     setState(() {
       billRecords.clear();
       billRecords.addAll(tmpBillRecords);
-      logger.d("${billRecords.entries.first.value.dateTime}");
+      logger.d("${billRecords.entries.firstOrNull?.value.dateTime}");
     });
     logger.d("billRecords is Empty = ${billRecords.isEmpty}");
   }
@@ -74,8 +74,13 @@ class _List23State extends State<List23> {
                           builder: (context) => List24(billRecord: e.value)));
                 },
                 callbackDelete: () {
-                  alert!.showAlert(
-                      "Delete Bill", "Are You Sure?", true, () async {});
+                  alert!.showAlert("Delete Bill", "Are You Sure?", true,
+                      () async {
+                    dataHelper.deleteBillRecord(e.value.id!);
+                    setState(() {
+                      billRecords.remove(e.value.id!);
+                    });
+                  });
                 },
                 content: e.value.dateTime.toString(),
               ))));

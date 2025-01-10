@@ -55,7 +55,7 @@ class DataHelper {
       title TEXT,
       desc TEXT,
       menuId INTEGER,
-      FOREIGN KEY (menuId) REFERENCES $sqlCategoryRecords(id) ON DELETE CASCADE
+      FOREIGN KEY (menuId) REFERENCES $sqlMenuRecords(id) ON DELETE CASCADE
     )''');
 
     await db.execute('''CREATE TABLE $sqlDishRecords (
@@ -65,7 +65,7 @@ class DataHelper {
       price REAL,
       imagePath TEXT,
       categoryId INTEGER,
-      FOREIGN KEY (categoryId) REFERENCES $sqlDishRecords(id) ON DELETE CASCADE
+      FOREIGN KEY (categoryId) REFERENCES $sqlCategoryRecords(id) ON DELETE CASCADE
     )''');
 
     await db.execute('''CREATE TABLE $sqlTableRecords (
@@ -77,8 +77,6 @@ class DataHelper {
 
     await db.execute('''CREATE TABLE $sqlBillRecords (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT,
-      desc TEXT,
       amountPaid REAL,
       discount REAL,
       tableId INTEGER,
@@ -92,6 +90,7 @@ class DataHelper {
       dishId INTEGER,
       billId INTEGER,
       categoryId INTEGER,
+      titleCategory TEXT,
       titleDish TEXT,
       price REAL,
       amount INTEGER,
@@ -103,12 +102,12 @@ class DataHelper {
       UNIQUE (dishId, billId) -- Ensure no duplicates
     )''');
   }
-  // menu_helper
+// menu_helper
 
   Future<int> insertMenuRecord(MenuRecord menuRecord) async {
     final db = await _dataHelper.database;
     final id = await db.insert(
-      'menu_records',
+      sqlMenuRecords,
       menuRecord.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -119,7 +118,7 @@ class DataHelper {
     final db = await _dataHelper.database;
     // Update the given menuRecord
     await db.update(
-      'menu_records',
+      sqlMenuRecords,
       menuRecord.toMap(),
       // Ensure that the Menu has a matching id.
       where: 'id = ?',
@@ -131,21 +130,21 @@ class DataHelper {
   Future<void> deleteMenuRecord(int id) async {
     final db = await _dataHelper.database;
     final sql = '''
-    SELECT dish_records.* from menu_records JOIN category_records ON 
-    category_records.menuId = menu_records.id JOIN dish_records ON 
-    categoryId = category_records.id WHERE menu_records.id = ?
+    SELECT $sqlDishRecords.* from $sqlMenuRecords JOIN $sqlCategoryRecords ON 
+    $sqlCategoryRecords.menuId = $sqlMenuRecords.id JOIN $sqlDishRecords ON 
+    categoryId = $sqlCategoryRecords.id WHERE $sqlMenuRecords.id = ?
     ''';
     final maps = await db.rawQuery(sql, [id]);
-    final dishRecords = maps.map((e) => DishRecord.fromMap(e)).toList();
-    for (var e in dishRecords) {
-      File file = File(e.imagePath);
-      if (file.existsSync()) {
-        file.deleteSync();
+    for (var e in maps) {
+      File image = File(e['imagePath'].toString());
+      logger.d('image: ${e['imagePath'].toString()}');
+      if (image.existsSync()) {
+        image.deleteSync();
       }
     }
     // Remove the Menu from the database.
     await db.delete(
-      'menu_records',
+      sqlMenuRecords,
       // Use a `where` clause to delete a specific breed.
       where: 'id = ?',
       // Pass the Menu's id as a whereArg to prevent SQL injection.
@@ -160,7 +159,7 @@ class DataHelper {
   }) async {
     final db = await _dataHelper.database;
     final List<Map<String, dynamic>> maps = await db.query(
-      'menu_records',
+      sqlMenuRecords,
       where: where,
       whereArgs: whereArgs,
       limit: limit,
@@ -171,12 +170,12 @@ class DataHelper {
     );
   }
 
-  // category_helper
+// category_helper
 
   Future<int> insertCategoryRecord(CategoryRecord categoryRecord) async {
     final db = await _dataHelper.database;
     final id = await db.insert(
-      'category_records',
+      sqlCategoryRecords,
       categoryRecord.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -187,7 +186,7 @@ class DataHelper {
     final db = await _dataHelper.database;
     // Update the given menuRecord
     await db.update(
-      'category_records',
+      sqlCategoryRecords,
       categoryRecord.toMap(),
       // Ensure that the Menu has a matching id.
       where: 'id = ?',
@@ -199,8 +198,8 @@ class DataHelper {
   Future<void> deleteCategoryRecord(int id) async {
     final db = await _dataHelper.database;
     final sqlQuery = '''
-    SELECT dish_records.* FROM category_records JOIN dish_records ON 
-    categoryId = category_records.id WHERE category_records.id = ?
+    SELECT $sqlDishRecords.* FROM $sqlCategoryRecords JOIN $sqlDishRecords ON 
+    categoryId = $sqlCategoryRecords.id WHERE $sqlCategoryRecords.id = ?
     ''';
     final maps = await db.rawQuery(sqlQuery, [id]);
     for (var e in maps) {
@@ -212,7 +211,7 @@ class DataHelper {
     }
     // Remove the Menu from the database.
     await db.delete(
-      'category_records',
+      sqlCategoryRecords,
       // Use a `where` clause to delete a specific breed.
       where: 'id = ?',
       // Pass the Menu's id as a whereArg to prevent SQL injection.
@@ -227,7 +226,7 @@ class DataHelper {
   }) async {
     final db = await _dataHelper.database;
     final List<Map<String, dynamic>> maps = await db.query(
-      'category_records',
+      sqlCategoryRecords,
       where: where,
       whereArgs: whereArgs,
       limit: limit,
@@ -238,12 +237,12 @@ class DataHelper {
     );
   }
 
-  // dish_helper
+// dish_helper
 
   Future<int> insertDishRecord(DishRecord dishRecord) async {
     final db = await _dataHelper.database;
     final id = await db.insert(
-      'dish_records',
+      sqlDishRecords,
       dishRecord.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -254,7 +253,7 @@ class DataHelper {
     final db = await _dataHelper.database;
     // Update the given menuRecord
     await db.update(
-      'dish_records',
+      sqlDishRecords,
       dishRecord.toMap(),
       // Ensure that the Menu has a matching id.
       where: 'id = ?',
@@ -267,7 +266,7 @@ class DataHelper {
     final db = await _dataHelper.database;
     // Remove the Menu from the database.
     await db.delete(
-      'dish_records',
+      sqlDishRecords,
       // Use a `where` clause to delete a specific breed.
       where: 'id = ?',
       // Pass the Menu's id as a whereArg to prevent SQL injection.
@@ -282,7 +281,7 @@ class DataHelper {
   }) async {
     final db = await _dataHelper.database;
     final List<Map<String, dynamic>> maps = await db.query(
-      'dish_records',
+      sqlDishRecords,
       where: where,
       whereArgs: whereArgs,
       limit: limit,
@@ -293,11 +292,11 @@ class DataHelper {
     );
   }
 
-  // bill_helper
+// bill_helper
 
   Future<void> deteleDishIdAtBillId(int billId, int dishId) async {
     final db = await _dataHelper.database;
-    await db.delete('pre_ordered_dish',
+    await db.delete(sqlPreOrderedDishRecords,
         where: 'billId = ? and dishId = ?',
         // Pass the Menu's id as a whereArg to prevent SQL injection.
         whereArgs: [billId, dishId]);
@@ -306,9 +305,10 @@ class DataHelper {
   Future<List<PreOrderedDishRecord>> insertDishesAtBillId(
       List<PreOrderedDishRecord> preOrderedDishRecords, int billId) async {
     final db = await _dataHelper.database;
-    var sqlPreOrderedDish = '''SELECT * FROM pre_ordered_dish WHERE billId = ? 
-    AND dishId NOT IN (SELECT dishId from pre_ordered_dish JOIN 
-    dish_records ON id = dishId WHERE billId = ?)''';
+    var sqlPreOrderedDish =
+        '''SELECT * FROM $sqlPreOrderedDishRecords WHERE billId = ? 
+    AND dishId NOT IN (SELECT dishId from $sqlPreOrderedDishRecords JOIN 
+    $sqlDishRecords ON id = dishId WHERE billId = ?)''';
     var mapPreOrderedDishNotExisted =
         await db.rawQuery(sqlPreOrderedDish, [billId, billId]);
     var preOrderedDishNotExisted = List.generate(
@@ -327,6 +327,7 @@ class DataHelper {
       'dishId',
       'billId',
       'categoryId',
+      'titleCategory',
       'titleDish',
       'amount',
       'price',
@@ -336,20 +337,24 @@ class DataHelper {
         .map((item) => columns.map((column) => item[column]).toList())
         .toList();
 
-    String deleteSql = '''DELETE FROM pre_ordered_dish WHERE billId = ? AND 
-        dishId IN (SELECT dishId FROM pre_ordered_dish JOIN 
-        dish_records ON id = dishId WHERE billId = ?)''';
+    String deleteSql =
+        '''DELETE FROM $sqlPreOrderedDishRecords WHERE billId = ? AND 
+        dishId IN (SELECT dishId FROM $sqlPreOrderedDishRecords JOIN 
+        $sqlDishRecords ON id = dishId WHERE billId = ?)''';
     List<dynamic> deleteArgs = [billId, billId];
     await db.rawDelete(deleteSql, deleteArgs);
 
-    logger.d("delete pre_ordered_dish $deleteSql\n $deleteArgs");
-// Tạo câu truy vấn
-    String sql = '''INSERT INTO pre_ordered_dish(${columns.join(',')}) VALUES
+    logger.d("delete $sqlPreOrderedDishRecords $deleteSql\n $deleteArgs");
+    // Tạo câu truy vấn
+    String sql =
+        '''INSERT INTO $sqlPreOrderedDishRecords(${columns.join(',')}) VALUES
     ${values.map((row) => '(${row.map((value) => '?').join(',')})').join(',')}''';
-// Thực thi truy vấn
+    // Thực thi truy vấn
     await db.rawInsert(sql, values.expand((i) => i).toList());
-    final List<Map<String, dynamic>> maps = await db
-        .query('pre_ordered_dish', where: 'billId = ?', whereArgs: [billId]);
+    final List<Map<String, dynamic>> maps = await db.query(
+        sqlPreOrderedDishRecords,
+        where: 'billId = ?',
+        whereArgs: [billId]);
     return List.generate(
         maps.length, (index) => PreOrderedDishRecord.fromMap(maps[index]));
   }
@@ -359,9 +364,9 @@ class DataHelper {
   Future<BillRecord?> billRecord(int id) async {
     final db = await _dataHelper.database;
     final List<Map<String, dynamic>> maps =
-        await db.query('bill_records', where: 'id = ?', whereArgs: [id]);
+        await db.query(sqlBillRecords, where: 'id = ?', whereArgs: [id]);
     final List<Map<String, dynamic>> preOrderedDishRecordsMaps = await db
-        .query('pre_ordered_dish', where: 'billId = ?', whereArgs: [id]);
+        .query(sqlPreOrderedDishRecords, where: 'billId = ?', whereArgs: [id]);
     if (maps.isNotEmpty) {
       BillRecord billRecord = BillRecord.fromMap(maps[0]);
       billRecord.preOrderedDishRecords = List.generate(
@@ -376,7 +381,7 @@ class DataHelper {
   Future<int> insertBillRecord(BillRecord billRecord) async {
     final db = await _dataHelper.database;
     final id = await db.insert(
-      'bill_records',
+      sqlBillRecords,
       billRecord.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -387,7 +392,7 @@ class DataHelper {
     final db = await _dataHelper.database;
     // Update the given menuRecord
     await db.update(
-      'bill_records',
+      sqlBillRecords,
       billRecord.toMap(),
       // Ensure that the Menu has a matching id.
       where: 'id = ?',
@@ -396,16 +401,20 @@ class DataHelper {
     );
   }
 
-  Future<void> deleteBillRecord(int id) async {
+  Future<void> deleteBillRecord(int billId) async {
     final db = await _dataHelper.database;
     // Remove the Menu from the database.
     await db.delete(
-      'bill_records',
+      sqlBillRecords,
       // Use a `where` clause to delete a specific breed.
       where: 'id = ?',
       // Pass the Menu's id as a whereArg to prevent SQL injection.
-      whereArgs: [id],
+      whereArgs: [billId],
     );
+    String sql = "UPDATE table_records SET numOfPeople = (numOfPeople-1) "
+        "WHERE numOfPeople > 0 AND id = "
+        "(SELECT tableId FROM bill_records WHERE id = ?)";
+    await db.rawUpdate(sql, [billId]);
   }
 
   Future<Map<int, BillRecord>> billRecords({
@@ -415,7 +424,7 @@ class DataHelper {
   }) async {
     final db = await _dataHelper.database;
 
-    final query = StringBuffer('SELECT * FROM bill_records');
+    final query = StringBuffer('SELECT * FROM $sqlBillRecords');
     final queryParams = [];
 
     if (where != null && whereArgs != null) {
@@ -435,8 +444,7 @@ class DataHelper {
 
     for (var billRecord in billRecords.values) {
       final preOrderedDishRecordsMaps = await db.rawQuery(
-        'SELECT * FROM pre_ordered_dish FULL JOIN '
-        'category_records ON categoryId = id WHERE billId = ?',
+        'SELECT * FROM $sqlPreOrderedDishRecords WHERE billId = ?',
         [billRecord.id!],
       );
       billRecord.preOrderedDishRecords = preOrderedDishRecordsMaps
@@ -450,18 +458,18 @@ class DataHelper {
   Future<double> revenueBillRecord(int id) async {
     final db = await _dataHelper.database;
     String sql = "SELECT SUM(price * amount) AS "
-        "revenue FROM pre_ordered_dish WHERE billId = ?";
+        "revenue FROM $sqlPreOrderedDishRecords WHERE billId = ?";
     final List<Map<String, dynamic>> maps = await db.rawQuery(sql, [id]);
     var value = maps.elementAtOrNull(0)?['revenue'];
     return double.parse(value.toString());
   }
 
-  // table_helper
+// table_helper
 
   Future<TableRecord?> tableRecord(int id) async {
     final db = await _dataHelper.database;
     final List<Map<String, dynamic>> maps =
-        await db.query('table_records', where: 'id = ?', whereArgs: [id]);
+        await db.query(sqlTableRecords, where: 'id = ?', whereArgs: [id]);
     if (maps.isNotEmpty) return TableRecord.fromMap(maps[0]);
     return null;
   }
@@ -469,7 +477,7 @@ class DataHelper {
   Future<int> insertTableRecord(TableRecord tableRecord) async {
     final db = await _dataHelper.database;
     final id = await db.insert(
-      'table_records',
+      sqlTableRecords,
       tableRecord.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -481,7 +489,7 @@ class DataHelper {
     // Update the given menuRecord
     try {
       await db.update(
-        'table_records',
+        sqlTableRecords,
         tableRecord.toMap(),
         // Ensure that the Menu has a matching id.
         where: 'id = ?',
@@ -490,7 +498,7 @@ class DataHelper {
       );
 
       await db.rawUpdate(
-        'UPDATE bill_records SET nameTable = ? WHERE tableId = ?',
+        'UPDATE $sqlBillRecords SET nameTable = ? WHERE tableId = ?',
         [tableRecord.name, tableRecord.id],
       );
     } catch (e) {
@@ -500,18 +508,17 @@ class DataHelper {
 
   Future<void> deleteTableRecord(int id) async {
     final db = await _dataHelper.database;
-
     try {
       // Xóa bản ghi bàn từ cơ sở dữ liệu.
       await db.delete(
-        'table_records',
+        sqlTableRecords,
         where: 'id = ?',
         whereArgs: [id],
       );
 
       // Cập nhật các bản ghi hóa đơn liên quan
       await db.rawUpdate(
-        'UPDATE bill_records SET tableId = ? WHERE tableId = ?',
+        'UPDATE $sqlBillRecords SET tableId = ? WHERE tableId = ?',
         [0, id],
       );
     } catch (e) {
@@ -525,13 +532,10 @@ class DataHelper {
 
   Future<Map<int, TableRecord>> tableRecords() async {
     final db = await _dataHelper.database;
-
-    final List<TableRecord> tableRecords = await db
-        .query('table_records')
-        .then((maps) => maps.map((e) => TableRecord.fromMap(e)).toList());
-
-    final mapTableRecords =
-        Map<int, TableRecord>.fromIterable(tableRecords, key: (e) => e.id!);
+    final maps = await db.query(sqlTableRecords);
+    final mapTableRecords = Map<int, TableRecord>.fromIterable(
+        maps.map((e) => TableRecord.fromMap(e)).toList(),
+        key: (e) => e.id);
 
     return mapTableRecords;
   }

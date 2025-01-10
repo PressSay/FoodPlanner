@@ -31,7 +31,6 @@ class _Table35 extends State<Table35> {
   void getTableRecords() async {
     final Map<int, TableRecord> tmpTableRecords =
         await dataHelper.tableRecords();
-    logger.d("get table_records success");
     setState(() {
       tableRecords.clear();
       tableRecords.addAll(tmpTableRecords);

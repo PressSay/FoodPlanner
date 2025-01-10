@@ -35,7 +35,7 @@ class _ListDetail40State extends State<ListDetail40> {
   int categoryId = 0;
   double total = 0;
   bool isInitBillId = true;
-  bool isInitDishes = true;
+
   Alert? alert;
   List<int> tableRecordOldAndNew = [];
 
@@ -60,7 +60,6 @@ class _ListDetail40State extends State<ListDetail40> {
     setState(() {
       billRecords.clear();
       billRecords.addAll(tmpBillRecords);
-      isInitDishes = true;
       isInitBillId = true;
     });
   }
@@ -164,7 +163,7 @@ class _ListDetail40State extends State<ListDetail40> {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final DishProvider dishProvider = context.watch<DishProvider>();
 
-    List<Widget> listAssignment = [];
+    final List<Widget> listAssignment = [];
     billRecords.forEach((k, v) {
       if (isInitBillId) {
         billRecord = v;
@@ -177,7 +176,6 @@ class _ListDetail40State extends State<ListDetail40> {
             }
             setState(() {
               billRecord = v;
-              isInitDishes = true;
             });
           },
           active: v.id == (billRecord?.id! ?? 0),
@@ -189,20 +187,9 @@ class _ListDetail40State extends State<ListDetail40> {
     });
     listAssignment.add(Padding(padding: EdgeInsets.all(6)));
 
-// nếu đúng thì khi xóa một DishCofirm hệ thống rebuild sẽ không chạy lại lệnh này
-    if (isInitDishes) {
-      List<PreOrderedDishRecord> preOrderedDishRecords =
-          (billRecord != null) ? billRecord!.preOrderedDishRecords! : [];
-// [_inddexDishListSorted] có tác dụng khi cần cập nhật bên Order44 thì bên List40 sẽ cập nhật luôn!
-      dishProvider.importDataToIndexDishListSorted(preOrderedDishRecords);
-      isInitDishes = false;
-    }
-
     total = 0;
-    List<Widget> itemDishBuilder = [];
-    List<PreOrderedDishRecord> dishRecordSorted =
-        dishProvider.indexDishListSorted;
-    for (var e in dishRecordSorted) {
+    final List<Widget> itemDishBuilder = [];
+    for (var e in billRecord?.preOrderedDishRecords ?? []) {
       if (e.categoryId != categoryId) {
         categoryId = e.categoryId;
         itemDishBuilder.add(Center(
@@ -221,9 +208,7 @@ class _ListDetail40State extends State<ListDetail40> {
         itemDishBuilder.add(Padding(padding: EdgeInsets.all(8)));
       }
       total += e.price * e.amount;
-      // if (e.imagePath.isNotEmpty) {
-      //   logger.d('e.imagePath: ${e.imagePath}');
-      // }
+
       itemDishBuilder.add(DishCofirm(
         onlyView: widget.onlyView,
         imagePath: e.imagePath,
@@ -234,11 +219,11 @@ class _ListDetail40State extends State<ListDetail40> {
           alert!.showAlert('Delete Dish', 'Are You Sure?', true, () async {
             dataHelper.deteleDishIdAtBillId(billRecord!.id!, e.dishId);
             // BigO(n)
-            dishProvider.deleteAmountSorted(e.dishId);
-            billRecords[billRecord!.id!]?.preOrderedDishRecords?.clear();
-            billRecords[billRecord!.id!]
-                ?.preOrderedDishRecords
-                ?.addAll(dishProvider.indexDishListSorted);
+            setState(() {
+              billRecords[billRecord!.id!]
+                  ?.preOrderedDishRecords
+                  ?.removeWhere((e1) => e1.dishId == e.dishId);
+            });
           });
         },
       ));
@@ -327,7 +312,6 @@ class _ListDetail40State extends State<ListDetail40> {
                         isInitBillId = true;
                       }
                     }
-                    isInitDishes = true;
                     // 40 -> 36 -> 35
                   });
                 });
@@ -347,7 +331,6 @@ class _ListDetail40State extends State<ListDetail40> {
               setState(() {
                 billRecords.remove(billIdCurrent);
                 billRecord = billRecords.values.lastOrNull;
-                isInitDishes = true;
               });
             }
           ], icons: [

@@ -36,6 +36,7 @@ class PreOrderedDishRecord {
       dishId: map['dishId'],
       billId: map['billId'],
       categoryId: map['categoryId'],
+      titleCategory: map['title'],
       titleDish: map['titleDish'],
       amount: map['amount'],
       price: map['price'],

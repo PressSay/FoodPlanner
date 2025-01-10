@@ -1,9 +1,12 @@
 import 'dart:math';
 
+import 'package:date_field/date_field.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import 'package:menu_qr/models/bill_record.dart';
+import 'package:menu_qr/screens/list_23.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 
@@ -18,21 +21,19 @@ class _Overview20State extends State<Overview20> {
   var maxBillMoney = 0.0;
   final dataHelper = DataHelper();
   final Map<int, BillRecord> billRecords = {};
-  final List<FlSpot> spotsBillRecord = [];
+  final List<FlSpot> spotsHourBill = [];
+  final List<FlSpot> spotsMinuteBill = [];
 
   final logger = Logger();
 
-  List<Color> gradientColors = [
-    Color(0xFF50E4FF),
-    Color(0xFF2196F3),
-  ];
   bool isInited = false;
+  DateTime? date;
 
-  var amountBill = "";
+  var amountBill = 0;
   var revenue = 0.0;
-  var agvPerBill = "";
-  var investment = "";
-  var profit = "";
+  var agvPerBill = 0.0;
+  var investment = 0.0;
+  var profit = 0.0;
 
   String formatDate(DateTime date) {
     String year = date.year.toString();
@@ -41,8 +42,7 @@ class _Overview20State extends State<Overview20> {
     return '$year-$month-$day';
   }
 
-  String formatNumber(double numberDouble) {
-    final number = numberDouble.toInt();
+  String formatNumber(double number) {
     if (number < 1000) {
       return number.toString();
     }
@@ -70,8 +70,7 @@ class _Overview20State extends State<Overview20> {
     return number.toString(); // Trả về số gốc nếu quá lớn
   }
 
-  void getBillRecords() async {
-    final now = DateTime(2025, 1, 8);
+  void getBillRecords(DateTime now) async {
     final tmpBillRecords = await dataHelper.billRecords(
         where: ("datetime >= ? AND datetime < ? "
             "ORDER BY datetime"),
@@ -79,38 +78,65 @@ class _Overview20State extends State<Overview20> {
           now.millisecondsSinceEpoch,
           now.add(const Duration(days: 1)).millisecondsSinceEpoch
         ]);
-    final List<List<double>> tmpSpots = [];
-    final List<FlSpot> tmptSpotsBillRecord = [];
+    final Map<int, double> tmpSpotsHour = {};
+    final Map<int, double> tmpSpotsMinute = {};
+    final List<FlSpot> tmptSpotsHourBill = [];
+    final List<FlSpot> tmpSpotsMinuteBill = [];
 
+    var tmpAmountBill = 0;
+    var sumOfbillNumber = 0.0;
     for (var e in tmpBillRecords.entries) {
-      logger.d("billRecord ${e.value.id}");
       final date = DateTime.fromMillisecondsSinceEpoch(e.value.dateTime);
       final billMoney = await dataHelper.revenueBillRecord(e.value.id ?? 0);
-      if (billMoney > maxBillMoney) {
-        maxBillMoney = billMoney;
+      final hour = date.hour + (date.minute / 60).ceil();
+      final minute = date.hour * 60 + date.minute;
+      tmpAmountBill += 1;
+      sumOfbillNumber += billMoney;
+      logger.d("hour $hour => $billMoney");
+      tmpSpotsHour[hour] = (tmpSpotsHour[hour] ?? 0) + billMoney;
+      // the max tmpSpotsMinute element number is 1439 = 60*24 - 1
+      tmpSpotsMinute[minute] = (tmpSpotsMinute[minute] ?? 0) + billMoney;
+      if (maxBillMoney < tmpSpotsHour[hour]!) {
+        maxBillMoney = tmpSpotsHour[hour]!;
       }
-      tmpSpots.add([date.hour.toDouble(), billMoney]);
     }
+
     logger.d("maxBillMoney: $maxBillMoney");
-    for (var i = 0; i < tmpSpots.length; i++) {
-      final y = tmpSpots.elementAtOrNull(i)?[1] ?? 0.0;
-      final x = tmpSpots.elementAtOrNull(i)?[0] ?? 0.0;
+    for (var e in tmpSpotsHour.entries) {
+      final y = e.value;
+      final x = e.key.toDouble();
       final newY = (y / maxBillMoney) * 6;
       logger.d("x: $x, y: $newY");
-      tmptSpotsBillRecord.add(FlSpot(x, newY));
+      tmptSpotsHourBill.add(FlSpot(x, newY));
+    }
+    for (var e in tmpSpotsMinute.entries) {
+      final y = e.value;
+      final x = e.key.toDouble();
+      final newX = (x / 1439) * 24;
+      final newY = (y / maxBillMoney) * 6;
+      logger.d("xM: $newX, yM: $newY");
+      tmpSpotsMinuteBill.add(FlSpot(newX, newY));
     }
     setState(() {
       billRecords.clear();
-      spotsBillRecord.clear();
+      spotsHourBill.clear();
+      spotsMinuteBill.clear();
       billRecords.addAll(tmpBillRecords);
-      spotsBillRecord.addAll(tmptSpotsBillRecord);
+      spotsHourBill.addAll(tmptSpotsHourBill);
+      spotsMinuteBill.addAll(tmpSpotsMinuteBill);
+      revenue = sumOfbillNumber;
+      agvPerBill = (tmpAmountBill != 0) ? sumOfbillNumber / tmpAmountBill : 0;
+      amountBill = tmpAmountBill;
+      date = now;
       isInited = true;
     });
   }
 
   @override
   void initState() {
-    getBillRecords();
+    // final now = DateTime(2025, 01, 08);
+    final now = DateTime.now();
+    getBillRecords(now);
     super.initState();
   }
 
@@ -144,7 +170,7 @@ class _Overview20State extends State<Overview20> {
   Widget leftTitleWidgets(double value, TitleMeta meta) {
     const style = TextStyle(
       fontWeight: FontWeight.bold,
-      fontSize: 15,
+      fontSize: 12,
     );
     String text;
     switch (value.toInt()) {
@@ -164,7 +190,16 @@ class _Overview20State extends State<Overview20> {
     return Text(text, style: style, textAlign: TextAlign.left);
   }
 
-  LineChartData avgData() {
+  LineChartData chartData() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final gradientColorsByHour = [
+      colorScheme.primaryContainer,
+      colorScheme.primary
+    ];
+    final gradientColorsByMinute = [
+      colorScheme.secondaryContainer,
+      colorScheme.secondary
+    ];
     return LineChartData(
       lineTouchData: const LineTouchData(enabled: false),
       gridData: FlGridData(
@@ -215,16 +250,16 @@ class _Overview20State extends State<Overview20> {
         border: Border.all(color: const Color(0xff37434d)),
       ),
       minX: 0,
-      maxX: 23,
+      maxX: 24,
       minY: 0,
       maxY: 6,
       lineBarsData: [
         LineChartBarData(
           // spots: spotsBillRecord,
-          spots: spotsBillRecord,
+          spots: spotsHourBill,
           isCurved: true,
           gradient: LinearGradient(
-            colors: gradientColors,
+            colors: gradientColorsByHour,
           ),
           barWidth: 5,
           isStrokeCapRound: true,
@@ -234,7 +269,28 @@ class _Overview20State extends State<Overview20> {
           belowBarData: BarAreaData(
             show: true,
             gradient: LinearGradient(
-              colors: gradientColors
+              colors: gradientColorsByHour
+                  .map((color) => color.withValues(alpha: 0.3))
+                  .toList(),
+            ),
+          ),
+        ),
+        LineChartBarData(
+          // spots: spotsBillRecord,
+          spots: spotsMinuteBill,
+          isCurved: true,
+          gradient: LinearGradient(
+            colors: gradientColorsByMinute,
+          ),
+          barWidth: 5,
+          isStrokeCapRound: true,
+          dotData: const FlDotData(
+            show: true,
+          ),
+          belowBarData: BarAreaData(
+            show: true,
+            gradient: LinearGradient(
+              colors: gradientColorsByMinute
                   .map((color) => color.withValues(alpha: 0.3))
                   .toList(),
             ),
@@ -250,7 +306,7 @@ class _Overview20State extends State<Overview20> {
             children: <Widget>[
               AspectRatio(
                 aspectRatio: 1.70,
-                child: LineChart(avgData()),
+                child: LineChart(chartData()),
               ),
               SizedBox(
                 width: 60,
@@ -288,7 +344,7 @@ class _Overview20State extends State<Overview20> {
                   style: TextStyle(
                       color: colorScheme.primary, fontWeight: FontWeight.bold)),
               TextSpan(
-                  text: amountBill,
+                  text: formatNumber(amountBill.toDouble()),
                   style: TextStyle(
                       color: colorScheme.secondary,
                       fontWeight: FontWeight.bold))
@@ -304,7 +360,7 @@ class _Overview20State extends State<Overview20> {
                   style: TextStyle(
                       color: colorScheme.primary, fontWeight: FontWeight.bold)),
               TextSpan(
-                  text: revenue.toString(),
+                  text: formatNumber(revenue),
                   style: TextStyle(
                       color: colorScheme.secondary,
                       fontWeight: FontWeight.bold))
@@ -320,7 +376,7 @@ class _Overview20State extends State<Overview20> {
                   style: TextStyle(
                       color: colorScheme.primary, fontWeight: FontWeight.bold)),
               TextSpan(
-                  text: agvPerBill,
+                  text: formatNumber(agvPerBill),
                   style: TextStyle(
                       color: colorScheme.secondary,
                       fontWeight: FontWeight.bold))
@@ -336,7 +392,7 @@ class _Overview20State extends State<Overview20> {
                   style: TextStyle(
                       color: colorScheme.primary, fontWeight: FontWeight.bold)),
               TextSpan(
-                  text: investment,
+                  text: formatNumber(investment),
                   style: TextStyle(
                       color: colorScheme.secondary,
                       fontWeight: FontWeight.bold))
@@ -352,7 +408,7 @@ class _Overview20State extends State<Overview20> {
                   style: TextStyle(
                       color: colorScheme.primary, fontWeight: FontWeight.bold)),
               TextSpan(
-                  text: profit,
+                  text: formatNumber(profit),
                   style: TextStyle(
                       color: colorScheme.secondary,
                       fontWeight: FontWeight.bold))
@@ -365,7 +421,12 @@ class _Overview20State extends State<Overview20> {
     itemBuilder.add(Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        ElevatedButton(onPressed: () {}, child: Text('Bill List')),
+        ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                  context, MaterialPageRoute(builder: (context) => List23()));
+            },
+            child: Text('Bill List')),
         Padding(
           padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
           child: ElevatedButton(
@@ -377,7 +438,21 @@ class _Overview20State extends State<Overview20> {
     itemBuilder.add(Center(
         child: Padding(
       padding: const EdgeInsets.all(8.0),
-      child: ElevatedButton(onPressed: () {}, child: Text('Choose Date')),
+      child: SizedBox(
+          width: 160,
+          child: DateTimeField(
+            value: date,
+            decoration: const InputDecoration(
+              labelText: 'Enter Date',
+              helperText: 'DD/MM/YYYY',
+            ),
+            dateFormat: DateFormat('dd/MM/yyyy'),
+            initialPickerDateTime: DateTime.now(),
+            mode: DateTimeFieldPickerMode.date,
+            onChanged: (DateTime? value) {
+              if (value != null) getBillRecords(value);
+            },
+          )),
     )));
 
     return Scaffold(

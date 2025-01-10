@@ -434,10 +434,10 @@ class DataHelper {
         key: (e) => e.id!);
 
     for (var billRecord in billRecords.values) {
-      final preOrderedDishRecordsMaps = await db.query(
-        'pre_ordered_dish',
-        where: 'billId = ?',
-        whereArgs: [billRecord.id!],
+      final preOrderedDishRecordsMaps = await db.rawQuery(
+        'SELECT * FROM pre_ordered_dish FULL JOIN '
+        'category_records ON categoryId = id WHERE billId = ?',
+        [billRecord.id!],
       );
       billRecord.preOrderedDishRecords = preOrderedDishRecordsMaps
           .map((e) => PreOrderedDishRecord.fromMap(e))

@@ -48,6 +48,7 @@ dependencies:
   sqflite_common_ffi: ^2.3.4+4
   mockito: ^5.4.5
   fl_chart: ^0.70.1
+  date_field: ^6.0.0
 
 dev_dependencies:
   flutter_test:

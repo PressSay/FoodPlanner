@@ -9,6 +9,7 @@ class DishButton extends StatelessWidget {
       required this.id,
       required this.categoryId,
       required this.imagePath,
+      required this.titleCategory,
       required this.title,
       required this.desc,
       required this.price});
@@ -16,6 +17,7 @@ class DishButton extends StatelessWidget {
   final int categoryId;
   final String imagePath;
   final String title;
+  final String titleCategory;
   final String desc;
   final double price;
   final double width = 320;
@@ -86,7 +88,9 @@ class DishButton extends StatelessWidget {
                             bottomLeft: Radius.circular(20.0),
                           ),
                           child: Image.asset(
-                            imagePath,
+                            (imagePath.isEmpty)
+                                ? 'assets/images/hinh-cafe-kem-banh-quy-2393351094.webp'
+                                : imagePath,
                             fit: BoxFit.cover,
                             width: 150, // width * 0.47
                             height: 165, // height * 0.75
@@ -178,8 +182,8 @@ class DishButton extends StatelessWidget {
                         maximumSize:
                             WidgetStateProperty.all(Size(width, halfHeight))),
                     onPressed: () {
-                      dishProvider.increaseAmount(
-                          id, categoryId, price, title, imagePath);
+                      dishProvider.increaseAmount(id, categoryId, price,
+                          titleCategory, title, imagePath);
                     },
                     child: SizedBox(
                       height: halfHeight,
@@ -195,8 +199,8 @@ class DishButton extends StatelessWidget {
                         maximumSize:
                             WidgetStateProperty.all(Size(width, halfHeight))),
                     onPressed: () {
-                      dishProvider.decreaseAmount(
-                          id, categoryId, price, title, imagePath);
+                      dishProvider.decreaseAmount(id, categoryId, price,
+                          titleCategory, title, imagePath);
                     },
                     child: SizedBox(
                       height: halfHeight,

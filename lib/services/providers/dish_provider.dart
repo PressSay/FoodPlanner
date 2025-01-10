@@ -5,9 +5,11 @@ import 'package:menu_qr/models/pre_ordered_dish.dart';
 // ignore: prefer_mixin
 class DishProvider extends ChangeNotifier {
   int _categoryId = 0;
+  String _titleCategory = "";
   int _menuId = 0;
 
   final Map<int, PreOrderedDishRecord> _indexDishList = {};
+  // [_indexDishListSorted] có tác dụng import vào Database
   final List<PreOrderedDishRecord> _indexDishListSorted = [];
 
   Map<int, PreOrderedDishRecord> get indexDishList => _indexDishList;
@@ -17,8 +19,10 @@ class DishProvider extends ChangeNotifier {
     _indexDishListSorted.add(preOrderedDishRecord);
   }
 
-  void setCateogryId(int categoryId) {
+  void setCateogry(int categoryId, String titleCategory) {
     _categoryId = categoryId;
+    _titleCategory = titleCategory;
+    notifyListeners();
   }
 
   void setMenuId(int menuId) {
@@ -26,6 +30,8 @@ class DishProvider extends ChangeNotifier {
   }
 
   int get categoryId => _categoryId;
+
+  String get titleCategory => _titleCategory;
 
   int get menuId => _menuId;
 
@@ -50,15 +56,16 @@ class DishProvider extends ChangeNotifier {
   }
 
   // table will be 0 if user choose order imediately
-  void increaseAmount(
-      int id, int categoryId, double price, String title, String imagePath) {
+  void increaseAmount(int id, int categoryId, double price,
+      String titleCategory_, String title, String imagePath) {
     // List<int> newElement = [categoryIndex, dishIndex, amount, table];
     if (!_indexDishList.containsKey(id)) {
       _indexDishList.addAll({
         id: PreOrderedDishRecord(
             amount: 0,
             billId: 0,
-            categoryId: 0,
+            categoryId: categoryId,
+            titleCategory: titleCategory_,
             titleDish: title,
             dishId: id,
             price: price,
@@ -69,14 +76,15 @@ class DishProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void decreaseAmount(
-      int id, int categoryId, double price, String title, String imagePath) {
+  void decreaseAmount(int id, int categoryId, double price,
+      String titleCategory_, String title, String imagePath) {
     if (!_indexDishList.containsKey(id)) {
       _indexDishList.addAll({
         id: PreOrderedDishRecord(
             amount: 0,
             billId: 0,
             categoryId: categoryId,
+            titleCategory: titleCategory_,
             titleDish: title,
             dishId: id,
             price: price,

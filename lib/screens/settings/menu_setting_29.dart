@@ -6,11 +6,12 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:menu_qr/models/menu_record.dart';
-import 'package:menu_qr/screens/category_setting_30.dart';
-import 'package:menu_qr/screens/setting_table_30.dart';
+import 'package:menu_qr/screens/settings/category_setting_30.dart';
+import 'package:menu_qr/screens/settings/setting_table_30.dart';
 import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
+import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/order_setting_button_online.dart';
 
 class Menu29 extends StatefulWidget {
@@ -28,6 +29,7 @@ class _Menu29State extends State<Menu29> {
   Alert? alert;
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _controllerMenu = TextEditingController();
+  final Logger logger = Logger();
 
   final DataHelper dataHelper = DataHelper();
   final List<MenuRecord> menuRecords = [];
@@ -43,18 +45,17 @@ class _Menu29State extends State<Menu29> {
   void saveMenu() async {
     final MenuRecord menuRecord =
         MenuRecord(title: titleMenu, isSelected: false);
-    final int lastId = await dataHelper.insertMenuRecord(menuRecord) ?? 0;
-    if (lastId != 0) {
-      menuRecord.id = lastId;
-      setState(() {
-        menuRecords.add(menuRecord);
-      });
-    }
+    final int lastId = await dataHelper.insertMenuRecord(menuRecord);
+    menuRecord.id = lastId;
+    setState(() {
+      menuRecords.add(menuRecord);
+    });
+    alert!.showAlert('Save Menu', 'success!', false, null);
   }
 
   void getMenuRecords() async {
     final List<MenuRecord> tmpMenuRecords =
-        await dataHelper.menuRecords(null, null, null);
+        await dataHelper.menuRecords(where: null, whereArgs: null, limit: null);
     setState(() {
       menuRecords.clear();
       menuRecords.addAll(tmpMenuRecords);
@@ -194,6 +195,7 @@ class _Menu29State extends State<Menu29> {
                               width: 240,
                               height: 48,
                               child: TextField(
+                                  key: const ValueKey('titleMenuField'),
                                   onChanged: (value) {
                                     titleMenu = value;
                                   },
@@ -254,12 +256,6 @@ class _Menu29State extends State<Menu29> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final colorBottomBarBtn = [
-      colorScheme.primary,
-      colorScheme.secondaryContainer,
-      colorScheme.onSecondary
-    ];
-    final colorBottomBar = colorScheme.secondaryContainer;
 
     List<MenuRecord> filteredMenuRecords = (filterTitleMenu.isEmpty)
         ? menuRecords
@@ -326,67 +322,49 @@ class _Menu29State extends State<Menu29> {
                 : CrossFadeState.showFirst,
             duration: const Duration(milliseconds: 200),
           ),
-          Container(
-            height: 68,
-            decoration: BoxDecoration(
-                color: colorBottomBar,
-                border: Border(
-                    top: BorderSide(width: 1.0, color: colorScheme.primary))),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-              child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.arrow_back,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          Navigator.pop(context);
-                        }),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.home,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          Navigator.popUntil(context, (route) => route.isFirst);
-                        }),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.search,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          setState(() {
-                            _showWidgetB = !_showWidgetB;
-                            filterTitleMenu = "";
-                          });
-                        }),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.add,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          if (titleMenu.isEmpty) {
-                            alert!
-                                .showAlert('Save Menu', 'failed!', false, null);
-                            return;
-                          }
-                          saveMenu();
-                          alert!
-                              .showAlert('Save Menu', 'success!', false, null);
-                        })
-                  ]),
+          BottomNavigatorCustomize(listEnableBtn: [
+            true,
+            true,
+            true,
+            true
+          ], listCallback: [
+            () {
+              Navigator.pop(context);
+            },
+            () {
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+            () {
+              setState(() {
+                _showWidgetB = !_showWidgetB;
+                filterTitleMenu = "";
+              });
+            },
+            () {
+              if (titleMenu.isEmpty) {
+                alert!.showAlert('Save Menu', 'failed!', false, null);
+                return;
+              }
+              saveMenu();
+            }
+          ], icons: [
+            Icon(
+              Icons.arrow_back,
+              color: colorScheme.primary,
             ),
-          )
+            Icon(
+              Icons.home,
+              color: colorScheme.primary,
+            ),
+            Icon(
+              Icons.search,
+              color: colorScheme.primary,
+            ),
+            Icon(
+              Icons.add,
+              color: colorScheme.primary,
+            )
+          ]),
         ],
       ),
     );

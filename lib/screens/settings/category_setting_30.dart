@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
 import 'package:menu_qr/models/category_record.dart';
 import 'package:menu_qr/models/menu_record.dart';
-import 'package:menu_qr/screens/dish_setting_31.dart';
+import 'package:menu_qr/screens/settings/dish_setting_31.dart';
 import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
-import 'package:menu_qr/widgets/bottom_bar_button.dart';
+import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/setting_button.dart';
 
 class Category30 extends StatefulWidget {
@@ -25,11 +24,11 @@ class _Category30State extends State<Category30> {
 
   bool _showWidgetB = false;
   final DataHelper dataHelper = DataHelper();
+  final TextEditingController _controller = TextEditingController();
   final TextEditingController _controllerMenu = TextEditingController();
   final TextEditingController _controllerCategory = TextEditingController();
   final TextEditingController _controllerDesc = TextEditingController();
   final List<CategoryRecord> categoryRecords = [];
-  final Logger lg = Logger();
 
   @override
   void initState() {
@@ -40,18 +39,20 @@ class _Category30State extends State<Category30> {
   }
 
   void getCategoryRecords() async {
-    final List<CategoryRecord> tmpCategoryRecords =
-        await dataHelper.categoryRecords(null, null, null);
+    final List<CategoryRecord> tmpCategoryRecords = await dataHelper
+        .categoryRecords(where: null, whereArgs: null, limit: null);
     setState(() {
       categoryRecords.clear();
       categoryRecords.addAll(tmpCategoryRecords);
     });
-    lg.d('success ${categoryRecords.isEmpty}');
   }
 
-  void deletedCategoryRecord(int categoryId) async {
+  void deletedCategoryRecord(CategoryRecord categoryRecord) async {
     alert!.showAlert('Delete Category', 'Are You Sure?', true, () {
-      dataHelper.deleteCategoryRecord(categoryId);
+      dataHelper.deleteCategoryRecord(categoryRecord.id!);
+      setState(() {
+        categoryRecords.removeWhere((e1) => e1.id == categoryRecord.id);
+      });
     });
   }
 
@@ -73,23 +74,17 @@ class _Category30State extends State<Category30> {
     }
     final CategoryRecord newE = CategoryRecord(
         menuId: widget.menuRecord.id!, title: titleCategory, desc: desc);
-    final int lastId = await dataHelper.insertCategoryRecord(newE) ?? 0;
-    if (lastId != 0) {
-      newE.id = lastId;
+    final int lastId = await dataHelper.insertCategoryRecord(newE);
+    newE.id = lastId;
+    alert!.showAlert('Save Category', 'success!', false, null);
+    setState(() {
       categoryRecords.add(newE);
-      alert!.showAlert('Save Category', 'success!', false, null);
-    }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final colorBottomBarBtn = [
-      colorScheme.primary,
-      colorScheme.secondaryContainer,
-      colorScheme.onSecondary
-    ];
-    final colorBottomBar = colorScheme.secondaryContainer;
 
     List<CategoryRecord> filteredCategoryRecords = (filterTitleCategory.isEmpty)
         ? categoryRecords
@@ -110,13 +105,14 @@ class _Category30State extends State<Category30> {
                     MaterialPageRoute(
                         builder: (BuildContext context) => Dish31(
                               categoryRecord: e,
-                            )));
+                            ))).then((onValue) {
+                  setState(() {
+                    if (onValue != null) e = onValue;
+                  });
+                });
               },
               callbackDelete: () {
-                deletedCategoryRecord(e.id!);
-                setState(() {
-                  categoryRecords.removeWhere((e1) => e1.id == e.id);
-                });
+                deletedCategoryRecord(e);
               },
               content: e.title),
         ),
@@ -273,7 +269,7 @@ class _Category30State extends State<Category30> {
             secondChild: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
                 child: TextField(
-                    controller: _controllerMenu,
+                    controller: _controller,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(),
                       labelText: 'Search Category',
@@ -289,60 +285,45 @@ class _Category30State extends State<Category30> {
                 : CrossFadeState.showFirst,
             duration: const Duration(milliseconds: 200),
           ),
-          Container(
-            height: 68,
-            decoration: BoxDecoration(
-                color: colorBottomBar,
-                border: Border(
-                    top: BorderSide(width: 1.0, color: colorScheme.primary))),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-              child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.arrow_back,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          Navigator.pop(context);
-                        }),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.home,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          Navigator.popUntil(context, (route) => route.isFirst);
-                        }),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.search,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          setState(() {
-                            _showWidgetB = !_showWidgetB;
-                            filterTitleCategory = "";
-                          });
-                        }),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.add,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          insertCategoryRecord();
-                        })
-                  ]),
+          BottomNavigatorCustomize(listEnableBtn: [
+            true,
+            true,
+            true,
+            true
+          ], listCallback: [
+            () {
+              Navigator.pop(context);
+            },
+            () {
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+            () {
+              setState(() {
+                _showWidgetB = !_showWidgetB;
+                filterTitleCategory = "";
+              });
+            },
+            () {
+              insertCategoryRecord();
+            }
+          ], icons: [
+            Icon(
+              Icons.arrow_back,
+              color: colorScheme.primary,
             ),
-          )
+            Icon(
+              Icons.home,
+              color: colorScheme.primary,
+            ),
+            Icon(
+              Icons.search,
+              color: colorScheme.primary,
+            ),
+            Icon(
+              Icons.add,
+              color: colorScheme.primary,
+            )
+          ]),
         ],
       ),
     );

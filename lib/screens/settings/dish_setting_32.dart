@@ -1,9 +1,14 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import 'package:menu_qr/models/dish_record.dart';
 import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
-import 'package:menu_qr/widgets/bottom_bar_button.dart';
+import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/dish_view.dart';
+import 'package:path_provider/path_provider.dart';
 
 class Dish32 extends StatefulWidget {
   const Dish32({super.key, required this.dishRecord});
@@ -13,9 +18,12 @@ class Dish32 extends StatefulWidget {
 }
 
 class _Dish32State extends State<Dish32> {
-  Alert? _alert;
+  Alert? alert;
   String imagePath = "";
+  bool isSaved = true;
 
+  final logger = Logger();
+  final defaultImage = "assets/images/hinh-cafe-kem-banh-quy-2393351094.jpg";
   final TextEditingController _controllerDescDish = TextEditingController();
   final TextEditingController _controllerDishTitle = TextEditingController();
   final TextEditingController _controllerDishPrice = TextEditingController();
@@ -24,7 +32,7 @@ class _Dish32State extends State<Dish32> {
 
   @override
   void initState() {
-    _alert = Alert(context: context);
+    alert = Alert(context: context);
     _controllerDishTitle.text = widget.dishRecord.title;
     _controllerDescDish.text = widget.dishRecord.desc;
     _controllerDishPrice.text = widget.dishRecord.price.toString();
@@ -34,27 +42,64 @@ class _Dish32State extends State<Dish32> {
     super.initState();
   }
 
+  void deleteImageTmp(String imagePath_) {
+    File file = File(imagePath_);
+    if (file.existsSync()) file.deleteSync();
+  }
+
   void updateDish() async {
-    if (widget.dishRecord.title.isEmpty ||
-        widget.dishRecord.desc.isEmpty ||
-        widget.dishRecord.price == 0 ||
-        widget.dishRecord.imagePath.isEmpty) {
-      _alert!.showAlert('Update Dish', 'failed!', false, null);
+    double priceDish =
+        double.parse(_controllerDishPrice.text.replaceAll(',', ''));
+    if (_controllerDishTitle.text.isEmpty ||
+        _controllerDescDish.text.isEmpty ||
+        priceDish == 0) {
+      alert!.showAlert('Update Dish', 'failed!', false, null);
       return;
     }
+    if (imagePath.compareTo(widget.dishRecord.imagePath) != 0) {
+      logger.d("delete old widget.dishRecord.imagePath");
+      final oldImage = File(widget.dishRecord.imagePath);
+      if (oldImage.existsSync()) await oldImage.delete();
+    }
+    widget.dishRecord.imagePath = imagePath;
     dataHelper.updateDishRecord(widget.dishRecord);
-    _alert!.showAlert('Update Category', 'success!', false, null);
+    isSaved = true;
+    alert!.showAlert('Update Category', 'success!', false, null);
+  }
+
+  void uploadImage() async {
+    final result = await FilePicker.platform.pickFiles();
+    if (result == null) {
+      alert!.showAlert('Upload', 'failed', false, null);
+      return;
+    }
+    if (imagePath.isNotEmpty &&
+        widget.dishRecord.imagePath.compareTo(imagePath) != 0) {
+      logger.d('delete tmp image!');
+      File fileDelete = File(imagePath);
+      if (fileDelete.existsSync()) await fileDelete.delete();
+    }
+    final file = result.files.first;
+    final appStorage = await getApplicationCacheDirectory();
+    final filename =
+        '${DateTime.now().millisecondsSinceEpoch}.${file.extension}';
+    final tmpNewFile = File('${appStorage.path}/$filename');
+    try {
+      // sẽ lỗi nếu như có trùng tên file ?
+      final newFile = await File(file.path!).copy(tmpNewFile.path);
+      setState(() {
+        imagePath = newFile.path;
+      });
+      isSaved = false;
+      logger.i('Image uploaded successfully to temporary location.');
+    } catch (e) {
+      alert!.showAlert('Upload', 'Error uploading image: $e', false, null);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final colorBottomBarBtn = [
-      colorScheme.primary,
-      colorScheme.secondaryContainer,
-      colorScheme.onSecondary
-    ];
-    final colorBottomBar = colorScheme.secondaryContainer;
 
     Widget dishView = Center(
         child: Padding(
@@ -133,7 +178,7 @@ class _Dish32State extends State<Dish32> {
                                     },
                                     style:
                                         TextStyle(color: colorScheme.primary),
-                                    controller: _controllerDishTitle,
+                                    controller: _controllerDishPrice,
                                     decoration: InputDecoration(
                                       border: OutlineInputBorder(
                                           borderRadius: BorderRadius.only(
@@ -174,7 +219,7 @@ class _Dish32State extends State<Dish32> {
                                 bottomLeft: Radius.circular(20.0),
                               ),
                               child: Image.asset(
-                                "assets/images/hinh-cafe-kem-banh-quy-2393351094.jpg",
+                                (imagePath.isEmpty) ? defaultImage : imagePath,
                                 fit: BoxFit.cover,
                                 width: 150, // width * 0.47
                                 height: 165, // height * 0.75
@@ -184,56 +229,51 @@ class _Dish32State extends State<Dish32> {
                             Padding(
                               padding: const EdgeInsets.fromLTRB(10, 0, 0, 0),
                               child: ElevatedButton(
-                                  onPressed: () {}, child: Text('Upload')),
+                                  onPressed: () {
+                                    uploadImage();
+                                  },
+                                  child: Text('Upload')),
                             )
                           ])),
                 ],
               ),
             ),
           ),
-          Container(
-            height: 68,
-            decoration: BoxDecoration(
-                color: colorBottomBar,
-                border: Border(
-                    top: BorderSide(width: 1.0, color: colorScheme.primary))),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-              child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.arrow_back,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          Navigator.pop(context);
-                        }),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.home,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          Navigator.popUntil(context, (route) => route.isFirst);
-                        }),
-                    SizedBox(width: 48),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.save,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          updateDish();
-                        })
-                  ]),
+          BottomNavigatorCustomize(listEnableBtn: [
+            true,
+            true,
+            false,
+            true
+          ], listCallback: [
+            () {
+              if (imagePath.isNotEmpty && !isSaved) {
+                deleteImageTmp(imagePath);
+              }
+              Navigator.pop(context);
+            },
+            () {
+              if (imagePath.isNotEmpty && !isSaved) {
+                deleteImageTmp(imagePath);
+              }
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+            () {
+              updateDish();
+            }
+          ], icons: [
+            Icon(
+              Icons.arrow_back,
+              color: colorScheme.primary,
             ),
-          )
+            Icon(
+              Icons.home,
+              color: colorScheme.primary,
+            ),
+            Icon(
+              Icons.save,
+              color: colorScheme.primary,
+            )
+          ]),
         ],
       ),
     );

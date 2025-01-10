@@ -1,32 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import 'package:menu_qr/models/pre_ordered_dish.dart';
 import 'package:menu_qr/models/table_record.dart';
 import 'package:menu_qr/screens/table_36.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/providers/bill_provider.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
-import 'package:menu_qr/widgets/bottom_bar_button.dart';
+import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/table_button.dart';
 import 'package:provider/provider.dart';
 
 class Table35 extends StatefulWidget {
-  const Table35({super.key, required this.isList});
+  const Table35({super.key, required this.isList, required this.billId});
   final bool isList;
+  final int billId;
   @override
   State<StatefulWidget> createState() => _Table35();
 }
 
 class _Table35 extends State<Table35> {
+  final logger = Logger();
   final TextEditingController _controller = TextEditingController();
   final DataHelper dataHelper = DataHelper();
   final int numEleInRow = 2;
-  final List<TableRecord> tableRecords = [];
+  final Map<int, TableRecord> tableRecords = {};
 
   String filterTitleTable = "";
   bool _showWidgetB = false;
 
   void getTableRecords() async {
-    final List<TableRecord> tmpTableRecords = await dataHelper.tableRecords();
+    final Map<int, TableRecord> tmpTableRecords =
+        await dataHelper.tableRecords();
+    logger.d("get table_records success");
     setState(() {
       tableRecords.clear();
       tableRecords.addAll(tmpTableRecords);
@@ -42,28 +47,22 @@ class _Table35 extends State<Table35> {
   void saveBillToRam(int tableId, nameTable, BillProvider billProvider,
       List<PreOrderedDishRecord> indexDishListSorted) {
     billProvider.setBillRecord(
-        0, 0, 0, tableId, nameTable, false, false, indexDishListSorted);
+        0, 0, tableId, nameTable, false, false, indexDishListSorted);
   }
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final colorBottomBarBtn = [
-      colorScheme.primary,
-      colorScheme.secondaryContainer,
-      colorScheme.onSecondary
-    ];
-    final colorBottomBar = colorScheme.secondaryContainer;
     final DishProvider dishProvider = context.watch<DishProvider>();
     final BillProvider billProvider = context.watch<BillProvider>();
 
-    List<TableRecord> filteredTableRecords = (filterTitleTable.isEmpty)
-        ? tableRecords
-        : tableRecords.where((e) => e.name.contains(filterTitleTable)).toList();
+    Map<int, TableRecord> filteredTableRecords =
+        (filterTitleTable.isEmpty) ? tableRecords : Map.from(tableRecords)
+          ..removeWhere((k, v) => !v.name.contains(filterTitleTable));
     List<Widget> itemBuilder = [Padding(padding: EdgeInsets.all(12))];
     List<Widget> itemBuilderRow = [];
     int counterEle = 0;
-    for (var value in filteredTableRecords) {
+    filteredTableRecords.forEach((k, value) {
       if (counterEle == numEleInRow) {
         counterEle %= numEleInRow;
         itemBuilder.add(Row(
@@ -75,6 +74,10 @@ class _Table35 extends State<Table35> {
       Widget tableButton = TableButton(
           nameTable: value.name,
           callBack: () {
+            if (widget.billId != 0) {
+              Navigator.pop(context, value);
+              return;
+            }
             if (!widget.isList) {
               saveBillToRam(value.id!, value.name, billProvider,
                   dishProvider.indexDishListSorted);
@@ -83,19 +86,30 @@ class _Table35 extends State<Table35> {
                 context,
                 MaterialPageRoute(
                   builder: (BuildContext context) => Table36(
-                    isList: !widget.isList,
+                    isList: widget.isList,
                     tableRecord: value,
                   ),
-                ));
+                )).then((onValue) {
+              // 36 -> 35 phải có tableOldId và tableNewId để cập nhật
+              if (onValue is List<int>) {
+                logger.d('onValue $onValue');
+                if (onValue.isNotEmpty) {
+                  updateTableRecord(onValue);
+                  logger.d("Đã cập nhật table old và table new");
+                  return;
+                }
+                logger.d("Không cập nhật table old và table new");
+              }
+            });
           });
       itemBuilderRow.add(tableButton);
       if (counterEle != numEleInRow - 1) {
         itemBuilderRow.add(Padding(padding: EdgeInsets.all(20)));
       }
       counterEle += 1;
-    }
-    if (counterEle < numEleInRow) {
-      itemBuilderRow.add(SizedBox(width: 120));
+    });
+    if (counterEle < numEleInRow || counterEle == numEleInRow) {
+      // itemBuilderRow.add(SizedBox(width: 120));
       itemBuilder.add(Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: itemBuilderRow.toList()));
@@ -130,54 +144,53 @@ class _Table35 extends State<Table35> {
                   ? CrossFadeState.showSecond
                   : CrossFadeState.showFirst,
               duration: const Duration(milliseconds: 200)),
-          Container(
-            height: 68,
-            decoration: BoxDecoration(
-                color: colorBottomBar,
-                border: Border(
-                    top: BorderSide(width: 1.0, color: colorScheme.primary))),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-              child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.arrow_back,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          Navigator.pop(context);
-                        }),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.home,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          Navigator.popUntil(context, (route) => route.isFirst);
-                        }),
-                    SizedBox(width: 42),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.search,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          setState(() {
-                            _showWidgetB = !_showWidgetB;
-                            filterTitleTable = "";
-                          });
-                        })
-                  ]),
+          BottomNavigatorCustomize(listEnableBtn: [
+            true,
+            true,
+            false,
+            true
+          ], listCallback: [
+            () {
+              Navigator.pop(context);
+            },
+            () {
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+            () {
+              setState(() {
+                _showWidgetB = !_showWidgetB;
+                filterTitleTable = "";
+              });
+            }
+          ], icons: [
+            Icon(
+              Icons.arrow_back,
+              color: colorScheme.primary,
             ),
-          )
+            Icon(
+              Icons.home,
+              color: colorScheme.primary,
+            ),
+            Icon(
+              Icons.search,
+              color: colorScheme.primary,
+            )
+          ])
         ],
       ),
     );
+  }
+
+  void updateTableRecord(onValue) async {
+    TableRecord? tableRecord0 = await dataHelper.tableRecord(onValue[0]);
+    TableRecord? tableRecord1 = await dataHelper.tableRecord(onValue[1]);
+    setState(() {
+      if (tableRecord0 != null) {
+        tableRecords[onValue[0]] = tableRecord0;
+      }
+      if (tableRecord1 != null) {
+        tableRecords[onValue[1]] = tableRecord1;
+      }
+    });
   }
 }

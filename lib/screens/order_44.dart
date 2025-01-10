@@ -8,8 +8,9 @@ import 'package:menu_qr/screens/category_45.dart';
 import 'package:menu_qr/screens/confirm_38.dart';
 import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
+import 'package:menu_qr/services/providers/bill_provider.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
-import 'package:menu_qr/widgets/bottom_bar_button.dart';
+import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/dish_button.dart';
 import 'package:menu_qr/widgets/category_bar.dart';
 import 'package:provider/provider.dart';
@@ -48,22 +49,28 @@ class _Order44 extends State<Order44> {
   }
 
   Future<List<DishRecord>> getDishRecords(DishProvider dishProvider) async {
-    if (!isInitMenuIdAndCategoryId) {
-      final List<MenuRecord> menuRecordSeleted =
-          await dataHelper.menuRecords('isSelected = ?', [1], 1);
+    if (!isInitMenuIdAndCategoryId && dishProvider.categoryId == 0) {
+      final List<MenuRecord> menuRecordSeleted = await dataHelper.menuRecords(
+          where: 'isSelected = ?', whereArgs: [1], limit: 1);
       if (menuRecordSeleted.isEmpty) {
         alert!.showAlert('Dish', 'no dish to show', false, null);
         isInitMenuIdAndCategoryId = false;
         return [];
       }
-      final List<CategoryRecord> categoryRecords = await dataHelper
-          .categoryRecords('menuId = ?', [menuRecordSeleted[0].id!], 1);
+      final List<CategoryRecord> categoryRecords =
+          await dataHelper.categoryRecords(
+              where: 'menuId = ?',
+              whereArgs: [menuRecordSeleted[0].id!],
+              limit: 1);
       dishProvider.setMenuId(menuRecordSeleted[0].id!);
-      dishProvider.setCateogryId(categoryRecords[0].id!);
+      dishProvider.setCateogry(
+          categoryRecords[0].id!, categoryRecords[0].title);
       isInitMenuIdAndCategoryId = false;
     }
     final List<DishRecord> tmpDishRecords = await dataHelper.dishRecords(
-        'categoryId = ?', [dishProvider.categoryId], null);
+        where: 'categoryId = ?',
+        whereArgs: [dishProvider.categoryId],
+        limit: null);
     setState(() {
       dishRecords.clear();
       dishRecords.addAll(tmpDishRecords);
@@ -72,7 +79,7 @@ class _Order44 extends State<Order44> {
     return dishRecords;
   }
 
-  void saveRebuildDishes(DishProvider dishProvider) async {
+  void saveRebuildDishes(DishProvider dishProvider, BillProvider billProvider) {
     final List<PreOrderedDishRecord> dishRecordSorted = dishProvider
         .indexDishList.entries
         .map((element) => element.value)
@@ -80,27 +87,23 @@ class _Order44 extends State<Order44> {
     dishRecordSorted.sort((a, b) {
       return a.categoryId - b.categoryId;
     });
-    dishProvider.importDataToIndexDishListSorted(dishRecordSorted);
+    widget.billRecord?.preOrderedDishRecords?.clear();
+    widget.billRecord?.preOrderedDishRecords?.addAll(dishRecordSorted);
     // storage to database
-    dataHelper.insertDishesAtBillId(
-        dishProvider.indexDishListSorted, widget.billRecord!.id!);
+    dataHelper.insertDishesAtBillId(dishRecordSorted, widget.billRecord!.id!);
+    Navigator.pop(context, dishRecordSorted);
   }
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final colorBottomBarBtn = [
-      colorScheme.primary,
-      colorScheme.secondaryContainer,
-      colorScheme.onSecondary
-    ];
-    final colorBottomBar = colorScheme.secondaryContainer;
     final DishProvider dishProvider = context.watch<DishProvider>();
+    final BillProvider billProvider = context.watch<BillProvider>();
 
-    // if (categoryIdInScreen != dishProvider.categoryId || !isInit) {
-    //   getDishRecords(dishProvider);
-    //   isInit = true;
-    // }
+    if (categoryIdInScreen != dishProvider.categoryId || !isInit) {
+      getDishRecords(dishProvider);
+      isInit = true;
+    }
     // final currentWidth = MediaQuery.of(context).size.width;
     // Add item to listview
     List<DishRecord> dishRecordsFiltered = (filterTitleDish.isEmpty)
@@ -115,6 +118,7 @@ class _Order44 extends State<Order44> {
               id: value.id!,
               categoryId: value.categoryId,
               imagePath: value.imagePath,
+              titleCategory: dishProvider.titleCategory,
               title: value.title,
               desc: value.desc,
               price: value.price)));
@@ -136,17 +140,9 @@ class _Order44 extends State<Order44> {
                   children: [
                     Padding(padding: EdgeInsets.all(10)),
                     Expanded(
-                        child: FutureBuilder<List<DishRecord>>(
-                            future: getDishRecords(dishProvider),
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return Text("Loading breeds...");
-                              }
-                              return ListView(
-                                children: itemDishBuilder,
-                              );
-                            })),
+                        child: ListView(
+                      children: itemDishBuilder,
+                    )),
                     Padding(padding: EdgeInsets.all(8)),
                     CategoryBar(categoryFunc: () {
                       Navigator.push(
@@ -160,8 +156,7 @@ class _Order44 extends State<Order44> {
                         return;
                       }
                       if (widget.isRebuild) {
-                        saveRebuildDishes(dishProvider);
-                        Navigator.pop(context);
+                        saveRebuildDishes(dishProvider, billProvider);
                         return;
                       }
                       Navigator.push(
@@ -195,57 +190,38 @@ class _Order44 extends State<Order44> {
                     : CrossFadeState.showFirst,
                 duration: const Duration(milliseconds: 200),
               ),
-              Container(
-                height: 68,
-                decoration: BoxDecoration(
-                    color: colorBottomBar,
-                    border: Border(
-                        top: BorderSide(
-                            width: 1.0, color: colorScheme.primary))),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-                  child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        BottomBarButton(
-                            colorPrimary: colorBottomBarBtn,
-                            child: Icon(
-                              Icons.arrow_back,
-                              color: colorScheme.primary,
-                            ),
-                            callback: () {
-                              Navigator.pop(context);
-                            }),
-                        BottomBarButton(
-                            colorPrimary: [
-                              colorScheme.error,
-                              colorScheme.errorContainer,
-                              colorScheme.onError
-                            ],
-                            child: Icon(
-                              Icons.delete,
-                              color: colorScheme.error,
-                            ),
-                            callback: () {
-                              dishProvider.clearRamWithNotify();
-                            }),
-                        SizedBox(width: 42),
-                        BottomBarButton(
-                            colorPrimary: colorBottomBarBtn,
-                            child: Icon(
-                              Icons.search,
-                              color: colorScheme.primary,
-                            ),
-                            callback: () {
-                              setState(() {
-                                _showWidgetB = !_showWidgetB;
-                                filterTitleDish = "";
-                              });
-                            })
-                      ]),
+              BottomNavigatorCustomize(listEnableBtn: [
+                true,
+                true,
+                false,
+                true
+              ], listCallback: [
+                () {
+                  Navigator.pop(context);
+                },
+                () {
+                  dishProvider.clearRamWithNotify();
+                },
+                () {
+                  setState(() {
+                    _showWidgetB = !_showWidgetB;
+                    filterTitleDish = "";
+                  });
+                }
+              ], icons: [
+                Icon(
+                  Icons.arrow_back,
+                  color: colorScheme.primary,
                 ),
-              )
+                Icon(
+                  Icons.delete,
+                  color: colorScheme.error,
+                ),
+                Icon(
+                  Icons.search,
+                  color: colorScheme.primary,
+                )
+              ])
             ],
           ),
         ));

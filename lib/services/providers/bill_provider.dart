@@ -4,7 +4,6 @@ import 'package:menu_qr/models/pre_ordered_dish.dart';
 
 class BillProvider extends ChangeNotifier {
   final BillRecord _billRecord = BillRecord(
-      id: 0,
       amountPaid: 0,
       discount: 0,
       tableId: 0,
@@ -15,7 +14,6 @@ class BillProvider extends ChangeNotifier {
       dateTime: DateTime.now().millisecondsSinceEpoch);
 
   void setBillRecord(
-      int id,
       double amountPaid,
       double discount,
       int tableId,
@@ -23,7 +21,6 @@ class BillProvider extends ChangeNotifier {
       bool isLeft,
       bool type,
       List<PreOrderedDishRecord> preOrderedDishRecords) {
-    _billRecord.id = id;
     _billRecord.amountPaid = amountPaid;
     _billRecord.discount = discount;
     _billRecord.tableId = tableId;

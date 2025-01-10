@@ -4,11 +4,11 @@ import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/services/pdf_api.dart';
 import 'package:menu_qr/services/pdf_invoice_api.dart';
 import 'package:menu_qr/widgets/bottom_bar_button.dart';
+import 'package:menu_qr/widgets/bottom_navigator.dart';
 
 class Paid42 extends StatefulWidget {
-  const Paid42({super.key, required this.billRecord, required this.isRebuild});
+  const Paid42({super.key, required this.billRecord});
   final BillRecord billRecord;
-  final bool isRebuild;
 
   @override
   State<Paid42> createState() => _Paid42State();
@@ -164,12 +164,6 @@ class _Paid42State extends State<Paid42> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final colorBottomBarBtn = [
-      colorScheme.primary,
-      colorScheme.secondaryContainer,
-      colorScheme.onSecondary
-    ];
-    final colorBottomBar = colorScheme.secondaryContainer;
     // int billId = billProvider.billRecord.id;
     final int billId = widget.billRecord.id!;
     final String logoPath = 'assets/images/wislam.png';
@@ -229,64 +223,50 @@ class _Paid42State extends State<Paid42> {
               ]),
             ),
           ),
-          Container(
-            height: 68,
-            decoration: BoxDecoration(
-                color: colorBottomBar,
-                border: Border(
-                    top: BorderSide(width: 1.0, color: colorScheme.primary))),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-              child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.arrow_back,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          Navigator.pop(context);
-                        }),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(Icons.home, color: colorScheme.primary),
-                        callback: () {
-                          Navigator.popUntil(context, (route) => route.isFirst);
-                        }),
-                    SizedBox(width: 42),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.print,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () async {
-                          final pdfFile = await PdfInvoiceApi.generate(
-                              colorScheme,
-                              widget.billRecord,
-                              widget.billRecord.preOrderedDishRecords ?? [],
-                              [
-                                'My Name Shop',
-                                'My Address Shop',
-                                widget.billRecord.nameTable,
-                                taxString,
-                                totalString,
-                                amountPaidString,
-                                changeString,
-                                qrImage,
-                                qrText
-                              ],
-                              descFromShop,
-                              timeZone,
-                              "Bill-$billId");
-                          PdfApi.openFile(pdfFile);
-                        }),
-                  ]),
+          BottomNavigatorCustomize(listEnableBtn: [
+            true,
+            true,
+            false,
+            true
+          ], listCallback: [
+            () {
+              Navigator.pop(context);
+            },
+            () {
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+            () async {
+              final pdfFile = await PdfInvoiceApi.generate(
+                  colorScheme,
+                  widget.billRecord,
+                  widget.billRecord.preOrderedDishRecords ?? [],
+                  [
+                    'My Name Shop',
+                    'My Address Shop',
+                    widget.billRecord.nameTable,
+                    taxString,
+                    totalString,
+                    amountPaidString,
+                    changeString,
+                    qrImage,
+                    qrText
+                  ],
+                  descFromShop,
+                  timeZone,
+                  "Bill-$billId");
+              PdfApi.openFile(pdfFile);
+            }
+          ], icons: [
+            Icon(
+              Icons.arrow_back,
+              color: colorScheme.primary,
             ),
-          )
+            Icon(Icons.home, color: colorScheme.primary),
+            Icon(
+              Icons.print,
+              color: colorScheme.primary,
+            )
+          ])
         ],
       ),
     );

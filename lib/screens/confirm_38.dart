@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:logger/logger.dart';
 import 'package:menu_qr/models/bill_record.dart';
-import 'package:menu_qr/models/dish_record.dart';
 import 'package:menu_qr/models/pre_ordered_dish.dart';
 import 'package:menu_qr/screens/paid_41.dart';
 import 'package:menu_qr/screens/table_35.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
-import 'package:menu_qr/widgets/bottom_bar_button.dart';
+import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/dish_cofirm.dart';
 import 'package:provider/provider.dart';
-import 'package:menu_qr/services/databases/data.dart';
 
 class Confirm38 extends StatefulWidget {
   const Confirm38({super.key, required this.isImmediate});
@@ -24,6 +23,7 @@ class _Confirm38 extends State<Confirm38> {
   double total = 0;
   String timeZone = 'vi_VN';
   bool isAddedDishRecordSorted = false;
+  final logger = Logger();
 
   final DataHelper dataHelper = DataHelper();
 
@@ -36,7 +36,7 @@ class _Confirm38 extends State<Confirm38> {
         isLeft: false,
         type: widget.isImmediate,
         dateTime: DateTime.now().millisecondsSinceEpoch);
-    int lastId = await dataHelper.insertBillRecord(newBillRecord) ?? 0;
+    int lastId = await dataHelper.insertBillRecord(newBillRecord);
     newBillRecord.preOrderedDishRecords = await dataHelper.insertDishesAtBillId(
         dishProvider.indexDishListSorted, lastId);
     newBillRecord.id = lastId;
@@ -59,12 +59,6 @@ class _Confirm38 extends State<Confirm38> {
   Widget build(BuildContext context) {
     total = 0;
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final colorBottomBarBtn = [
-      colorScheme.primary,
-      colorScheme.secondaryContainer,
-      colorScheme.onSecondary
-    ];
-    final colorBottomBar = colorScheme.secondaryContainer;
     final DishProvider dishProvider = context.watch<DishProvider>();
 
     List<Widget> itemDishBuilder = [Padding(padding: EdgeInsets.all(8))];
@@ -82,13 +76,14 @@ class _Confirm38 extends State<Confirm38> {
         dishProvider.addIndexDishListSorted(e.value);
       }
       if (e.value.categoryId != categoryId) {
+        logger.d('message category');
         categoryId = e.value.categoryId;
         itemDishBuilder.add(Center(
           child: SizedBox(
               width: 345,
               child: Row(mainAxisAlignment: MainAxisAlignment.start, children: [
                 Text(
-                  categoryRecords[categoryId]!.title,
+                  e.value.titleCategory ?? "",
                   style: TextStyle(
                       color: colorScheme.primary,
                       fontWeight: FontWeight.bold,
@@ -98,13 +93,12 @@ class _Confirm38 extends State<Confirm38> {
         ));
         itemDishBuilder.add(Padding(padding: EdgeInsets.all(8)));
       }
-      DishRecord dishRecord = dishRecords[e.key]!;
-      total += dishRecord.price * e.value.amount;
+      total += e.value.price * e.value.amount;
       itemDishBuilder.add(DishCofirm(
         onlyView: false,
-        imagePath: dishRecord.imagePath,
-        title: dishRecord.title,
-        price: dishRecord.price,
+        imagePath: e.value.imagePath,
+        title: e.value.titleDish,
+        price: e.value.price,
         amount: e.value.amount,
         callBackDel: () {
           dishProvider.deleteAmount(e.key);
@@ -202,61 +196,47 @@ class _Confirm38 extends State<Confirm38> {
               ),
             ),
           ),
-          Container(
-            height: 68,
-            decoration: BoxDecoration(
-                color: colorBottomBar,
-                border: Border(
-                    top: BorderSide(width: 1.0, color: colorScheme.primary))),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-              child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.arrow_back,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          Navigator.pop(context);
-                        }),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.home,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          Navigator.popUntil(context, (route) => route.isFirst);
-                        }),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(Icons.qr_code, color: colorScheme.primary),
-                        callback: () {}),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.list_alt,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          if (widget.isImmediate) {
-                            saveBillImmediately(dishProvider);
-                            return;
-                          }
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (BuildContext context) => Table35(
-                                        isList: false,
-                                      )));
-                        }),
-                  ]),
+          BottomNavigatorCustomize(listEnableBtn: [
+            true,
+            true,
+            true,
+            true
+          ], listCallback: [
+            () {
+              Navigator.pop(context);
+            },
+            () {
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+            () {},
+            () {
+              if (widget.isImmediate) {
+                saveBillImmediately(dishProvider);
+                return;
+              }
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (BuildContext context) => Table35(
+                            isList: false,
+                            billId: 0,
+                          )));
+            }
+          ], icons: [
+            Icon(
+              Icons.arrow_back,
+              color: colorScheme.primary,
             ),
-          )
+            Icon(
+              Icons.home,
+              color: colorScheme.primary,
+            ),
+            Icon(Icons.qr_code, color: colorScheme.primary),
+            Icon(
+              Icons.list_alt,
+              color: colorScheme.primary,
+            )
+          ]),
         ],
       ),
     );

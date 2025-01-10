@@ -28,6 +28,18 @@ class BillRecord {
       required this.dateTime,
       this.preOrderedDishRecords});
 
+  BillRecord.copy(BillRecord from)
+      : this(
+            id: from.id,
+            tableId: from.tableId,
+            amountPaid: from.amountPaid,
+            discount: from.discount,
+            nameTable: from.nameTable,
+            isLeft: from.isLeft,
+            type: from.type,
+            dateTime: from.dateTime,
+            preOrderedDishRecords: from.preOrderedDishRecords?.toList());
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -35,8 +47,8 @@ class BillRecord {
       'amountPaid': amountPaid,
       'discount': discount,
       'nameTable': nameTable,
-      'isLeft': isLeft ? 1 : 0,
-      'type': type ? 1 : 0,
+      'isLeft': (isLeft) ? 1 : 0,
+      'type': (type) ? 1 : 0,
       'dateTime': dateTime
     };
   }
@@ -48,8 +60,8 @@ class BillRecord {
         amountPaid: map['amountPaid'],
         discount: map['discount'],
         nameTable: map['nameTable'],
-        isLeft: map['isLeft'],
-        type: map['type'],
+        isLeft: map['isLeft'] == 1,
+        type: map['type'] == 1,
         dateTime: map['dateTime']);
   }
 }

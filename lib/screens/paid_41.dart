@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:logger/logger.dart';
 import 'package:menu_qr/models/bill_record.dart';
-import 'package:menu_qr/models/dish_record.dart';
+import 'package:menu_qr/models/table_record.dart';
 import 'package:menu_qr/screens/order_44.dart';
 import 'package:menu_qr/screens/paid_42.dart';
-import 'package:menu_qr/services/alert.dart';
-import 'package:menu_qr/services/databases/data.dart';
+import 'package:menu_qr/screens/table_35.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:menu_qr/services/throusand_separator_formatter.dart';
-import 'package:menu_qr/widgets/bottom_bar_button.dart';
+import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:provider/provider.dart';
 
 class Paid41 extends StatefulWidget {
@@ -27,125 +27,130 @@ class Paid41 extends StatefulWidget {
 }
 
 class _Paid41State extends State<Paid41> {
+  final logger = Logger();
   final TextEditingController _controller = TextEditingController();
+  bool isInit = true;
   double total = 0;
   double tax = 0;
   double amountPaid = 0;
   double change = 0;
   String timeZone = "vi_VN";
-  Alert? alert;
+  bool isTableIdChange = true;
+  String tableName = "";
 
   final DataHelper dataHelper = DataHelper();
 
   @override
   void initState() {
-    alert = Alert(context: context);
+    if (isInit) {
+      _controller.text = '${widget.billRecord.amountPaid.floor()}';
+      isInit = false;
+    }
     super.initState();
   }
 
-  List<Widget> bottomNavigationBar(
+  void saveTableRebuild(
+      TableRecord? newTableRecord_, int oldTableRecordId) async {
+    TableRecord? oldTableRecord =
+        await dataHelper.tableRecord(oldTableRecordId);
+    oldTableRecord?.numOfPeople -= 1;
+    newTableRecord_?.numOfPeople += 1;
+    logger.d(
+        "oldTableRecord: ${oldTableRecord?.numOfPeople}, newTableRecord_: ${newTableRecord_?.numOfPeople}");
+    if (newTableRecord_ != null) {
+      await dataHelper.updateTableRecord(newTableRecord_);
+    }
+    if (oldTableRecord != null) {
+      await dataHelper.updateTableRecord(oldTableRecord);
+    }
+  }
+
+  Widget bottomNavigationBar(
       DishProvider dishProvider, ColorScheme colorScheme) {
-    final colorBottomBarBtn = [
-      colorScheme.primary,
-      colorScheme.secondaryContainer,
-      colorScheme.onSecondary
+    final listEnableBtn = [widget.isRebuild, true, widget.isRebuild, true];
+    final listCallback = [
+      () {
+        dishProvider.clearRam();
+        Navigator.pop(context, widget.billRecord);
+      },
+      () {
+        dishProvider.clearRam();
+        Navigator.popUntil(context, (route) => route.isFirst);
+      },
+      () {
+        dishProvider.importDataToIndexDishList(
+            widget.billRecord.preOrderedDishRecords!);
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (BuildContext context) => Order44(
+                  billRecord: widget.billRecord,
+                  isRebuild: true,
+                  isImmediate: true),
+            )).then((value) {
+          if (value == null) return;
+          setState(() {
+            widget.billRecord.preOrderedDishRecords?.clear();
+            widget.billRecord.preOrderedDishRecords?.addAll(value);
+          });
+        });
+      },
+      () {
+        saveBill();
+        if (widget.isRebuild) {
+          Navigator.pop(context, widget.billRecord);
+        } else {
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (BuildContext context) => Paid42(
+                  billRecord: widget.billRecord,
+                ),
+              ));
+        }
+      }
     ];
-    List<Widget> bottomNavWidgets = [];
-    if (widget.isRebuild) {
-      bottomNavWidgets.add(BottomBarButton(
-          colorPrimary: colorBottomBarBtn,
-          child: Icon(
-            Icons.arrow_back,
-            color: colorScheme.primary,
-          ),
-          callback: () {
-            Navigator.pop(context);
-          }));
-    }
-    bottomNavWidgets.add(
-      BottomBarButton(
-          colorPrimary: colorBottomBarBtn,
-          child: Icon(Icons.home, color: colorScheme.primary),
-          callback: () {
-            Navigator.popUntil(context, (route) => route.isFirst);
-          }),
-    );
-    int quantityElePadding = (widget.isRebuild) ? 0 : 1;
-    for (int i = 0; i < quantityElePadding; i++) {
-      bottomNavWidgets.add(SizedBox(width: 42));
-    }
-    if (widget.isRebuild) {
-      bottomNavWidgets.add(BottomBarButton(
-          colorPrimary: colorBottomBarBtn,
-          child: Icon(Icons.build, color: colorScheme.primary),
-          callback: () {
-            dishProvider.importDataToIndexDishList(
-                widget.billRecord.preOrderedDishRecords!);
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (BuildContext context) => Order44(
-                      billRecord: widget.billRecord,
-                      isRebuild: true,
-                      isImmediate: true),
-                ));
-          }));
-    }
-    bottomNavWidgets.add(
-      BottomBarButton(
-          colorPrimary: colorBottomBarBtn,
-          child: Icon(Icons.save, color: colorScheme.primary),
-          callback: () {
-            saveBill();
-            if (widget.isRebuild) {
-              Navigator.pop(context);
-              return;
-            }
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (BuildContext context) => Paid42(
-                    billRecord: widget.billRecord,
-                    isRebuild: !widget.isRebuild,
-                  ),
-                ));
-          }),
-    );
-    return bottomNavWidgets;
+    final icons = [
+      Icon(Icons.arrow_back, color: colorScheme.primary),
+      Icon(Icons.home, color: colorScheme.primary),
+      Icon(Icons.build, color: colorScheme.primary),
+      Icon(Icons.save, color: colorScheme.primary)
+    ];
+
+    return BottomNavigatorCustomize(
+        listEnableBtn: listEnableBtn, listCallback: listCallback, icons: icons);
   }
 
   void changeMoney(text) {
     double moneyCustomer =
         (text.isEmpty) ? 0.0 : double.parse(text.replaceAll(',', ''));
     setState(() {
+      amountPaid =
+          (moneyCustomer != 0) ? moneyCustomer : widget.billRecord.amountPaid;
       change = moneyCustomer - total;
     });
   }
 
-  void saveBill() async {
-    widget.billRecord.amountPaid = total + change;
-    if (widget.isImmediate) widget.billRecord.isLeft = true;
+  void saveBill() {
+    widget.billRecord.amountPaid =
+        (amountPaid != 0) ? amountPaid : widget.billRecord.amountPaid;
     dataHelper.updateBillRecord(widget.billRecord);
-    alert!.showAlert('Update Bill', 'success', false, null);
   }
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final colorBottomBar = colorScheme.secondaryContainer;
     final DishProvider dishProvider = context.watch<DishProvider>();
+
     final int tableId = widget.billRecord.tableId!;
     final String typeCustomer =
         (widget.billRecord.type) ? "Buy take away" : "Sit in place";
-    final String tableName =
-        (tableId == 0) ? 'None' : widget.billRecord.nameTable;
 
-    amountPaid = widget.billRecord.amountPaid;
+    tableName = (tableId == 0) ? 'None' : widget.billRecord.nameTable;
+
     total = 0;
     for (var element in widget.billRecord.preOrderedDishRecords!) {
-      int dishId = element.dishId;
-      DishRecord dishRecord = dishRecords[dishId]!;
-      total += (element.amount * dishRecord.price);
+      total += (element.amount * element.price);
     }
     tax = total * 0.05;
 
@@ -312,24 +317,68 @@ class _Paid41State extends State<Paid41> {
                       ]),
                     ),
                   ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
+                    child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (BuildContext context) => Table35(
+                                  isList: true,
+                                  billId: widget.billRecord.id!,
+                                ),
+                              )).then((onValue) {
+                            if (onValue is TableRecord) {
+                              isTableIdChange =
+                                  onValue.id != widget.billRecord.tableId!;
+                              logger.d(
+                                  'onValue.id != widget.billRecord.tableId! $isTableIdChange');
+                              if (isTableIdChange) {
+                                saveTableRebuild(
+                                    onValue, widget.billRecord.tableId!);
+                                setState(() {
+                                  widget.billRecord.tableId = onValue.id;
+                                  widget.billRecord.nameTable = onValue.name;
+                                });
+                                dataHelper.updateBillRecord(widget.billRecord);
+                                return;
+                              }
+                            }
+                          });
+                          isTableIdChange = false;
+                        },
+                        child: Text('Change Table')),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
+                    child: ElevatedButton(
+                        onPressed: () {
+                          var onValue = TableRecord(
+                              id: 0, name: "không", desc: "", numOfPeople: 0);
+                          isTableIdChange =
+                              onValue.id != widget.billRecord.tableId!;
+                          logger.d(
+                              'onValue.id != widget.billRecord.tableId! $isTableIdChange');
+                          if (isTableIdChange) {
+                            saveTableRebuild(
+                                onValue, widget.billRecord.tableId!);
+                            setState(() {
+                              widget.billRecord.tableId = onValue.id;
+                              widget.billRecord.nameTable = onValue.name;
+                            });
+                            dataHelper.updateBillRecord(widget.billRecord);
+                            return;
+                          }
+                          isTableIdChange = false;
+                        },
+                        child: Text('Unlink Table')),
+                  ),
                 ],
               ),
             ),
           ),
-          Container(
-            height: 68,
-            decoration: BoxDecoration(
-                color: colorBottomBar,
-                border: Border(
-                    top: BorderSide(width: 1.0, color: colorScheme.primary))),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-              child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: bottomNavigationBar(dishProvider, colorScheme)),
-            ),
-          )
+          bottomNavigationBar(dishProvider, colorScheme)
         ],
       ),
     );

@@ -3,8 +3,8 @@ import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/screens/list_detail_40.dart';
 import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
+import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/order_setting_button.dart';
-import 'package:menu_qr/widgets/bottom_bar_button.dart';
 
 class ListScreen47 extends StatefulWidget {
   const ListScreen47({super.key});
@@ -24,8 +24,8 @@ class _ListScreen47State extends State<ListScreen47> {
   final Map<int, BillRecord> billRecords = {};
 
   void getBillRecords() async {
-    final Map<int, BillRecord> tmpBillRecords =
-        await dataHelper.billRecords('isLeft = ?', [0], null);
+    final Map<int, BillRecord> tmpBillRecords = await dataHelper.billRecords(
+        where: 'isLeft = ?', whereArgs: [0], limit: null);
     setState(() {
       billRecords.clear();
       billRecords.addAll(tmpBillRecords);
@@ -42,12 +42,6 @@ class _ListScreen47State extends State<ListScreen47> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final colorBottomBarBtn = [
-      colorScheme.primary,
-      colorScheme.secondaryContainer,
-      colorScheme.onSecondary
-    ];
-    final colorBottomBar = colorScheme.secondaryContainer;
 
     List<Widget> itemBuilder = [];
     Map<int, BillRecord> filteredBillRecords = (filterTitleBillId.isEmpty)
@@ -119,66 +113,54 @@ class _ListScreen47State extends State<ListScreen47> {
                 : CrossFadeState.showFirst,
             duration: const Duration(milliseconds: 200),
           ),
-          Container(
-            height: 68,
-            decoration: BoxDecoration(
-                color: colorBottomBar,
-                border: Border(
-                    top: BorderSide(width: 1.0, color: colorScheme.primary))),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-              child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.arrow_back,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          Navigator.pop(context);
-                        }),
-                    SizedBox(width: 42),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.search,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          setState(() {
-                            _showWidgetB = !_showWidgetB;
-                            filterTitleBillId = "";
-                          });
-                        }),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.build,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          Map<int, BillRecord> billRecordsArg =
-                              Map.from(billRecords)
-                                ..removeWhere(
-                                    (k, v) => !(checkedBillIdList[k] ?? false));
-                          if (billRecordsArg.isEmpty) {
-                            return;
-                          }
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (BuildContext context) => ListDetail40(
-                                  billRecords: billRecordsArg,
-                                  onlyView: false,
-                                ),
-                              ));
-                        }),
-                  ]),
+          BottomNavigatorCustomize(listEnableBtn: [
+            true,
+            false,
+            true,
+            true
+          ], listCallback: [
+            () {
+              Navigator.pop(context);
+            },
+            () {
+              setState(() {
+                _showWidgetB = !_showWidgetB;
+                filterTitleBillId = "";
+              });
+            },
+            () {
+              List<int> billIdsArg = [];
+              checkedBillIdList.forEach((k, v) {
+                if (v) {
+                  billIdsArg.add(k);
+                }
+              });
+              if (billIdsArg.isEmpty) {
+                return;
+              }
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (BuildContext context) => ListDetail40(
+                      onlyView: false,
+                      listBillId: billIdsArg,
+                    ),
+                  ));
+            }
+          ], icons: [
+            Icon(
+              Icons.arrow_back,
+              color: colorScheme.primary,
             ),
-          )
+            Icon(
+              Icons.search,
+              color: colorScheme.primary,
+            ),
+            Icon(
+              Icons.build,
+              color: colorScheme.primary,
+            )
+          ]),
         ],
       ),
     );

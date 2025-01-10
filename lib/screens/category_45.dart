@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:menu_qr/models/category_record.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
-import 'package:menu_qr/widgets/bottom_bar_button.dart';
+import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:provider/provider.dart';
 
 class Category45 extends StatefulWidget {
@@ -14,14 +14,16 @@ class Category45 extends StatefulWidget {
 
 class _Category45 extends State<Category45> {
   bool _showWidgetB = false;
+  bool isInit = false;
+
   final TextEditingController _controller = TextEditingController();
   final DataHelper dataHelper = DataHelper();
-  late final DishProvider dishProvider;
   final List<CategoryRecord> categoryRecords = [];
 
-  void getCategoryRecords() async {
-    final List<CategoryRecord> tmpCategoryRecords = await dataHelper
-        .categoryRecords('menuId = ?', [dishProvider.categoryId], null);
+  void getCategoryRecords(DishProvider dishProvider) async {
+    final List<CategoryRecord> tmpCategoryRecords =
+        await dataHelper.categoryRecords(
+            where: 'menuId = ?', whereArgs: [dishProvider.menuId], limit: null);
     setState(() {
       categoryRecords.clear();
       categoryRecords.addAll(tmpCategoryRecords);
@@ -30,8 +32,6 @@ class _Category45 extends State<Category45> {
 
   @override
   void initState() {
-    dishProvider = context.watch<DishProvider>();
-    getCategoryRecords();
     super.initState();
   }
 
@@ -39,12 +39,12 @@ class _Category45 extends State<Category45> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final colorBottomBarBtn = [
-      colorScheme.primary,
-      colorScheme.secondaryContainer,
-      colorScheme.onSecondary
-    ];
-    final colorBottomBar = colorScheme.secondaryContainer;
+    final DishProvider dishProvider = context.watch<DishProvider>();
+
+    if (!isInit) {
+      getCategoryRecords(dishProvider);
+      isInit = true;
+    }
 
     List<CategoryRecord> filterCategoryRecoreds = (filterTitleCategory.isEmpty)
         ? categoryRecords
@@ -70,7 +70,8 @@ class _Category45 extends State<Category45> {
                     )),
                     minimumSize: WidgetStateProperty.all(Size(50, 50))),
                 onPressed: () {
-                  dishProvider.setCateogryId(value.id!);
+                  dishProvider.setCateogry(value.id!, value.title);
+                  Navigator.pop(context);
                 },
                 child: Text('${value.id!} . ${value.title}')),
           )
@@ -78,79 +79,66 @@ class _Category45 extends State<Category45> {
       ));
     }
     return Scaffold(
-      body: Column(
-        children: [
-          Expanded(
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(0, 15, 0, 0),
-                child: ListView(
-                  children: itemCategoryBuilder,
-                ),
-              ),
-            ),
-          ),
-          AnimatedCrossFade(
-            firstChild: SizedBox(), // Thay thế CategoryBar bằng SizedBox
-            secondChild: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-              child: TextField(
-                controller: _controller,
-                decoration: InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: 'Search Category',
-                    fillColor: colorScheme.primaryContainer),
-                onSubmitted: (text) {
-                  setState(() {
-                    _showWidgetB = !_showWidgetB;
-                    filterTitleCategory = text;
-                  });
-                },
-              ),
-            ),
-            crossFadeState: _showWidgetB
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 200),
-          ),
-          Container(
-            height: 68,
-            decoration: BoxDecoration(
-                color: colorBottomBar,
-                border: Border(
-                    top: BorderSide(width: 1.0, color: colorScheme.primary))),
+      body: Column(children: [
+        Expanded(
+          child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-              child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.arrow_back,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          Navigator.pop(context);
-                        }),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.search,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          setState(() {
-                            _showWidgetB = !_showWidgetB;
-                            filterTitleCategory = "";
-                          });
-                        }),
-                  ]),
+              padding: const EdgeInsets.fromLTRB(0, 15, 0, 0),
+              child: ListView(
+                children: itemCategoryBuilder,
+              ),
             ),
+          ),
+        ),
+        AnimatedCrossFade(
+          firstChild: SizedBox(), // Thay thế CategoryBar bằng SizedBox
+          secondChild: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+            child: TextField(
+              controller: _controller,
+              decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Search Category',
+                  fillColor: colorScheme.primaryContainer),
+              onSubmitted: (text) {
+                setState(() {
+                  _showWidgetB = !_showWidgetB;
+                  filterTitleCategory = text;
+                });
+              },
+            ),
+          ),
+          crossFadeState: _showWidgetB
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 200),
+        ),
+        BottomNavigatorCustomize(listEnableBtn: [
+          true,
+          false,
+          false,
+          true
+        ], listCallback: [
+          () {
+            Navigator.pop(context);
+          },
+          () {
+            setState(() {
+              _showWidgetB = !_showWidgetB;
+              filterTitleCategory = "";
+            });
+          }
+        ], icons: [
+          Icon(
+            Icons.arrow_back,
+            color: colorScheme.primary,
+          ),
+          Icon(
+            Icons.search,
+            color: colorScheme.primary,
           )
-        ],
-      ),
+        ]),
+      ]),
     );
   }
 }

@@ -2,12 +2,13 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import 'package:menu_qr/models/category_record.dart';
 import 'package:menu_qr/models/dish_record.dart';
-import 'package:menu_qr/screens/dish_setting_32.dart';
+import 'package:menu_qr/screens/settings/dish_setting_32.dart';
 import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
-import 'package:menu_qr/widgets/bottom_bar_button.dart';
+import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/setting_button.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -21,16 +22,16 @@ class Dish31 extends StatefulWidget {
 class _Dish31State extends State<Dish31> {
   Alert? alert;
   String filterTitleDish = "";
-  String titleCategory = "";
-  String descCategory = "";
 
   String titleDish = "";
   String descDish = "";
   double price = 0;
   String imagePath = "";
-  String filePath = "";
 
   bool _showWidgetB = false;
+
+  final logger = Logger();
+  final defaultImage = "assets/images/hinh-cafe-kem-banh-quy-2393351094.jpg";
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _controllerCategory = TextEditingController();
   final TextEditingController _controllerDescCategory = TextEditingController();
@@ -45,9 +46,9 @@ class _Dish31State extends State<Dish31> {
   @override
   void initState() {
     alert = Alert(context: context);
-    getDishRecords();
     _controllerCategory.text = widget.categoryRecord.title;
     _controllerDescCategory.text = widget.categoryRecord.desc;
+    getDishRecords();
     return super.initState();
   }
 
@@ -57,19 +58,32 @@ class _Dish31State extends State<Dish31> {
       alert!.showAlert('Upload', 'failed', false, null);
       return;
     }
+    if (imagePath.isNotEmpty) {
+      logger.d('delete tmp image!');
+      File fileDelete = File(imagePath);
+      if (fileDelete.existsSync()) await fileDelete.delete();
+    }
     final file = result.files.first;
     final appStorage = await getApplicationCacheDirectory();
-    final newFile = File('${appStorage.path}/${file.name}');
-
-    filePath = file.path!;
-    setState(() {
-      imagePath = newFile.path;
-    });
+    final filename =
+        '${DateTime.now().millisecondsSinceEpoch}.${file.extension}';
+    final tmpNewFile = File('${appStorage.path}/$filename');
+    try {
+      final newFile = await File(file.path!).copy(tmpNewFile.path);
+      setState(() {
+        imagePath = newFile.path;
+      });
+      logger.i('Image uploaded successfully to temporary location.');
+    } catch (e) {
+      alert!.showAlert('Upload', 'failed!', false, null);
+    }
   }
 
   void getDishRecords() async {
-    final List<DishRecord> tmpDishRecords =
-        await dataHelper.dishRecords(null, null, null);
+    final List<DishRecord> tmpDishRecords = await dataHelper.dishRecords(
+        where: 'categoryId = ?',
+        whereArgs: [widget.categoryRecord.id!],
+        limit: null);
     setState(() {
       dishRecords.clear();
       dishRecords.addAll(tmpDishRecords);
@@ -77,6 +91,8 @@ class _Dish31State extends State<Dish31> {
   }
 
   void updateCategory() async {
+    String titleCategory = _controllerCategory.text;
+    String descCategory = _controllerDescCategory.text;
     if (titleCategory.isEmpty || descCategory.isEmpty) {
       alert!.showAlert('Update Category', 'failed!', false, null);
       return;
@@ -98,46 +114,33 @@ class _Dish31State extends State<Dish31> {
         title: titleDish,
         desc: descDish,
         price: price);
-    final int lastId = await dataHelper.insertDishRecord(newE) ?? 0;
-    if (imagePath != "") {
-      await File(filePath).copy(imagePath);
-    }
-    if (lastId != 0) {
-      newE.id = lastId;
+    final int lastId = await dataHelper.insertDishRecord(newE);
+    newE.id = lastId;
+    alert!.showAlert('Save Dish', 'success!', false, null);
+    setState(() {
       dishRecords.add(newE);
-      alert!.showAlert('Save Dish', 'success!', false, null);
-      imagePath = "";
-      filePath = "";
-    }
+    });
   }
 
-  void deleteDishRecord(DishRecord dishRecord) async {
-    alert!.showAlert('Delete Dish', 'Are You Sure?', true, () {
+  void deleteDishRecord(DishRecord dishRecord) {
+    alert!.showAlert('Delete Dish', 'Are You Sure?', true, () async {
       dataHelper.deleteDishRecord(dishRecord.id!);
-    });
-    if (dishRecord.imagePath == "") {
-      return;
-    }
-    try {
-      final file = File(dishRecord.imagePath);
-      if (await file.exists()) {
-        await file.delete();
-        alert!.showAlert('Delete Dish', 'success', false, null);
+      if (dishRecord.imagePath == "") {
+        return;
       }
-    } catch (e) {
-      alert!.showAlert('Delete Dish', 'Error deleting file: $e', false, null);
-    }
+      try {
+        final file = File(dishRecord.imagePath);
+        if (await file.exists()) await file.delete();
+        alert!.showAlert('Delete Dish', 'success', false, null);
+      } catch (e) {
+        alert!.showAlert('Delete Dish', 'Error deleting file: $e', false, null);
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final colorBottomBarBtn = [
-      colorScheme.primary,
-      colorScheme.secondaryContainer,
-      colorScheme.onSecondary
-    ];
-    final colorBottomBar = colorScheme.secondaryContainer;
 
     List<DishRecord> filteredDishRecords = (filterTitleDish.isEmpty)
         ? dishRecords
@@ -151,6 +154,11 @@ class _Dish31State extends State<Dish31> {
           child: SettingButton(
               colorScheme: colorScheme,
               callbackRebuild: () {
+                if (imagePath.isNotEmpty) {
+                  final file = File(imagePath);
+                  if (file.existsSync()) file.deleteSync();
+                  imagePath = "";
+                }
                 Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -190,9 +198,6 @@ class _Dish31State extends State<Dish31> {
                       child: SizedBox(
                           width: 288,
                           child: TextField(
-                              onChanged: (value) {
-                                descCategory = value;
-                              },
                               minLines: 3,
                               maxLines: null,
                               style: TextStyle(color: colorScheme.primary),
@@ -233,9 +238,6 @@ class _Dish31State extends State<Dish31> {
                                 width: 192,
                                 height: 48,
                                 child: TextField(
-                                    onChanged: (value) {
-                                      titleCategory = value;
-                                    },
                                     style:
                                         TextStyle(color: colorScheme.primary),
                                     controller: _controllerCategory,
@@ -358,9 +360,7 @@ class _Dish31State extends State<Dish31> {
                                 bottomLeft: Radius.circular(20.0),
                               ),
                               child: Image.asset(
-                                (imagePath.isEmpty)
-                                    ? "assets/images/hinh-cafe-kem-banh-quy-2393351094.webp"
-                                    : imagePath,
+                                (imagePath.isEmpty) ? defaultImage : imagePath,
                                 fit: BoxFit.cover,
                                 width: 150, // width * 0.47
                                 height: 165, // height * 0.75
@@ -401,60 +401,53 @@ class _Dish31State extends State<Dish31> {
                 : CrossFadeState.showFirst,
             duration: const Duration(milliseconds: 200),
           ),
-          Container(
-            height: 68,
-            decoration: BoxDecoration(
-                color: colorBottomBar,
-                border: Border(
-                    top: BorderSide(width: 1.0, color: colorScheme.primary))),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-              child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.arrow_back,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          Navigator.pop(context);
-                        }),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.home,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          Navigator.popUntil(context, (route) => route.isFirst);
-                        }),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.search,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          setState(() {
-                            _showWidgetB = !_showWidgetB;
-                            filterTitleDish = "";
-                          });
-                        }),
-                    BottomBarButton(
-                        colorPrimary: colorBottomBarBtn,
-                        child: Icon(
-                          Icons.add,
-                          color: colorScheme.primary,
-                        ),
-                        callback: () {
-                          insertDishRecord();
-                        })
-                  ]),
+          BottomNavigatorCustomize(listEnableBtn: [
+            true,
+            true,
+            true,
+            true
+          ], listCallback: [
+            () {
+              if (imagePath.isNotEmpty) {
+                final file = File(imagePath);
+                if (file.existsSync()) file.deleteSync();
+              }
+              Navigator.pop(context, widget.categoryRecord);
+            },
+            () {
+              if (imagePath.isNotEmpty) {
+                final file = File(imagePath);
+                if (file.existsSync()) file.deleteSync();
+              }
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+            () {
+              setState(() {
+                _showWidgetB = !_showWidgetB;
+                filterTitleDish = "";
+              });
+            },
+            () {
+              insertDishRecord();
+            }
+          ], icons: [
+            Icon(
+              Icons.arrow_back,
+              color: colorScheme.primary,
             ),
-          )
+            Icon(
+              Icons.home,
+              color: colorScheme.primary,
+            ),
+            Icon(
+              Icons.search,
+              color: colorScheme.primary,
+            ),
+            Icon(
+              Icons.add,
+              color: colorScheme.primary,
+            )
+          ]),
         ],
       ),
     );

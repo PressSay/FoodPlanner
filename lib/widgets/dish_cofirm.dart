@@ -76,7 +76,9 @@ class DishCofirm extends StatelessWidget {
               bottomLeft: Radius.circular(20.0),
             ),
             child: Image.asset(
-              imagePath,
+              (imagePath.isEmpty)
+                  ? "assets/images/hinh-cafe-kem-banh-quy-2393351094.webp"
+                  : imagePath,
               fit: BoxFit.cover,
               width: 86.25 /* widthBarDish * 0.25 */,
               height: 76.5 /* heightBarDish * 0.85 */,

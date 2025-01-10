@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:logger/logger.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/category_record.dart';
 import 'package:menu_qr/models/dish_record.dart';
@@ -9,6 +12,7 @@ import 'package:path/path.dart' show join;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class DataHelper {
+  final logger = Logger();
   static const String sqlMenuRecords = 'menu_records';
   static const String sqlBillRecords = "bill_records";
   static const String sqlDishRecords = 'dish_records';
@@ -88,10 +92,11 @@ class DataHelper {
       dishId INTEGER,
       billId INTEGER,
       categoryId INTEGER,
-      title TEXT,
+      titleDish TEXT,
       price REAL,
       amount INTEGER,
       imagePath TEXT,
+      -- Dont need dishID foreign key because when dishId delete billid will not delete with them
       -- FOREIGN KEY (dishId) REFERENCES $sqlDishRecords(id) ON DELETE CASCADE,
       FOREIGN KEY (billId) REFERENCES $sqlBillRecords(id) ON DELETE CASCADE,
       PRIMARY KEY (dishId, billId), -- Composite primary key
@@ -100,19 +105,14 @@ class DataHelper {
   }
   // menu_helper
 
-  Future<int?> insertMenuRecord(MenuRecord menuRecord) async {
+  Future<int> insertMenuRecord(MenuRecord menuRecord) async {
     final db = await _dataHelper.database;
-    await db.insert(
+    final id = await db.insert(
       'menu_records',
       menuRecord.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    List<Map<String, dynamic>> maps = await db.query('category_records',
-        columns: ['id'], orderBy: 'id DESC', limit: 1);
-    if (maps.isNotEmpty) {
-      return maps.first['id'];
-    }
-    return null;
+    return id;
   }
 
   Future<void> updateMenuRecord(MenuRecord menuRecord) async {
@@ -130,6 +130,19 @@ class DataHelper {
 
   Future<void> deleteMenuRecord(int id) async {
     final db = await _dataHelper.database;
+    final sql = '''
+    SELECT dish_records.* from menu_records JOIN category_records ON 
+    category_records.menuId = menu_records.id JOIN dish_records ON 
+    categoryId = category_records.id WHERE menu_records.id = ?
+    ''';
+    final maps = await db.rawQuery(sql, [id]);
+    final dishRecords = maps.map((e) => DishRecord.fromMap(e)).toList();
+    for (var e in dishRecords) {
+      File file = File(e.imagePath);
+      if (file.existsSync()) {
+        file.deleteSync();
+      }
+    }
     // Remove the Menu from the database.
     await db.delete(
       'menu_records',
@@ -140,35 +153,34 @@ class DataHelper {
     );
   }
 
-  Future<List<MenuRecord>> menuRecords(
-      String? where, List<Object>? whereArgs, int? limit) async {
+  Future<List<MenuRecord>> menuRecords({
+    String? where,
+    List<Object>? whereArgs,
+    int? limit,
+  }) async {
     final db = await _dataHelper.database;
-    final List<Map<String, dynamic>> maps =
-        (where == null && whereArgs == null && limit == null)
-            ? await db.query('menu_records')
-            : (where == null && whereArgs == null && limit != null)
-                ? await db.query('menu_records', limit: limit)
-                : await db.query('menu_records',
-                    where: where, whereArgs: whereArgs, limit: limit);
+    final List<Map<String, dynamic>> maps = await db.query(
+      'menu_records',
+      where: where,
+      whereArgs: whereArgs,
+      limit: limit,
+    );
     return List.generate(
-        maps.length, (index) => MenuRecord.fromMap(maps[index]));
+      maps.length,
+      (index) => MenuRecord.fromMap(maps[index]),
+    );
   }
 
   // category_helper
 
-  Future<int?> insertCategoryRecord(CategoryRecord categoryRecord) async {
+  Future<int> insertCategoryRecord(CategoryRecord categoryRecord) async {
     final db = await _dataHelper.database;
-    await db.insert(
+    final id = await db.insert(
       'category_records',
       categoryRecord.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    List<Map<String, dynamic>> maps = await db.query('category_records',
-        columns: ['id'], orderBy: 'id DESC', limit: 1);
-    if (maps.isNotEmpty) {
-      return maps.first['id'];
-    }
-    return null;
+    return id;
   }
 
   Future<void> updateCategoryRecord(CategoryRecord categoryRecord) async {
@@ -186,6 +198,18 @@ class DataHelper {
 
   Future<void> deleteCategoryRecord(int id) async {
     final db = await _dataHelper.database;
+    final sqlQuery = '''
+    SELECT dish_records.* FROM category_records JOIN dish_records ON 
+    categoryId = category_records.id WHERE category_records.id = ?
+    ''';
+    final maps = await db.rawQuery(sqlQuery, [id]);
+    for (var e in maps) {
+      File image = File(e['imagePath'].toString());
+      logger.d(image);
+      if (image.existsSync()) {
+        image.deleteSync();
+      }
+    }
     // Remove the Menu from the database.
     await db.delete(
       'category_records',
@@ -196,35 +220,34 @@ class DataHelper {
     );
   }
 
-  Future<List<CategoryRecord>> categoryRecords(
-      String? where, List<Object>? whereArgs, int? limit) async {
+  Future<List<CategoryRecord>> categoryRecords({
+    String? where,
+    List<Object>? whereArgs,
+    int? limit,
+  }) async {
     final db = await _dataHelper.database;
-    final List<Map<String, dynamic>> maps =
-        (where == null && whereArgs == null && limit == null)
-            ? await db.query('category_records')
-            : (where == null && whereArgs == null && limit != null)
-                ? await db.query('category_records', limit: limit)
-                : await db.query('category_records',
-                    where: where, whereArgs: whereArgs, limit: limit);
+    final List<Map<String, dynamic>> maps = await db.query(
+      'category_records',
+      where: where,
+      whereArgs: whereArgs,
+      limit: limit,
+    );
     return List.generate(
-        maps.length, (index) => CategoryRecord.fromMap(maps[index]));
+      maps.length,
+      (index) => CategoryRecord.fromMap(maps[index]),
+    );
   }
 
   // dish_helper
 
-  Future<int?> insertDishRecord(DishRecord dishRecord) async {
+  Future<int> insertDishRecord(DishRecord dishRecord) async {
     final db = await _dataHelper.database;
-    await db.insert(
+    final id = await db.insert(
       'dish_records',
       dishRecord.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    List<Map<String, dynamic>> maps = await db.query('dish_records',
-        columns: ['id'], orderBy: 'id DESC', limit: 1);
-    if (maps.isNotEmpty) {
-      return maps.first['id'];
-    }
-    return null;
+    return id;
   }
 
   Future<void> updateDishRecord(DishRecord dishRecord) async {
@@ -252,18 +275,22 @@ class DataHelper {
     );
   }
 
-  Future<List<DishRecord>> dishRecords(
-      String? where, List<Object>? whereArgs, int? limit) async {
+  Future<List<DishRecord>> dishRecords({
+    String? where,
+    List<Object>? whereArgs,
+    int? limit,
+  }) async {
     final db = await _dataHelper.database;
-    final List<Map<String, dynamic>> maps =
-        (where == null && whereArgs == null && limit == null)
-            ? await db.query('dish_records')
-            : (where == null && whereArgs == null && limit != null)
-                ? await db.query('dish_records', limit: limit)
-                : await db.query('dish_records',
-                    where: where, whereArgs: whereArgs);
+    final List<Map<String, dynamic>> maps = await db.query(
+      'dish_records',
+      where: where,
+      whereArgs: whereArgs,
+      limit: limit,
+    );
     return List.generate(
-        maps.length, (index) => DishRecord.fromMap(maps[index]));
+      maps.length,
+      (index) => DishRecord.fromMap(maps[index]),
+    );
   }
 
   // bill_helper
@@ -277,17 +304,25 @@ class DataHelper {
   }
 
   Future<List<PreOrderedDishRecord>> insertDishesAtBillId(
-      List<PreOrderedDishRecord> preOrdereddishRecords, int billId) async {
+      List<PreOrderedDishRecord> preOrderedDishRecords, int billId) async {
     final db = await _dataHelper.database;
-    await db.delete(
-      'pre_ordered_dish',
-      // Use a `where` clause to delete a specific breed.
-      where: 'billId = ?',
-      // Pass the Menu's id as a whereArg to prevent SQL injection.
-      whereArgs: [billId],
+    var sqlPreOrderedDish = '''SELECT * FROM pre_ordered_dish WHERE billId = ? 
+    AND dishId NOT IN (SELECT dishId from pre_ordered_dish JOIN 
+    dish_records ON id = dishId WHERE billId = ?)''';
+    var mapPreOrderedDishNotExisted =
+        await db.rawQuery(sqlPreOrderedDish, [billId, billId]);
+    var preOrderedDishNotExisted = List.generate(
+      mapPreOrderedDishNotExisted.length,
+      (index) =>
+          PreOrderedDishRecord.fromMap(mapPreOrderedDishNotExisted[index]),
     );
-    List<Map<String, dynamic>> data =
-        preOrdereddishRecords.map((e) => e.toMap(billId)).toList();
+
+    List<Map<String, dynamic>> data = preOrderedDishRecords
+        .where(
+            (e) => !preOrderedDishNotExisted.any((e1) => e.dishId == e1.dishId))
+        .map((e) => e.toMap(billId))
+        .toList();
+
     List<String> columns = [
       'dishId',
       'billId',
@@ -300,45 +335,52 @@ class DataHelper {
     List<List<dynamic>> values = data
         .map((item) => columns.map((column) => item[column]).toList())
         .toList();
+
+    String deleteSql = '''DELETE FROM pre_ordered_dish WHERE billId = ? AND 
+        dishId IN (SELECT dishId FROM pre_ordered_dish JOIN 
+        dish_records ON id = dishId WHERE billId = ?)''';
+    List<dynamic> deleteArgs = [billId, billId];
+    await db.rawDelete(deleteSql, deleteArgs);
+
+    logger.d("delete pre_ordered_dish $deleteSql\n $deleteArgs");
 // Tạo câu truy vấn
     String sql = '''INSERT INTO pre_ordered_dish(${columns.join(',')}) VALUES
     ${values.map((row) => '(${row.map((value) => '?').join(',')})').join(',')}''';
 // Thực thi truy vấn
     await db.rawInsert(sql, values.expand((i) => i).toList());
-    final List<Map<String, dynamic>> maps = await db.query('pre_ordered_dish');
+    final List<Map<String, dynamic>> maps = await db
+        .query('pre_ordered_dish', where: 'billId = ?', whereArgs: [billId]);
     return List.generate(
         maps.length, (index) => PreOrderedDishRecord.fromMap(maps[index]));
   }
 
   // CRUD BillRecord below
 
-  Future<BillRecord> billRecord(int id) async {
+  Future<BillRecord?> billRecord(int id) async {
     final db = await _dataHelper.database;
     final List<Map<String, dynamic>> maps =
         await db.query('bill_records', where: 'id = ?', whereArgs: [id]);
     final List<Map<String, dynamic>> preOrderedDishRecordsMaps = await db
         .query('pre_ordered_dish', where: 'billId = ?', whereArgs: [id]);
-    BillRecord billRecord = BillRecord.fromMap(maps[0]);
-    billRecord.preOrderedDishRecords = List.generate(
-        preOrderedDishRecordsMaps.length,
-        (index) =>
-            PreOrderedDishRecord.fromMap(preOrderedDishRecordsMaps[index]));
-    return billRecord;
+    if (maps.isNotEmpty) {
+      BillRecord billRecord = BillRecord.fromMap(maps[0]);
+      billRecord.preOrderedDishRecords = List.generate(
+          preOrderedDishRecordsMaps.length,
+          (index) =>
+              PreOrderedDishRecord.fromMap(preOrderedDishRecordsMaps[index]));
+      return billRecord;
+    }
+    return null;
   }
 
-  Future<int?> insertBillRecord(BillRecord billRecord) async {
+  Future<int> insertBillRecord(BillRecord billRecord) async {
     final db = await _dataHelper.database;
-    await db.insert(
+    final id = await db.insert(
       'bill_records',
       billRecord.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    List<Map<String, dynamic>> maps = await db.query('bill_records',
-        columns: ['id'], orderBy: 'id DESC', limit: 1);
-    if (maps.isNotEmpty) {
-      return maps.first['id'];
-    }
-    return null;
+    return id;
   }
 
   Future<void> updateBillRecord(BillRecord billRecord) async {
@@ -366,31 +408,52 @@ class DataHelper {
     );
   }
 
-  Future<Map<int, BillRecord>> billRecords(
-      String? where, List<Object>? whereArgs, int? limit) async {
+  Future<Map<int, BillRecord>> billRecords({
+    String? where,
+    List<Object>? whereArgs,
+    int? limit,
+  }) async {
     final db = await _dataHelper.database;
-    final List<Map<String, dynamic>> maps =
-        (where == null && whereArgs == null && limit == null)
-            ? await db.query('bill_records')
-            : (where == null && whereArgs == null && limit != null)
-                ? await db.query('bill_records', limit: limit)
-                : await db.query('bill_records',
-                    where: where, whereArgs: whereArgs);
-    final List<BillRecord> tmpBillRecords = List.generate(maps.length, (index) {
-      BillRecord billRecord = BillRecord.fromMap(maps[index]);
-      return billRecord;
-    });
-    Map<int, BillRecord> billRecords = {};
-    for (BillRecord e in tmpBillRecords) {
-      final List<Map<String, dynamic>> preOrderedDishRecordsMaps = await db
-          .query('pre_ordered_dish', where: 'billId = ?', whereArgs: [e.id!]);
-      e.preOrderedDishRecords = List.generate(
-          preOrderedDishRecordsMaps.length,
-          (index1) =>
-              PreOrderedDishRecord.fromMap(preOrderedDishRecordsMaps[index1]));
-      billRecords.addAll({e.id!: e});
+
+    final query = StringBuffer('SELECT * FROM bill_records');
+    final queryParams = [];
+
+    if (where != null && whereArgs != null) {
+      query.write(' WHERE $where');
+      queryParams.addAll(whereArgs);
     }
+
+    if (limit != null) {
+      query.write(' LIMIT $limit');
+    }
+
+    final maps = await db.rawQuery(query.toString(), queryParams);
+
+    final billRecords = Map<int, BillRecord>.fromIterable(
+        maps.map((e) => BillRecord.fromMap(e)).toList(),
+        key: (e) => e.id!);
+
+    for (var billRecord in billRecords.values) {
+      final preOrderedDishRecordsMaps = await db.query(
+        'pre_ordered_dish',
+        where: 'billId = ?',
+        whereArgs: [billRecord.id!],
+      );
+      billRecord.preOrderedDishRecords = preOrderedDishRecordsMaps
+          .map((e) => PreOrderedDishRecord.fromMap(e))
+          .toList();
+    }
+
     return billRecords;
+  }
+
+  Future<double> revenueBillRecord(int id) async {
+    final db = await _dataHelper.database;
+    String sql = "SELECT SUM(price * amount) AS "
+        "revenue FROM pre_ordered_dish WHERE billId = ?";
+    final List<Map<String, dynamic>> maps = await db.rawQuery(sql, [id]);
+    var value = maps.elementAtOrNull(0)?['revenue'];
+    return double.parse(value.toString());
   }
 
   // table_helper
@@ -399,53 +462,77 @@ class DataHelper {
     final db = await _dataHelper.database;
     final List<Map<String, dynamic>> maps =
         await db.query('table_records', where: 'id = ?', whereArgs: [id]);
-    return TableRecord.fromMap(maps[0]);
+    if (maps.isNotEmpty) return TableRecord.fromMap(maps[0]);
+    return null;
   }
 
-  Future<int?> insertTableRecord(TableRecord tableRecord) async {
+  Future<int> insertTableRecord(TableRecord tableRecord) async {
     final db = await _dataHelper.database;
-    await db.insert(
+    final id = await db.insert(
       'table_records',
       tableRecord.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    List<Map<String, dynamic>> maps = await db.query('table_records',
-        columns: ['id'], orderBy: 'id DESC', limit: 1);
-    if (maps.isNotEmpty) {
-      return maps.first['id'];
-    }
-    return null;
+    return id;
   }
 
   Future<void> updateTableRecord(TableRecord tableRecord) async {
     final db = await _dataHelper.database;
     // Update the given menuRecord
-    await db.update(
-      'table_records',
-      tableRecord.toMap(),
-      // Ensure that the Menu has a matching id.
-      where: 'id = ?',
-      // Pass the Menu's id as a whereArg to prevent SQL injection.
-      whereArgs: [tableRecord.id],
-    );
+    try {
+      await db.update(
+        'table_records',
+        tableRecord.toMap(),
+        // Ensure that the Menu has a matching id.
+        where: 'id = ?',
+        // Pass the Menu's id as a whereArg to prevent SQL injection.
+        whereArgs: [tableRecord.id],
+      );
+
+      await db.rawUpdate(
+        'UPDATE bill_records SET nameTable = ? WHERE tableId = ?',
+        [tableRecord.name, tableRecord.id],
+      );
+    } catch (e) {
+      rethrow;
+    }
   }
 
   Future<void> deleteTableRecord(int id) async {
     final db = await _dataHelper.database;
-    // Remove the Menu from the database.
-    await db.delete(
-      'table_records',
-      // Use a `where` clause to delete a specific breed.
-      where: 'id = ?',
-      // Pass the Menu's id as a whereArg to prevent SQL injection.
-      whereArgs: [id],
-    );
+
+    try {
+      // Xóa bản ghi bàn từ cơ sở dữ liệu.
+      await db.delete(
+        'table_records',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+
+      // Cập nhật các bản ghi hóa đơn liên quan
+      await db.rawUpdate(
+        'UPDATE bill_records SET tableId = ? WHERE tableId = ?',
+        [0, id],
+      );
+    } catch (e) {
+      // Xử lý các ngoại lệ tiềm năng (ví dụ: lỗi cơ sở dữ liệu)
+
+      // Có thể ném lại ngoại lệ hoặc xử lý nó một cách phù hợp
+      // dựa trên nhu cầu của ứng dụng.
+      rethrow;
+    }
   }
 
-  Future<List<TableRecord>> tableRecords() async {
+  Future<Map<int, TableRecord>> tableRecords() async {
     final db = await _dataHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query('table_records');
-    return List.generate(
-        maps.length, (index) => TableRecord.fromMap(maps[index]));
+
+    final List<TableRecord> tableRecords = await db
+        .query('table_records')
+        .then((maps) => maps.map((e) => TableRecord.fromMap(e)).toList());
+
+    final mapTableRecords =
+        Map<int, TableRecord>.fromIterable(tableRecords, key: (e) => e.id!);
+
+    return mapTableRecords;
   }
 }

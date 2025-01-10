@@ -6,9 +6,11 @@ class Alert {
 
   void showAlert(
       String title, String content, bool isConfirm, Function? confirm) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
     List<Widget> itemBuilder = [
       TextButton(
-        child: Text((isConfirm) ? 'Cancel' : 'Ok'),
+        child: Text((isConfirm) ? 'Cancel' : 'Ok',
+            style: TextStyle(color: colorScheme.primary)),
         onPressed: () {
           Navigator.of(context).pop();
         },
@@ -17,8 +19,11 @@ class Alert {
     if (isConfirm) {
       itemBuilder.add(
         TextButton(
-          child: const Text('Ok'),
-          onPressed: () => confirm!(),
+          child: Text('Ok', style: TextStyle(color: colorScheme.primary)),
+          onPressed: () {
+            confirm!();
+            Navigator.of(context).pop();
+          },
         ),
       );
     }
@@ -35,14 +40,7 @@ class Alert {
                   ],
                 ),
               ),
-              actions: <Widget>[
-                TextButton(
-                    child: const Text(''),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      // Perform some action after pressing OK
-                    }),
-              ]);
+              actions: itemBuilder);
         });
   }
 }

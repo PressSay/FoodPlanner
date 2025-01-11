@@ -152,13 +152,29 @@ class DataHelper {
     );
   }
 
-  Future<List<MenuRecord>> menuRecords({
-    String? where,
-    List<Object>? whereArgs,
-    int? limit,
-  }) async {
+  Future<List<MenuRecord>> menuRecords(
+      {String? where,
+      List<Object>? whereArgs,
+      int? limit,
+      int? pageNum,
+      int? pageSize}) async {
     final db = await _dataHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query(
+    if (pageNum != null && pageSize != null) {
+      final query = StringBuffer(
+          'WITH new_$sqlMenuRecords AS ( SELECT ROW_NUMBER () OVER '
+          '(ORDER BY id) AS RowNum, $sqlMenuRecords.* FROM $sqlMenuRecords ) SELECT * '
+          'FROM new_$sqlMenuRecords WHERE RowNum BETWEEN (? - 1) * ? + 1 AND ? * ?');
+      final queryParams = [];
+      if (where != null && whereArgs != null) {
+        query.write(" AND $where");
+        queryParams.add(whereArgs);
+      }
+      queryParams.addAll([pageNum, pageSize, pageNum, pageSize]);
+      final maps = await db.rawQuery(query.toString(), queryParams);
+      return List.generate(
+          maps.length, (index) => MenuRecord.fromMap(maps[index]));
+    }
+    final maps = await db.query(
       sqlMenuRecords,
       where: where,
       whereArgs: whereArgs,
@@ -219,12 +235,28 @@ class DataHelper {
     );
   }
 
-  Future<List<CategoryRecord>> categoryRecords({
-    String? where,
-    List<Object>? whereArgs,
-    int? limit,
-  }) async {
+  Future<List<CategoryRecord>> categoryRecords(
+      {String? where,
+      List<Object>? whereArgs,
+      int? limit,
+      int? pageNum,
+      int? pageSize}) async {
     final db = await _dataHelper.database;
+    if (pageNum != null && pageSize != null) {
+      final query = StringBuffer(
+          'WITH new_$sqlCategoryRecords AS ( SELECT ROW_NUMBER () OVER '
+          '(ORDER BY id) AS RowNum, $sqlCategoryRecords.* FROM $sqlCategoryRecords ) SELECT * '
+          'FROM new_$sqlCategoryRecords WHERE RowNum BETWEEN (? - 1) * ? + 1 AND ? * ?');
+      final queryParams = [];
+      if (where != null && whereArgs != null) {
+        query.write(" AND $where");
+        queryParams.add(whereArgs);
+      }
+      queryParams.addAll([pageNum, pageSize, pageNum, pageSize]);
+      final maps = await db.rawQuery(query.toString(), queryParams);
+      return List.generate(
+          maps.length, (index) => CategoryRecord.fromMap(maps[index]));
+    }
     final List<Map<String, dynamic>> maps = await db.query(
       sqlCategoryRecords,
       where: where,
@@ -274,22 +306,47 @@ class DataHelper {
     );
   }
 
-  Future<List<DishRecord>> dishRecords({
-    String? where,
-    List<Object>? whereArgs,
-    int? limit,
-  }) async {
+  Future<List<DishRecord>> dishRecords(
+      {String? where,
+      List<Object>? whereArgs,
+      int? limit,
+      int? pageNum,
+      int? pageSize}) async {
     final db = await _dataHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      sqlDishRecords,
-      where: where,
-      whereArgs: whereArgs,
-      limit: limit,
-    );
-    return List.generate(
-      maps.length,
-      (index) => DishRecord.fromMap(maps[index]),
-    );
+    try {
+      if (pageNum != null && pageSize != null) {
+        final offset = (pageNum - 1) * pageSize;
+
+        // Use parameterized query to prevent SQL injection
+        final List<Map<String, dynamic>> maps = await db.query(
+          sqlDishRecords,
+          where: where,
+          whereArgs: whereArgs,
+          limit: pageSize,
+          offset: offset,
+        );
+
+        return List.generate(
+          maps.length,
+          (index) => DishRecord.fromMap(maps[index]),
+        );
+      } else {
+        final List<Map<String, dynamic>> maps = await db.query(
+          sqlDishRecords,
+          where: where,
+          whereArgs: whereArgs,
+          limit: limit,
+        );
+        return List.generate(
+          maps.length,
+          (index) => DishRecord.fromMap(maps[index]),
+        );
+      }
+    } catch (e) {
+      logger.e('Error fetching dish records: $e'); // Log the error
+      // Handle the error appropriately, e.g., return an empty list or rethrow
+      return []; // Or throw an exception
+    }
   }
 
 // bill_helper
@@ -305,13 +362,13 @@ class DataHelper {
   Future<List<PreOrderedDishRecord>> insertDishesAtBillId(
       List<PreOrderedDishRecord> preOrderedDishRecords, int billId) async {
     final db = await _dataHelper.database;
-    var sqlPreOrderedDish =
+    final sqlPreOrderedDish =
         '''SELECT * FROM $sqlPreOrderedDishRecords WHERE billId = ? 
     AND dishId NOT IN (SELECT dishId from $sqlPreOrderedDishRecords JOIN 
     $sqlDishRecords ON id = dishId WHERE billId = ?)''';
-    var mapPreOrderedDishNotExisted =
+    final mapPreOrderedDishNotExisted =
         await db.rawQuery(sqlPreOrderedDish, [billId, billId]);
-    var preOrderedDishNotExisted = List.generate(
+    final preOrderedDishNotExisted = List.generate(
       mapPreOrderedDishNotExisted.length,
       (index) =>
           PreOrderedDishRecord.fromMap(mapPreOrderedDishNotExisted[index]),
@@ -346,7 +403,7 @@ class DataHelper {
 
     logger.d("delete $sqlPreOrderedDishRecords $deleteSql\n $deleteArgs");
     // Tạo câu truy vấn
-    String sql =
+    final sql =
         '''INSERT INTO $sqlPreOrderedDishRecords(${columns.join(',')}) VALUES
     ${values.map((row) => '(${row.map((value) => '?').join(',')})').join(',')}''';
     // Thực thi truy vấn
@@ -368,7 +425,7 @@ class DataHelper {
     final List<Map<String, dynamic>> preOrderedDishRecordsMaps = await db
         .query(sqlPreOrderedDishRecords, where: 'billId = ?', whereArgs: [id]);
     if (maps.isNotEmpty) {
-      BillRecord billRecord = BillRecord.fromMap(maps[0]);
+      final billRecord = BillRecord.fromMap(maps[0]);
       billRecord.preOrderedDishRecords = List.generate(
           preOrderedDishRecordsMaps.length,
           (index) =>
@@ -411,7 +468,7 @@ class DataHelper {
       // Pass the Menu's id as a whereArg to prevent SQL injection.
       whereArgs: [billId],
     );
-    String sql = "UPDATE table_records SET numOfPeople = (numOfPeople-1) "
+    final sql = "UPDATE table_records SET numOfPeople = (numOfPeople-1) "
         "WHERE numOfPeople > 0 AND id = "
         "(SELECT tableId FROM bill_records WHERE id = ?)";
     await db.rawUpdate(sql, [billId]);
@@ -421,18 +478,31 @@ class DataHelper {
     String? where,
     List<Object>? whereArgs,
     int? limit,
+    int? pageNum,
+    int? pageSize,
   }) async {
     final db = await _dataHelper.database;
 
     final query = StringBuffer('SELECT * FROM $sqlBillRecords');
+    if (pageNum != null && pageSize != null) {
+      query.clear();
+      query.write('WITH new_$sqlBillRecords AS ( SELECT ROW_NUMBER () OVER '
+          '(ORDER BY id) AS RowNum, $sqlBillRecords.* FROM $sqlBillRecords ) SELECT * '
+          'FROM new_$sqlBillRecords WHERE RowNum BETWEEN (? - 1) * ? + 1 AND ? * ?');
+    }
     final queryParams = [];
+    queryParams.addAll([pageNum, pageSize, pageNum, pageSize]);
 
     if (where != null && whereArgs != null) {
-      query.write(' WHERE $where');
+      if (pageNum != null && pageSize != null) {
+        query.write(' AND $where');
+      } else {
+        query.write(' WHERE $where');
+      }
       queryParams.addAll(whereArgs);
     }
 
-    if (limit != null) {
+    if (limit != null && (pageNum == null && pageSize == null)) {
       query.write(' LIMIT $limit');
     }
 
@@ -457,7 +527,7 @@ class DataHelper {
 
   Future<double> revenueBillRecord(int id) async {
     final db = await _dataHelper.database;
-    String sql = "SELECT SUM(price * amount) AS "
+    final sql = "SELECT SUM(price * amount) AS "
         "revenue FROM $sqlPreOrderedDishRecords WHERE billId = ?";
     final List<Map<String, dynamic>> maps = await db.rawQuery(sql, [id]);
     var value = maps.elementAtOrNull(0)?['revenue'];
@@ -530,13 +600,24 @@ class DataHelper {
     }
   }
 
-  Future<Map<int, TableRecord>> tableRecords() async {
+  Future<Map<int, TableRecord>> tableRecords(
+      {int? pageNum, int? pageSize}) async {
     final db = await _dataHelper.database;
+    if (pageNum != null && pageSize != null) {
+      final query = StringBuffer(
+          'WITH new_$sqlTableRecords AS ( SELECT ROW_NUMBER () OVER '
+          '(ORDER BY id) AS RowNum, $sqlTableRecords.* FROM $sqlTableRecords ) SELECT * '
+          'FROM new_$sqlTableRecords WHERE RowNum BETWEEN (? - 1) * ? + 1 AND ? * ?');
+      final queryParams = [pageNum, pageSize, pageNum, pageSize];
+      final maps = await db.rawQuery(query.toString(), queryParams);
+      return Map<int, TableRecord>.fromIterable(
+          maps.map((e) => TableRecord.fromMap(e)).toList(),
+          key: (e) => e.id);
+    }
     final maps = await db.query(sqlTableRecords);
     final mapTableRecords = Map<int, TableRecord>.fromIterable(
         maps.map((e) => TableRecord.fromMap(e)).toList(),
         key: (e) => e.id);
-
     return mapTableRecords;
   }
 }

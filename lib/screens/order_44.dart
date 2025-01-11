@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/category_record.dart';
 import 'package:menu_qr/models/dish_record.dart';
@@ -35,12 +36,14 @@ class _Order44 extends State<Order44> {
   String filterTitleDish = "";
   bool _showWidgetB = false;
   bool isInitMenuIdAndCategoryId = false;
-  int categoryIdInScreen = 0;
   bool isInit = false;
+  int categoryIdInScreen = 0;
 
+  final pageSized = 40;
   final TextEditingController _controller = TextEditingController();
   final DataHelper dataHelper = DataHelper();
   final List<DishRecord> dishRecords = [];
+  final logger = Logger();
 
   @override
   void initState() {
@@ -48,14 +51,14 @@ class _Order44 extends State<Order44> {
     super.initState();
   }
 
-  Future<List<DishRecord>> getDishRecords(DishProvider dishProvider) async {
+  Future<void> getDishRecords(DishProvider dishProvider) async {
     if (!isInitMenuIdAndCategoryId && dishProvider.categoryId == 0) {
       final List<MenuRecord> menuRecordSeleted = await dataHelper.menuRecords(
           where: 'isSelected = ?', whereArgs: [1], limit: 1);
       if (menuRecordSeleted.isEmpty) {
         alert!.showAlert('Dish', 'no dish to show', false, null);
         isInitMenuIdAndCategoryId = false;
-        return [];
+        return;
       }
       final List<CategoryRecord> categoryRecords =
           await dataHelper.categoryRecords(
@@ -67,16 +70,30 @@ class _Order44 extends State<Order44> {
           categoryRecords[0].id!, categoryRecords[0].title);
       isInitMenuIdAndCategoryId = false;
     }
+
     final List<DishRecord> tmpDishRecords = await dataHelper.dishRecords(
         where: 'categoryId = ?',
         whereArgs: [dishProvider.categoryId],
-        limit: null);
+        pageNum: 1,
+        pageSize: pageSized);
+
     setState(() {
       dishRecords.clear();
       dishRecords.addAll(tmpDishRecords);
     });
     categoryIdInScreen = dishProvider.categoryId;
-    return dishRecords;
+  }
+
+  Future<void> getDishRecordsAtPageViewIndex(int index) async {
+    final tmpDishRecords = await dataHelper.dishRecords(
+        where: 'categoryId = ?',
+        whereArgs: [categoryIdInScreen],
+        pageNum: index,
+        pageSize: pageSized);
+    setState(() {
+      dishRecords.clear();
+      dishRecords.addAll(tmpDishRecords);
+    });
   }
 
   void saveRebuildDishes(DishProvider dishProvider, BillProvider billProvider) {
@@ -94,34 +111,51 @@ class _Order44 extends State<Order44> {
     Navigator.pop(context, dishRecordSorted);
   }
 
+  Widget pageViewBuilder(DishProvider dishProvider, double currentWidth) {
+    return PageView.builder(itemBuilder: (context, index) {
+      List<DishRecord> dishRecordsFiltered = (filterTitleDish.isEmpty)
+          ? dishRecords
+          : dishRecords
+              .where((e) => e.title.contains(filterTitleDish))
+              .toList();
+
+      logger.d("index ${index + 1}");
+
+      if (categoryIdInScreen != dishProvider.categoryId || !isInit) {
+        getDishRecords(dishProvider);
+        isInit = true;
+      } else {
+        getDishRecordsAtPageViewIndex(index + 1);
+      }
+
+      return ListView.builder(
+          itemCount: dishRecordsFiltered.length,
+          itemBuilder: (context, index) {
+            final value = dishRecordsFiltered[index];
+            return Padding(
+                padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+                child: DishButton(
+                    id: value.id!,
+                    categoryId: value.categoryId,
+                    imagePath: value.imagePath,
+                    titleCategory: dishProvider.titleCategory,
+                    title: value.title,
+                    desc: value.desc,
+                    price: value.price));
+          });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final DishProvider dishProvider = context.watch<DishProvider>();
     final BillProvider billProvider = context.watch<BillProvider>();
+    final currentWidth = MediaQuery.of(context).size.width;
 
     if (categoryIdInScreen != dishProvider.categoryId || !isInit) {
       getDishRecords(dishProvider);
       isInit = true;
-    }
-    // final currentWidth = MediaQuery.of(context).size.width;
-    // Add item to listview
-    List<DishRecord> dishRecordsFiltered = (filterTitleDish.isEmpty)
-        ? dishRecords
-        : dishRecords.where((e) => e.title.contains(filterTitleDish)).toList();
-    List<Widget> itemDishBuilder = [];
-
-    for (var value in dishRecordsFiltered) {
-      itemDishBuilder.add(Padding(
-          padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
-          child: DishButton(
-              id: value.id!,
-              categoryId: value.categoryId,
-              imagePath: value.imagePath,
-              titleCategory: dishProvider.titleCategory,
-              title: value.title,
-              desc: value.desc,
-              price: value.price)));
     }
 
     return PopScope(
@@ -140,9 +174,7 @@ class _Order44 extends State<Order44> {
                   children: [
                     Padding(padding: EdgeInsets.all(10)),
                     Expanded(
-                        child: ListView(
-                      children: itemDishBuilder,
-                    )),
+                        child: pageViewBuilder(dishProvider, currentWidth)),
                     Padding(padding: EdgeInsets.all(8)),
                     CategoryBar(categoryFunc: () {
                       Navigator.push(

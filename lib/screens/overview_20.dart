@@ -20,7 +20,7 @@ class Overview20 extends StatefulWidget {
 class _Overview20State extends State<Overview20> {
   var maxBillMoney = 0.0;
   final dataHelper = DataHelper();
-  final Map<int, BillRecord> billRecords = {};
+
   final List<FlSpot> spotsHourBill = [];
   final List<FlSpot> spotsMinuteBill = [];
 
@@ -70,7 +70,7 @@ class _Overview20State extends State<Overview20> {
 
   void getBillRecords(DateTime now1) async {
     final now = DateTime(now1.year, now1.month, now1.day);
-    final tmpBillRecords = await dataHelper.billRecords(
+    final tmpBillRecords = await dataHelper.billRecordsTypeListOnly(
         where: ("datetime >= ? AND datetime < ? "
             "ORDER BY datetime"),
         whereArgs: [
@@ -84,9 +84,9 @@ class _Overview20State extends State<Overview20> {
 
     var tmpAmountBill = 0;
     var sumOfbillNumber = 0.0;
-    for (var e in tmpBillRecords.entries) {
-      final date = DateTime.fromMillisecondsSinceEpoch(e.value.dateTime);
-      final billMoney = await dataHelper.revenueBillRecord(e.value.id ?? 0);
+    for (var e in tmpBillRecords) {
+      final date = DateTime.fromMillisecondsSinceEpoch(e.dateTime);
+      final billMoney = await dataHelper.revenueBillRecord(e.id ?? 0);
       final hour = date.hour + (date.minute / 60).ceil();
       final minute = date.hour * 60 + date.minute;
       tmpAmountBill += 1;
@@ -117,10 +117,8 @@ class _Overview20State extends State<Overview20> {
       tmpSpotsMinuteBill.add(FlSpot(newX, newY));
     }
     setState(() {
-      billRecords.clear();
       spotsHourBill.clear();
       spotsMinuteBill.clear();
-      billRecords.addAll(tmpBillRecords);
       spotsHourBill.addAll(tmptSpotsHourBill);
       spotsMinuteBill.addAll(tmpSpotsMinuteBill);
       revenue = sumOfbillNumber;

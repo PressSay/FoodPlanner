@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import 'package:menu_qr/models/bill_record.dart';
+import 'package:menu_qr/models/pre_ordered_dish.dart';
 import 'package:menu_qr/models/table_record.dart';
 import 'package:menu_qr/screens/order_44.dart';
 import 'package:menu_qr/screens/paid_42.dart';
@@ -39,6 +40,23 @@ class _Paid41State extends State<Paid41> {
   String tableName = "";
 
   final DataHelper dataHelper = DataHelper();
+  final List<PreOrderedDishRecord> preOrderedDishRecords = [];
+
+  void getPreOrderedDishRecords() async {
+    final tmpPreOrderedDishRecords = await dataHelper.preOrderedDishList(
+        where: 'billId = ?', whereArgs: [widget.billRecord.id!]);
+    var tmpTotal = 0.0;
+    var tmpTax = 0.0;
+    for (var element in tmpPreOrderedDishRecords) {
+      tmpTotal += (element.amount * element.price);
+      tmpTax = tmpTax + tmpTotal * 0.05;
+    }
+    setState(() {
+      total = tmpTotal;
+      tax = tmpTax;
+      widget.billRecord.preOrderedDishRecords = tmpPreOrderedDishRecords;
+    });
+  }
 
   @override
   void initState() {
@@ -46,6 +64,7 @@ class _Paid41State extends State<Paid41> {
       _controller.text = '${widget.billRecord.amountPaid.floor()}';
       isInit = false;
     }
+    getPreOrderedDishRecords();
     super.initState();
   }
 
@@ -71,6 +90,7 @@ class _Paid41State extends State<Paid41> {
     final listCallback = [
       () {
         dishProvider.clearRam();
+        widget.billRecord.preOrderedDishRecords?.clear();
         Navigator.pop(context, widget.billRecord);
       },
       () {
@@ -89,10 +109,7 @@ class _Paid41State extends State<Paid41> {
                   isImmediate: true),
             )).then((value) {
           if (value == null) return;
-          setState(() {
-            widget.billRecord.preOrderedDishRecords?.clear();
-            widget.billRecord.preOrderedDishRecords?.addAll(value);
-          });
+          getPreOrderedDishRecords();
         });
       },
       () {
@@ -147,12 +164,6 @@ class _Paid41State extends State<Paid41> {
         (widget.billRecord.type) ? "Buy take away" : "Sit in place";
 
     tableName = (tableId == 0) ? 'None' : widget.billRecord.nameTable;
-
-    total = 0;
-    for (var element in widget.billRecord.preOrderedDishRecords!) {
-      total += (element.amount * element.price);
-    }
-    tax = total * 0.05;
 
     String totalString = NumberFormat.currency(locale: timeZone).format(total);
     String taxString = NumberFormat.currency(locale: timeZone).format(tax);

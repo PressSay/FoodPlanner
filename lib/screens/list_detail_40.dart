@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
@@ -12,6 +13,7 @@ import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:menu_qr/widgets/assignment_button.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/dish_cofirm.dart';
+import 'package:menu_qr/widgets/page_indicator.dart';
 import 'package:provider/provider.dart';
 
 class ListDetail40 extends StatefulWidget {
@@ -31,14 +33,21 @@ class _ListDetail40State extends State<ListDetail40> {
   final Logger logger = Logger();
   String timeZone = 'vi_VN';
   BillRecord? billRecord; // lam sao de chinh gia tri default nay day
-  Map<int, BillRecord> billRecords = {};
+  List<BillRecord> billRecords = [];
+  int indexBillIdCurrent = 0;
   int categoryId = 0;
   double total = 0;
   bool isInitBillId = true;
-
+  int iBackward = (1 - 1) % 3; // pageViewSize;
+  int iForward = (1 + 1) % 3; //pageViewSize;
+  int _currentPageIndex = 0;
   Alert? alert;
-  List<int> tableRecordOldAndNew = [];
+  late PageController _pageViewController;
 
+  final List<List<PreOrderedDishRecord>> preOrderedDishRecords = [];
+  final pageViewSize = 3;
+  final pageSize = 4;
+  final List<int> tableRecordOldAndNew = [];
   final DataHelper dataHelper = DataHelper();
 
   void getBillRecords() async {
@@ -55,8 +64,8 @@ class _ListDetail40State extends State<ListDetail40> {
       sql = 'id IN ($placeholders)';
     }
 
-    Map<int, BillRecord> tmpBillRecords =
-        await dataHelper.billRecords(where: sql, whereArgs: A);
+    List<BillRecord> tmpBillRecords =
+        await dataHelper.billRecordsTypeListOnly(where: sql, whereArgs: A);
     setState(() {
       billRecords.clear();
       billRecords.addAll(tmpBillRecords);
@@ -76,6 +85,13 @@ class _ListDetail40State extends State<ListDetail40> {
     alert = Alert(context: context);
     getBillRecords();
     super.initState();
+    _pageViewController = PageController();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _pageViewController.dispose();
   }
 
   void checkComplete(BillRecord billRecord) async {
@@ -158,77 +174,67 @@ class _ListDetail40State extends State<ListDetail40> {
         ]));
   }
 
+  void getPreOrderedDishRecords(int billId) async {
+    final List<List<PreOrderedDishRecord>> listTmpPreOrderedDishRecords = [];
+    var tmpTotal = 0.0;
+    for (var i = 0; i < pageViewSize; i++) {
+      final tmpPreOrderedDishRecords = await dataHelper.preOrderedDishList(
+          where: 'billId = ?',
+          whereArgs: [billId],
+          pageNum: (i + 1),
+          pageSize: pageSize);
+      for (PreOrderedDishRecord e in tmpPreOrderedDishRecords) {
+        tmpTotal = tmpTotal + e.amount * e.price;
+      }
+      listTmpPreOrderedDishRecords.add(tmpPreOrderedDishRecords);
+    }
+    setState(() {
+      total = tmpTotal;
+      preOrderedDishRecords.clear();
+      preOrderedDishRecords.addAll(listTmpPreOrderedDishRecords);
+    });
+  }
+
+  ListView assigmentsListView(ColorScheme colorScheme) {
+    return ListView.builder(
+        scrollDirection: Axis.horizontal,
+        // vì Assigment không thể nào vượt quá con số interger được
+        itemCount: billRecords.length,
+        itemBuilder: (context, index) {
+          if (isInitBillId) {
+            logger.d("isInitBillId $isInitBillId");
+            billRecord = billRecords[index];
+            indexBillIdCurrent = index;
+            getPreOrderedDishRecords(billRecords[index].id!);
+            isInitBillId = false;
+          }
+
+          return AssignmentButton(
+              callBack: () {
+                if (billRecord!.id! == billRecords[index].id!) {
+                  return;
+                }
+                setState(() {
+                  billRecord = billRecords[index];
+                  indexBillIdCurrent = index;
+                  getPreOrderedDishRecords(billRecords[index].id!);
+                });
+              },
+              active: (billRecord != null)
+                  ? billRecords[index].id == billRecord!.id!
+                  : false,
+              colors: [
+                colorScheme.primary,
+                colorScheme.onPrimaryContainer,
+                colorScheme.primaryContainer,
+              ]);
+        });
+  }
+
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final DishProvider dishProvider = context.watch<DishProvider>();
-
-    final List<Widget> listAssignment = [];
-    billRecords.forEach((k, v) {
-      if (isInitBillId) {
-        billRecord = v;
-        isInitBillId = !isInitBillId;
-      }
-      listAssignment.add(AssignmentButton(
-          callBack: () {
-            if (billRecord!.id! == k) {
-              return;
-            }
-            setState(() {
-              billRecord = v;
-            });
-          },
-          active: v.id == (billRecord?.id! ?? 0),
-          colors: [
-            colorScheme.primary,
-            colorScheme.onPrimaryContainer,
-            colorScheme.primaryContainer,
-          ]));
-    });
-    listAssignment.add(Padding(padding: EdgeInsets.all(6)));
-
-    total = 0;
-    final List<Widget> itemDishBuilder = [];
-    for (var e in billRecord?.preOrderedDishRecords ?? []) {
-      if (e.categoryId != categoryId) {
-        categoryId = e.categoryId;
-        itemDishBuilder.add(Center(
-          child: SizedBox(
-              width: 345,
-              child: Row(mainAxisAlignment: MainAxisAlignment.start, children: [
-                Text(
-                  e.titleCategory ?? "",
-                  style: TextStyle(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 17),
-                ),
-              ])),
-        ));
-        itemDishBuilder.add(Padding(padding: EdgeInsets.all(8)));
-      }
-      total += e.price * e.amount;
-
-      itemDishBuilder.add(DishCofirm(
-        onlyView: widget.onlyView,
-        imagePath: e.imagePath,
-        title: e.titleDish,
-        price: e.price,
-        amount: e.amount,
-        callBackDel: () {
-          alert!.showAlert('Delete Dish', 'Are You Sure?', true, () async {
-            dataHelper.deteleDishIdAtBillId(billRecord!.id!, e.dishId);
-            // BigO(n)
-            setState(() {
-              billRecords[billRecord!.id!]
-                  ?.preOrderedDishRecords
-                  ?.removeWhere((e1) => e1.dishId == e.dishId);
-            });
-          });
-        },
-      ));
-    }
-    categoryId = 0;
 
     return Scaffold(
       body: Column(
@@ -237,9 +243,7 @@ class _ListDetail40State extends State<ListDetail40> {
             child: SafeArea(
               child: Column(children: [
                 Expanded(
-                  child: ListView(
-                    children: itemDishBuilder,
-                  ),
+                  child: dishPageView(),
                 ),
                 infoPrice(colorScheme, billRecord?.amountPaid ?? 0, total),
                 Padding(
@@ -251,17 +255,18 @@ class _ListDetail40State extends State<ListDetail40> {
                             Border.all(width: 1, color: colorScheme.primary)),
                     child: Row(
                       children: [
-                        Expanded(
-                            child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          children: listAssignment,
-                        ))
+                        Expanded(child: assigmentsListView(colorScheme))
                       ],
                     ),
                   ),
                 )
               ]),
             ),
+          ),
+          PageIndicator(
+            currentPageIndex: _currentPageIndex,
+            onUpdateCurrentPageIndex: _updateCurrentPageIndex,
+            isOnDesktopAndWeb: _isOnDesktopAndWeb,
           ),
           BottomNavigatorCustomize(listEnableBtn: [
             true,
@@ -293,11 +298,13 @@ class _ListDetail40State extends State<ListDetail40> {
                         isImmediate: false,
                       ),
                     )).then((value) {
+                  getPreOrderedDishRecords(value.id);
                   logger.d('old: $currenTableId, new: ${value.tableId}');
                   setState(() {
                     /* Nên đổi cách khác để xét xem tableId đã thay đổi hay chưa */
                     if (currenTableId == value.tableId) {
-                      billRecords[billRecord!.id!] = value;
+                      logger.d('indexBillRecord: $indexBillIdCurrent');
+                      billRecords[indexBillIdCurrent] = value;
                     } else {
                       // nếu old khác new thì nó mới thêm vào [tableRecordOldAndNew]
                       tableRecordOldAndNew.clear();
@@ -307,9 +314,14 @@ class _ListDetail40State extends State<ListDetail40> {
                           'widget.listBillId is null ? ${widget.listBillId == null}');
                       if (widget.listBillId == null) {
                         updateTableRecordOfPage36(currenTableId);
-                        billRecords.remove(billRecord!.id!);
-                        billRecord = null;
-                        isInitBillId = true;
+                        billRecords
+                            .removeWhere((e1) => e1.id! == billRecord!.id!);
+                        setState(() {
+                          billRecord = billRecords.firstOrNull;
+                          if (billRecord != null) {
+                            getPreOrderedDishRecords(billRecord!.id!);
+                          }
+                        });
                       }
                     }
                     // 40 -> 36 -> 35
@@ -320,18 +332,23 @@ class _ListDetail40State extends State<ListDetail40> {
             () {
               // check customer was left
               checkComplete(billRecord!);
-              int billIdCurrent = billRecord!.id!;
+              // int billIdCurrent = billRecord!.id!;
               Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (BuildContext context) => Paid42(
                       billRecord: billRecord!,
                     ),
-                  ));
+                  )).then((value) {});
               setState(() {
-                billRecords.remove(billIdCurrent);
-                billRecord = billRecords.values.lastOrNull;
+// bigO(n) nhưng n có giới hạn theo người dùng select Bill của trang trước đó
+                // billRecords.removeWhere((e) => e.id! == billIdCurrent);
+                billRecords.removeAt(indexBillIdCurrent);
+                billRecord = billRecords.lastOrNull;
               });
+              if (billRecord != null) {
+                getPreOrderedDishRecords(billRecord!.id!);
+              }
             }
           ], icons: [
             Icon(Icons.arrow_back),
@@ -351,5 +368,174 @@ class _ListDetail40State extends State<ListDetail40> {
         ],
       ),
     );
+  }
+
+  void _updateCurrentPageIndex(int index) {
+    // logger.d('_updateCurrentPageIndex $index');
+    _pageViewController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  bool get _isOnDesktopAndWeb {
+    if (kIsWeb) {
+      return true;
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.macOS:
+      case TargetPlatform.linux:
+      case TargetPlatform.windows:
+        return true;
+      case TargetPlatform.android:
+      case TargetPlatform.iOS:
+      case TargetPlatform.fuchsia:
+        return false;
+    }
+  }
+
+  void getpreOrderedDishRecordsAtPageViewIndex(int index, int pageNum) async {
+    final tmpBillRecords = await dataHelper.preOrderedDishList(
+        where: 'billId = ?',
+        whereArgs: [billRecord?.id ?? 0],
+        pageNum: pageNum,
+        pageSize: pageSize);
+    preOrderedDishRecords[index].clear();
+    preOrderedDishRecords[index].addAll(tmpBillRecords);
+  }
+
+  void _handlePageViewChanged(int currentPageIndex) {
+    if (!_isOnDesktopAndWeb) {
+      return;
+    }
+    logger.d("currentPageIndex $currentPageIndex");
+
+    final index = currentPageIndex;
+    final newIndex = index % pageViewSize;
+    final pageNum = index + 1;
+
+    switch (newIndex) {
+      case 0:
+        if (iBackward == 0) {
+          getpreOrderedDishRecordsAtPageViewIndex(2, pageNum - 1);
+        }
+        if (iForward == 1) {
+          getpreOrderedDishRecordsAtPageViewIndex(1, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+      case 1:
+        if (iBackward == 1) {
+          getpreOrderedDishRecordsAtPageViewIndex(0, pageNum - 1);
+        }
+        if (iForward == 2) {
+          getpreOrderedDishRecordsAtPageViewIndex(2, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+      case 2:
+        if (iBackward == 2) {
+          getpreOrderedDishRecordsAtPageViewIndex(1, pageNum - 1);
+        }
+        if (iForward == 0) {
+          getpreOrderedDishRecordsAtPageViewIndex(0, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+    }
+
+    setState(() {
+      _currentPageIndex = currentPageIndex;
+    });
+  }
+
+  PageView dishPageView() {
+    return PageView.builder(
+        controller: _pageViewController,
+        onPageChanged: _handlePageViewChanged,
+        itemBuilder: (context, index) {
+          return ListDetailView40(
+              preOrderedDishRecords:
+                  preOrderedDishRecords.elementAtOrNull(index % pageViewSize) ??
+                      [],
+              onlyView: widget.onlyView,
+              deleteCallback: (List<PreOrderedDishRecord> records, int index1) {
+                alert!.showAlert('Delete Dish', 'Are You Sure?', true,
+                    () async {
+                  dataHelper.deteleDishIdAtBillId(
+                      billRecord!.id!, records[index1].dishId);
+                  // BigO(n)
+                  setState(() {
+                    records.removeAt(index1);
+                  });
+                  if (records.isEmpty && index1 == 0) {
+                    getPreOrderedDishRecords(billRecord?.id ?? 0);
+                  }
+                });
+              });
+        });
+  }
+}
+
+class ListDetailView40 extends StatelessWidget {
+  const ListDetailView40(
+      {super.key,
+      required this.preOrderedDishRecords,
+      required this.onlyView,
+      required this.deleteCallback});
+  final List<PreOrderedDishRecord> preOrderedDishRecords;
+  final bool onlyView;
+  final Function deleteCallback;
+
+  @override
+  Widget build(BuildContext context) {
+    var categoryId = 0;
+    return ListView.builder(
+        itemCount: preOrderedDishRecords.length,
+        itemBuilder: (context, index) {
+          final colorScheme = Theme.of(context).colorScheme;
+          final e = preOrderedDishRecords[index];
+          final dishCofirm = DishCofirm(
+            onlyView: onlyView,
+            imagePath: e.imagePath,
+            title: e.titleDish,
+            price: e.price,
+            amount: e.amount,
+            callBackDel: () => deleteCallback(preOrderedDishRecords, index),
+          );
+          if (e.categoryId != categoryId) {
+            categoryId = e.categoryId;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 0, 0, 8),
+                  child: Center(
+                    child: SizedBox(
+                        width: 345,
+                        child: Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Text(
+                                e.titleCategory,
+                                style: TextStyle(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 17),
+                              ),
+                            ])),
+                  ),
+                ),
+                dishCofirm
+              ],
+            );
+          }
+
+          return dishCofirm;
+        });
   }
 }

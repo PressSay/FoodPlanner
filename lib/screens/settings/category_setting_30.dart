@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import 'package:menu_qr/models/category_record.dart';
 import 'package:menu_qr/models/menu_record.dart';
 import 'package:menu_qr/screens/settings/dish_setting_31.dart';
@@ -29,6 +30,7 @@ class _Category30State extends State<Category30> {
   final TextEditingController _controllerCategory = TextEditingController();
   final TextEditingController _controllerDesc = TextEditingController();
   final List<CategoryRecord> categoryRecords = [];
+  final logger = Logger();
 
   @override
   void initState() {
@@ -100,6 +102,7 @@ class _Category30State extends State<Category30> {
           child: SettingButton(
               colorScheme: colorScheme,
               callbackRebuild: () {
+                logger.d("category: ${e.id ?? 0}");
                 Navigator.push(
                     context,
                     MaterialPageRoute(

@@ -152,38 +152,40 @@ class DataHelper {
     );
   }
 
-  Future<List<MenuRecord>> menuRecords(
-      {String? where,
-      List<Object>? whereArgs,
-      int? limit,
-      int? pageNum,
-      int? pageSize}) async {
+  Future<List<MenuRecord>> menuRecords({
+    String? where,
+    List<Object>? whereArgs,
+    int? limit,
+    int? pageNum,
+    int? pageSize,
+  }) async {
     final db = await _dataHelper.database;
-    if (pageNum != null && pageSize != null) {
-      final query = StringBuffer(
-          'WITH new_$sqlMenuRecords AS ( SELECT ROW_NUMBER () OVER '
-          '(ORDER BY id) AS RowNum, $sqlMenuRecords.* FROM $sqlMenuRecords ) SELECT * '
-          'FROM new_$sqlMenuRecords WHERE RowNum BETWEEN (? - 1) * ? + 1 AND ? * ?');
+    try {
+      final query = StringBuffer('SELECT * FROM $sqlMenuRecords');
       final queryParams = [];
+
       if (where != null && whereArgs != null) {
-        query.write(" AND $where");
-        queryParams.add(whereArgs);
+        query.write(' WHERE $where');
+        queryParams.addAll(whereArgs);
       }
-      queryParams.addAll([pageNum, pageSize, pageNum, pageSize]);
+
+      if (pageNum != null && pageSize != null) {
+        final offset = (pageNum - 1) * pageSize;
+        query.write(' LIMIT ? OFFSET ?');
+        queryParams.addAll([pageSize, offset]);
+      } else if (limit != null) {
+        query.write(' LIMIT ?');
+        queryParams.add(limit);
+      }
+
       final maps = await db.rawQuery(query.toString(), queryParams);
+
       return List.generate(
           maps.length, (index) => MenuRecord.fromMap(maps[index]));
+    } catch (e) {
+      logger.e('Error fetching menu records: $e');
+      return []; // Or rethrow, depending on your error handling strategy
     }
-    final maps = await db.query(
-      sqlMenuRecords,
-      where: where,
-      whereArgs: whereArgs,
-      limit: limit,
-    );
-    return List.generate(
-      maps.length,
-      (index) => MenuRecord.fromMap(maps[index]),
-    );
   }
 
 // category_helper
@@ -235,38 +237,30 @@ class DataHelper {
     );
   }
 
-  Future<List<CategoryRecord>> categoryRecords(
-      {String? where,
-      List<Object>? whereArgs,
-      int? limit,
-      int? pageNum,
-      int? pageSize}) async {
+  Future<List<CategoryRecord>> categoryRecords({
+    String? where,
+    List<Object>? whereArgs,
+    int? limit,
+    int? pageNum,
+    int? pageSize,
+  }) async {
     final db = await _dataHelper.database;
-    if (pageNum != null && pageSize != null) {
-      final query = StringBuffer(
-          'WITH new_$sqlCategoryRecords AS ( SELECT ROW_NUMBER () OVER '
-          '(ORDER BY id) AS RowNum, $sqlCategoryRecords.* FROM $sqlCategoryRecords ) SELECT * '
-          'FROM new_$sqlCategoryRecords WHERE RowNum BETWEEN (? - 1) * ? + 1 AND ? * ?');
-      final queryParams = [];
-      if (where != null && whereArgs != null) {
-        query.write(" AND $where");
-        queryParams.add(whereArgs);
-      }
-      queryParams.addAll([pageNum, pageSize, pageNum, pageSize]);
-      final maps = await db.rawQuery(query.toString(), queryParams);
+    try {
+      final offset = (pageNum != null && pageSize != null)
+          ? (pageNum - 1) * pageSize
+          : null;
+      final maps = await db.query(sqlCategoryRecords,
+          where: where,
+          whereArgs: whereArgs,
+          limit: pageSize ?? limit,
+          offset: offset);
+
       return List.generate(
           maps.length, (index) => CategoryRecord.fromMap(maps[index]));
+    } catch (e) {
+      logger.e('Error fetching category records: $e');
+      return []; // Or throw the exception, depending on your error handling strategy
     }
-    final List<Map<String, dynamic>> maps = await db.query(
-      sqlCategoryRecords,
-      where: where,
-      whereArgs: whereArgs,
-      limit: limit,
-    );
-    return List.generate(
-      maps.length,
-      (index) => CategoryRecord.fromMap(maps[index]),
-    );
   }
 
 // dish_helper
@@ -482,47 +476,115 @@ class DataHelper {
     int? pageSize,
   }) async {
     final db = await _dataHelper.database;
+    try {
+      final query = StringBuffer('SELECT * FROM $sqlBillRecords');
+      final queryParams = [];
 
-    final query = StringBuffer('SELECT * FROM $sqlBillRecords');
-    if (pageNum != null && pageSize != null) {
-      query.clear();
-      query.write('WITH new_$sqlBillRecords AS ( SELECT ROW_NUMBER () OVER '
-          '(ORDER BY id) AS RowNum, $sqlBillRecords.* FROM $sqlBillRecords ) SELECT * '
-          'FROM new_$sqlBillRecords WHERE RowNum BETWEEN (? - 1) * ? + 1 AND ? * ?');
-    }
-    final queryParams = [];
-    queryParams.addAll([pageNum, pageSize, pageNum, pageSize]);
-
-    if (where != null && whereArgs != null) {
-      if (pageNum != null && pageSize != null) {
-        query.write(' AND $where');
-      } else {
+      if (where != null && whereArgs != null) {
         query.write(' WHERE $where');
+        queryParams.addAll(whereArgs);
       }
-      queryParams.addAll(whereArgs);
-    }
 
-    if (limit != null && (pageNum == null && pageSize == null)) {
-      query.write(' LIMIT $limit');
-    }
+      // Handle pagination with limit and offset
+      if (pageNum != null && pageSize != null) {
+        final offset = (pageNum - 1) * pageSize;
+        query.write(' LIMIT ? OFFSET ?');
+        queryParams.addAll([pageSize, offset]);
+      } else if (limit != null) {
+        query.write(' LIMIT ?');
+        queryParams.add(limit);
+      }
 
-    final maps = await db.rawQuery(query.toString(), queryParams);
+      logger.d(query.toString());
 
-    final billRecords = Map<int, BillRecord>.fromIterable(
+      final maps = await db.rawQuery(query.toString(), queryParams);
+
+      if (maps.isEmpty) return {};
+
+      final billRecords = Map<int, BillRecord>.fromIterable(
         maps.map((e) => BillRecord.fromMap(e)).toList(),
-        key: (e) => e.id!);
-
-    for (var billRecord in billRecords.values) {
-      final preOrderedDishRecordsMaps = await db.rawQuery(
-        'SELECT * FROM $sqlPreOrderedDishRecords WHERE billId = ?',
-        [billRecord.id!],
+        key: (e) => e.id ?? 0,
       );
-      billRecord.preOrderedDishRecords = preOrderedDishRecordsMaps
-          .map((e) => PreOrderedDishRecord.fromMap(e))
-          .toList();
-    }
 
-    return billRecords;
+      // Fetch pre-ordered dishes in a separate query with join
+      final preOrderedDishQuery =
+          StringBuffer('SELECT * FROM $sqlPreOrderedDishRecords');
+      if (billRecords.isNotEmpty) {
+        preOrderedDishQuery.write(' WHERE billId IN (');
+        preOrderedDishQuery
+            .write(List.generate(billRecords.length, (_) => '?').join(','));
+        preOrderedDishQuery.write(')');
+
+        final preOrderedDishMaps = await db.rawQuery(
+          preOrderedDishQuery.toString(),
+          billRecords.keys.toList(),
+        );
+
+        // Add pre-ordered dishes to each bill record
+        for (final billRecord in billRecords.values) {
+          billRecord.preOrderedDishRecords = preOrderedDishMaps
+              .where((e) => e['billId'] == billRecord.id)
+              .map((e) => PreOrderedDishRecord.fromMap(e))
+              .toList();
+        }
+      }
+
+      return billRecords;
+    } catch (e) {
+      logger.e('Error fetching bill records: $e'); // Log the error
+      // Handle the error appropriately, e.g., return an empty map or rethrow
+      return {}; // Or throw an exception
+    }
+  }
+
+  Future<List<BillRecord>> billRecordsTypeListOnly({
+    String? where,
+    List<Object>? whereArgs,
+    int? limit,
+    int? pageNum,
+    int? pageSize,
+  }) async {
+    final db = await _dataHelper.database;
+    try {
+      final offset = (pageSize != null && pageNum != null)
+          ? (pageNum - 1) * pageSize
+          : null;
+      final maps = await db.query(sqlBillRecords,
+          where: where, whereArgs: whereArgs, limit: pageSize, offset: offset);
+
+      logger.d("maps.isEmpty ${maps.isEmpty}");
+
+      if (maps.isEmpty) return [];
+
+      final billRecords = List.generate(
+        maps.length,
+        (index) => BillRecord.fromMap(maps[index]),
+      );
+
+      return billRecords;
+    } catch (e) {
+      logger.e('Error fetching bill records: $e'); // Log the error
+      // Handle the error appropriately, e.g., return an empty map or rethrow
+      return []; // Or throw an exception
+    }
+  }
+
+  Future<List<PreOrderedDishRecord>> preOrderedDishList(
+      {String? where,
+      List<Object?>? whereArgs,
+      int? limit,
+      int? pageNum,
+      int? pageSize}) async {
+    final db = await _dataHelper.database;
+    final offset =
+        (pageSize != null && pageNum != null) ? (pageNum - 1) * pageSize : null;
+    final maps = await db.query(sqlPreOrderedDishRecords,
+        where: where,
+        whereArgs: whereArgs,
+        limit: pageSize ?? limit,
+        offset: offset);
+    return List.generate(
+        maps.length, (index) => PreOrderedDishRecord.fromMap(maps[index]));
   }
 
   Future<double> revenueBillRecord(int id) async {
@@ -600,24 +662,32 @@ class DataHelper {
     }
   }
 
-  Future<Map<int, TableRecord>> tableRecords(
-      {int? pageNum, int? pageSize}) async {
+  Future<Map<int, TableRecord>> tableRecords({
+    int? pageNum,
+    int? pageSize,
+  }) async {
     final db = await _dataHelper.database;
-    if (pageNum != null && pageSize != null) {
-      final query = StringBuffer(
-          'WITH new_$sqlTableRecords AS ( SELECT ROW_NUMBER () OVER '
-          '(ORDER BY id) AS RowNum, $sqlTableRecords.* FROM $sqlTableRecords ) SELECT * '
-          'FROM new_$sqlTableRecords WHERE RowNum BETWEEN (? - 1) * ? + 1 AND ? * ?');
-      final queryParams = [pageNum, pageSize, pageNum, pageSize];
+    try {
+      final query = StringBuffer('SELECT * FROM $sqlTableRecords');
+      final queryParams = [];
+
+      // Handle pagination with limit and offset
+      if (pageNum != null && pageSize != null) {
+        final offset = (pageNum - 1) * pageSize;
+        query.write(' LIMIT ? OFFSET ?');
+        queryParams.addAll([pageSize, offset]);
+      }
+
       final maps = await db.rawQuery(query.toString(), queryParams);
+
       return Map<int, TableRecord>.fromIterable(
-          maps.map((e) => TableRecord.fromMap(e)).toList(),
-          key: (e) => e.id);
-    }
-    final maps = await db.query(sqlTableRecords);
-    final mapTableRecords = Map<int, TableRecord>.fromIterable(
         maps.map((e) => TableRecord.fromMap(e)).toList(),
-        key: (e) => e.id);
-    return mapTableRecords;
+        key: (e) => e.id,
+      );
+    } catch (e) {
+      logger.e('Error fetching table records: $e'); // Log the error
+      // Handle the error appropriately, e.g., return an empty map or rethrow
+      return {}; // Or throw an exception
+    }
   }
 }

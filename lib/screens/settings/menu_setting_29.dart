@@ -10,7 +10,6 @@ import 'package:menu_qr/screens/settings/category_setting_30.dart';
 import 'package:menu_qr/screens/settings/setting_table_30.dart';
 import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
-import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/order_setting_button_online.dart';
 

@@ -8,7 +8,6 @@ import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/providers/bill_provider.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
-import 'package:menu_qr/widgets/bottom_bar_button.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/table_cofirm.dart';
 import 'package:provider/provider.dart';
@@ -79,7 +78,7 @@ class _Table36State extends State<Table36> {
     newBillRecord.id = lastId;
     newBillRecord.preOrderedDishRecords = await dataHelper.insertDishesAtBillId(
         billProvider.billRecord.preOrderedDishRecords!, lastId);
-    dishProvider.clearRam();
+    dishProvider.clearIndexListRam();
     widget.tableRecord.numOfPeople += 1;
     await saveInfoTable();
     if (wantNavigateToPaid41) {
@@ -127,7 +126,7 @@ class _Table36State extends State<Table36> {
         TableConfirm(
             callBack: () {
               saveBillToSQL(billProvider, dishProvider, false);
-              dishProvider.clearRam();
+              dishProvider.clearIndexListRam();
               Navigator.popUntil(context, (route) => route.isFirst);
             },
             text: (numOfPeople != 0) ? "Add" : "Confirm"),

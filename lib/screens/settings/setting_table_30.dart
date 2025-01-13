@@ -1,8 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import 'package:menu_qr/models/table_record.dart';
 import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
+import 'package:menu_qr/widgets/page_indicator.dart';
 import 'package:menu_qr/widgets/setting_button.dart';
 
 class Table30 extends StatefulWidget {
@@ -15,23 +18,40 @@ class _Table30State extends State<Table30> {
   String filterTitleTable = "";
   bool _showWidgetB = false;
   Alert? alert;
+  int iBackward = (1 - 1) % 3; // pageViewSize;
+  int iForward = (1 + 1) % 3; //pageViewSize;
+  int _currentPageIndex = 0;
+  int indexTableRecordsList = 0;
+  int indexTableRecords = 0;
   int tableId = 0;
   int numOfPeople = 0;
 
-  final Map<int, TableRecord> tableRecords = {};
+  final pageViewSize = 3;
+  final pageSize = 40;
+  final List<List<TableRecord>> tableRecordsList = [];
   final TextEditingController _controllerTableOld = TextEditingController();
   final TextEditingController _controllerDescOld = TextEditingController();
   final TextEditingController _controllerTable = TextEditingController();
   final TextEditingController _controllerDesc = TextEditingController();
+  final logger = Logger();
 
   final DataHelper dataHelper = DataHelper();
+  late PageController _pageViewController;
 
-  void getTableRecords() async {
-    final Map<int, TableRecord> tmpTableRecords =
-        await dataHelper.tableRecords();
+  void getTableRecords({String? where, List<Object?>? whereArgs}) async {
+    final List<List<TableRecord>> listTmpTableRecords = [];
+    for (var i = 0; i < pageViewSize; i++) {
+      final tmpTableRecords = await dataHelper.listTypeTableRecords(
+          where: where,
+          whereArgs: whereArgs,
+          pageNum: (i + 1),
+          pageSize: pageSize);
+      listTmpTableRecords.add(tmpTableRecords);
+      logger.d('getTableRecords $i');
+    }
     setState(() {
-      tableRecords.clear();
-      tableRecords.addAll(tmpTableRecords);
+      tableRecordsList.clear();
+      tableRecordsList.addAll(listTmpTableRecords);
     });
   }
 
@@ -43,7 +63,7 @@ class _Table30State extends State<Table30> {
         numOfPeople: numOfPeople);
     dataHelper.updateTableRecord(newE);
     setState(() {
-      tableRecords[tableId] = newE;
+      tableRecordsList[indexTableRecordsList][indexTableRecords] = newE;
     });
     alert!.showAlert('Update Table', 'success!', false, null);
   }
@@ -63,7 +83,9 @@ class _Table30State extends State<Table30> {
     }
     newE.id = lastId;
     setState(() {
-      tableRecords.addAll({lastId: newE});
+      if (tableRecordsList[indexTableRecordsList].length < pageSize) {
+        tableRecordsList[indexTableRecordsList].add(newE);
+      }
     });
     alert!.showAlert('Insert Table', 'success!', false, null);
   }
@@ -73,52 +95,138 @@ class _Table30State extends State<Table30> {
     alert = Alert(context: context);
     getTableRecords();
     super.initState();
+    _pageViewController = PageController();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _pageViewController.dispose();
+  }
+
+  Future<void> getTableRecordsAtPageViewIndex(int index, int pageNum) async {
+    if (pageNum == 0) return;
+    final where = filterTitleTable.isNotEmpty ? 'name LIKE ?' : null;
+    final whereArgs =
+        filterTitleTable.isNotEmpty ? ['%$filterTitleTable%'] : null;
+    final tmpBillRecords = await dataHelper.listTypeTableRecords(
+        where: where,
+        whereArgs: whereArgs,
+        pageNum: pageNum,
+        pageSize: pageSize);
+
+    tableRecordsList[index].clear();
+    tableRecordsList[index].addAll(tmpBillRecords);
+  }
+
+  void _handlePageViewChanged(int currentPageIndex) {
+    if (!_isOnDesktopAndWeb) {
+      return;
+    }
+
+    final index = currentPageIndex;
+    final newIndex = index % pageViewSize;
+    final pageNum = index + 1;
+
+    switch (newIndex) {
+      case 0:
+        if (iBackward == 0) {
+          getTableRecordsAtPageViewIndex(2, pageNum - 1);
+        }
+        if (iForward == 1) {
+          getTableRecordsAtPageViewIndex(1, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+      case 1:
+        if (iBackward == 1) {
+          getTableRecordsAtPageViewIndex(0, pageNum - 1);
+        }
+        if (iForward == 2) {
+          getTableRecordsAtPageViewIndex(2, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+      case 2:
+        if (iBackward == 2) {
+          getTableRecordsAtPageViewIndex(1, pageNum - 1);
+        }
+        if (iForward == 0) {
+          getTableRecordsAtPageViewIndex(0, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+    }
+
+    setState(() {
+      _currentPageIndex = currentPageIndex;
+    });
+  }
+
+  void _updateCurrentPageIndex(int index) {
+    // logger.d('_updateCurrentPageIndex $index');
+    _pageViewController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  PageView tablePageView() {
+    return PageView.builder(
+        controller: _pageViewController,
+        onPageChanged: _handlePageViewChanged,
+        itemBuilder: (context, index) {
+          return SettingTable30View(
+              tableRecords:
+                  tableRecordsList.elementAtOrNull(index % pageViewSize) ?? [],
+              deleteCallback:
+                  (List<TableRecord> insideTableRecords, int index1) {
+                alert!.showAlert('Delete Table Record', 'Are You Sure', true,
+                    () {
+                  dataHelper.deleteTableRecord(insideTableRecords[index1].id!);
+                  setState(() {
+                    insideTableRecords.removeAt(index1);
+                  });
+                });
+              },
+              rebuildCallback:
+                  (List<TableRecord> insideTableRecords, int index1) {
+                _controllerDescOld.text = insideTableRecords[index1].desc;
+                _controllerTableOld.text = insideTableRecords[index1].name;
+                tableId = insideTableRecords[index1].id!;
+                numOfPeople = insideTableRecords[index1].numOfPeople;
+                indexTableRecordsList = index % pageViewSize;
+                indexTableRecords = index1;
+                logger.d('desc ${insideTableRecords[index1].desc}, '
+                    'name ${insideTableRecords[index1].name}, '
+                    'id ${insideTableRecords[index1].id}, '
+                    'numOfPeople ${insideTableRecords[index1].numOfPeople}, '
+                    'indexTableRecordsList $indexTableRecordsList, '
+                    'indexTableRecords $indexTableRecords');
+              });
+        });
   }
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
-    Map<int, TableRecord> filteredTableRecords =
-        (filterTitleTable.isEmpty) ? tableRecords : Map.from(tableRecords)
-          ..removeWhere((k, v) => !v.name.contains(filterTitleTable));
-
-    List<Widget> itemBuilder = [];
-    filteredTableRecords.forEach((k, e) {
-      itemBuilder.add(Center(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
-          child: SettingButton(
-              colorScheme: colorScheme,
-              callbackRebuild: () {
-                _controllerDescOld.text = e.desc;
-                _controllerTableOld.text = e.name;
-                tableId = e.id!;
-                numOfPeople = e.numOfPeople;
-              },
-              callbackDelete: () {
-                alert!.showAlert('Delete Table Record', 'Are You Sure', true,
-                    () {
-                  dataHelper.deleteTableRecord(e.id!);
-                  setState(() {
-                    tableRecords.remove(k);
-                  });
-                });
-              },
-              content: e.name),
-        ),
-      ));
-    });
-
     return Scaffold(
       body: Column(
         children: [
           Expanded(
               child: SafeArea(
-            child: ListView(
-              children: itemBuilder,
-            ),
+            child: tablePageView(),
           )),
+          PageIndicator(
+            currentPageIndex: _currentPageIndex,
+            onUpdateCurrentPageIndex: _updateCurrentPageIndex,
+            isOnDesktopAndWeb: _isOnDesktopAndWeb,
+          ),
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -277,7 +385,11 @@ class _Table30State extends State<Table30> {
                     onSubmitted: (text) {
                       setState(() {
                         _showWidgetB = !_showWidgetB;
-                        filterTitleTable = text;
+                        if (text.isNotEmpty) {
+                          getTableRecords(
+                              where: 'name LIKE ?', whereArgs: ['%$text%']);
+                          filterTitleTable = text;
+                        }
                       });
                     })),
             crossFadeState: _showWidgetB
@@ -300,7 +412,10 @@ class _Table30State extends State<Table30> {
             () {
               setState(() {
                 _showWidgetB = !_showWidgetB;
-                filterTitleTable = "";
+                if (filterTitleTable.isNotEmpty) {
+                  getTableRecords();
+                  filterTitleTable = "";
+                }
               });
             },
             () {
@@ -327,5 +442,52 @@ class _Table30State extends State<Table30> {
         ],
       ),
     );
+  }
+
+  bool get _isOnDesktopAndWeb {
+    if (kIsWeb) {
+      return true;
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.macOS:
+      case TargetPlatform.linux:
+      case TargetPlatform.windows:
+        return true;
+      case TargetPlatform.android:
+      case TargetPlatform.iOS:
+      case TargetPlatform.fuchsia:
+        return false;
+    }
+  }
+}
+
+class SettingTable30View extends StatelessWidget {
+  const SettingTable30View(
+      {super.key,
+      required this.tableRecords,
+      required this.deleteCallback,
+      required this.rebuildCallback});
+  final List<TableRecord> tableRecords;
+  final Function deleteCallback;
+  final Function rebuildCallback;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return ListView.builder(
+        itemCount: tableRecords.length,
+        itemBuilder: (context, index) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
+              child: SettingButton(
+                  colorScheme: colorScheme,
+                  callbackRebuild: () => rebuildCallback(tableRecords, index),
+                  callbackDelete: () => deleteCallback(tableRecords, index),
+                  content: tableRecords[index].name),
+            ),
+          );
+        });
   }
 }

@@ -32,7 +32,6 @@ class _Paid41State extends State<Paid41> {
   final TextEditingController _controller = TextEditingController();
   bool isInit = true;
   double total = 0;
-  double tax = 0;
   double amountPaid = 0;
   double change = 0;
   String timeZone = "vi_VN";
@@ -46,14 +45,11 @@ class _Paid41State extends State<Paid41> {
     final tmpPreOrderedDishRecords = await dataHelper.preOrderedDishList(
         where: 'billId = ?', whereArgs: [widget.billRecord.id!]);
     var tmpTotal = 0.0;
-    var tmpTax = 0.0;
     for (var element in tmpPreOrderedDishRecords) {
       tmpTotal += (element.amount * element.price);
-      tmpTax = tmpTax + tmpTotal * 0.05;
     }
     setState(() {
       total = tmpTotal;
-      tax = tmpTax;
       widget.billRecord.preOrderedDishRecords = tmpPreOrderedDishRecords;
     });
   }
@@ -89,12 +85,12 @@ class _Paid41State extends State<Paid41> {
     final listEnableBtn = [widget.isRebuild, true, widget.isRebuild, true];
     final listCallback = [
       () {
-        dishProvider.clearRam();
+        dishProvider.clearIndexListRam();
         widget.billRecord.preOrderedDishRecords?.clear();
         Navigator.pop(context, widget.billRecord);
       },
       () {
-        dishProvider.clearRam();
+        dishProvider.clearIndexListRam();
         Navigator.popUntil(context, (route) => route.isFirst);
       },
       () {
@@ -166,7 +162,8 @@ class _Paid41State extends State<Paid41> {
     tableName = (tableId == 0) ? 'None' : widget.billRecord.nameTable;
 
     String totalString = NumberFormat.currency(locale: timeZone).format(total);
-    String taxString = NumberFormat.currency(locale: timeZone).format(tax);
+    String taxString =
+        NumberFormat.currency(locale: timeZone).format(total * 0.05);
     String changeString =
         NumberFormat.currency(locale: timeZone).format(change);
 

@@ -15,10 +15,6 @@ class DishProvider extends ChangeNotifier {
   Map<int, PreOrderedDishRecord> get indexDishList => _indexDishList;
   List<PreOrderedDishRecord> get indexDishListSorted => _indexDishListSorted;
 
-  void addIndexDishListSorted(PreOrderedDishRecord preOrderedDishRecord) {
-    _indexDishListSorted.add(preOrderedDishRecord);
-  }
-
   void setCateogry(int categoryId, String titleCategory) {
     _categoryId = categoryId;
     _titleCategory = titleCategory;
@@ -35,10 +31,6 @@ class DishProvider extends ChangeNotifier {
 
   int get menuId => _menuId;
 
-  void clearIndexDishListSorted() {
-    _indexDishListSorted.clear();
-  }
-
   void importDataToIndexDishList(
       List<PreOrderedDishRecord> preOrderedDishRecords) {
     _indexDishList.clear();
@@ -50,9 +42,10 @@ class DishProvider extends ChangeNotifier {
   void importDataToIndexDishListSorted(
       List<PreOrderedDishRecord> preOrderedDishRecords) {
     _indexDishListSorted.clear();
-    for (var e in preOrderedDishRecords) {
-      _indexDishListSorted.add(e);
-    }
+    _indexDishListSorted.addAll(preOrderedDishRecords);
+    _indexDishListSorted.sort((a, b) {
+      return a.categoryId - b.categoryId;
+    });
   }
 
   // table will be 0 if user choose order imediately
@@ -101,15 +94,10 @@ class DishProvider extends ChangeNotifier {
       return;
     }
     _indexDishList.remove(id);
-    notifyListeners();
+    // notifyListeners();
   }
 
-  void deleteAmountSorted(int id) {
-    _indexDishListSorted.removeWhere((e) => e.dishId == id);
-    notifyListeners();
-  }
-
-  void deleteZero() {
+  void deleteEmptyIndexDishList() {
     _indexDishList.removeWhere((k, v) => v.amount == 0);
   }
 
@@ -117,12 +105,12 @@ class DishProvider extends ChangeNotifier {
     return _indexDishList[id]?.amount ?? 0;
   }
 
-  void clearRamWithNotify() {
+  void clearIndexListWithNotify() {
     _indexDishList.clear();
     notifyListeners();
   }
 
-  void clearRam() {
+  void clearIndexListRam() {
     _indexDishList.clear();
   }
 }

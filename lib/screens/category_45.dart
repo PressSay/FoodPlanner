@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:menu_qr/models/category_record.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
+import 'package:menu_qr/widgets/page_indicator.dart';
 import 'package:provider/provider.dart';
 
 class Category45 extends StatefulWidget {
@@ -15,80 +17,159 @@ class Category45 extends StatefulWidget {
 class _Category45 extends State<Category45> {
   bool _showWidgetB = false;
   bool isInit = false;
+  String filterTitleCategory = "";
+  int iBackward = (1 - 1) % 3; // pageViewSize;
+  int iForward = (1 + 1) % 3; //pageViewSize;
+  int _currentPageIndex = 0;
 
+  final pageViewSize = 3;
+  final pageSize = 40;
   final TextEditingController _controller = TextEditingController();
   final DataHelper dataHelper = DataHelper();
-  final List<CategoryRecord> categoryRecords = [];
+  final List<List<CategoryRecord>> categoryRecords = [];
+  late PageController _pageViewController;
 
-  void getCategoryRecords(DishProvider dishProvider) async {
-    final List<CategoryRecord> tmpCategoryRecords =
-        await dataHelper.categoryRecords(
-            where: 'menuId = ?', whereArgs: [dishProvider.menuId], limit: null);
+  void getCategoryRecords(
+      {required DishProvider dishProvider,
+      String? where,
+      List<Object?>? whereArgs}) async {
+    final List<List<CategoryRecord>> tmpCategoryRecordsList = [];
+    for (var i = 0; i < pageViewSize; i++) {
+      final List<CategoryRecord> tmpCategoryRecords =
+          await dataHelper.categoryRecords(
+              where: 'menuId = ? ${where != null ? 'AND $where' : ''}',
+              whereArgs: [dishProvider.menuId, ...?whereArgs],
+              pageNum: (i + 1),
+              pageSize: pageSize);
+      tmpCategoryRecordsList.add(tmpCategoryRecords);
+    }
     setState(() {
       categoryRecords.clear();
-      categoryRecords.addAll(tmpCategoryRecords);
+      categoryRecords.addAll(tmpCategoryRecordsList);
     });
   }
 
   @override
   void initState() {
+    final dishProvider = context.read<DishProvider>();
+    getCategoryRecords(dishProvider: dishProvider);
     super.initState();
+    _pageViewController = PageController();
   }
 
-  String filterTitleCategory = "";
+  @override
+  void dispose() {
+    super.dispose();
+    _pageViewController.dispose();
+  }
+
+  Future<void> getCategoryRecordsAtPageViewIndex(int index, int pageNum) async {
+    if (pageNum == 0) return;
+    final where = filterTitleCategory.isNotEmpty ? 'title = ?' : null;
+    final whereArgs =
+        filterTitleCategory.isNotEmpty ? [filterTitleCategory] : null;
+    final tmpDishRecords = await dataHelper.categoryRecords(
+        where: 'menuId = ? ${where != null ? 'AND $where' : ''}',
+        whereArgs: [context.read<DishProvider>().menuId, ...?whereArgs],
+        pageNum: pageNum,
+        pageSize: pageSize);
+
+    categoryRecords[index].clear();
+    categoryRecords[index].addAll(tmpDishRecords);
+  }
+
+  void _handlePageViewChanged(int currentPageIndex) {
+    if (!_isOnDesktopAndWeb) {
+      return;
+    }
+
+    final index = currentPageIndex;
+    final newIndex = index % pageViewSize;
+    final pageNum = index + 1;
+
+    switch (newIndex) {
+      case 0:
+        if (iBackward == 0) {
+          getCategoryRecordsAtPageViewIndex(2, pageNum - 1);
+        }
+        if (iForward == 1) {
+          getCategoryRecordsAtPageViewIndex(1, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+      case 1:
+        if (iBackward == 1) {
+          getCategoryRecordsAtPageViewIndex(0, pageNum - 1);
+        }
+        if (iForward == 2) {
+          getCategoryRecordsAtPageViewIndex(2, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+      case 2:
+        if (iBackward == 2) {
+          getCategoryRecordsAtPageViewIndex(1, pageNum - 1);
+        }
+        if (iForward == 0) {
+          getCategoryRecordsAtPageViewIndex(0, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+    }
+
+    setState(() {
+      _currentPageIndex = currentPageIndex;
+    });
+  }
+
+  void _updateCurrentPageIndex(int index) {
+    // logger.d('_updateCurrentPageIndex $index');
+    _pageViewController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  PageView categoryPageView(DishProvider dishProvider) {
+    return PageView.builder(
+        controller: _pageViewController,
+        onPageChanged: _handlePageViewChanged,
+        itemBuilder: (context, index) {
+          return CategoryView45(
+            categoryRecords:
+                categoryRecords.elementAtOrNull(index % pageViewSize) ?? [],
+            filterTitleCategory: filterTitleCategory,
+            callback: (CategoryRecord e) {
+              dishProvider.setCateogry(e.id!, e.title);
+              Navigator.pop(context);
+            },
+          );
+        });
+  }
+
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final DishProvider dishProvider = context.watch<DishProvider>();
 
-    if (!isInit) {
-      getCategoryRecords(dishProvider);
-      isInit = true;
-    }
-
-    List<CategoryRecord> filterCategoryRecoreds = (filterTitleCategory.isEmpty)
-        ? categoryRecords
-        : categoryRecords
-            .where((e) => e.title.contains(filterTitleCategory))
-            .toList();
-
-    List<Widget> itemCategoryBuilder = [];
-    for (var value in filterCategoryRecoreds) {
-      itemCategoryBuilder.add(Padding(
-        padding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
-        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          SizedBox(
-            height: 64,
-            width: 288.0, // 320 * 0.9
-            child: ElevatedButton(
-                style: ButtonStyle(
-                    shape: WidgetStateProperty.all<RoundedRectangleBorder>(
-                        RoundedRectangleBorder(
-                      borderRadius: BorderRadiusDirectional.only(
-                          topEnd: Radius.circular(20),
-                          bottomStart: Radius.circular(20)),
-                    )),
-                    minimumSize: WidgetStateProperty.all(Size(50, 50))),
-                onPressed: () {
-                  dishProvider.setCateogry(value.id!, value.title);
-                  Navigator.pop(context);
-                },
-                child: Text('${value.id!} . ${value.title}')),
-          )
-        ]),
-      ));
-    }
     return Scaffold(
       body: Column(children: [
         Expanded(
           child: SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(0, 15, 0, 0),
-              child: ListView(
-                children: itemCategoryBuilder,
-              ),
+              child: categoryPageView(dishProvider),
             ),
           ),
+        ),
+        PageIndicator(
+          currentPageIndex: _currentPageIndex,
+          onUpdateCurrentPageIndex: _updateCurrentPageIndex,
+          isOnDesktopAndWeb: _isOnDesktopAndWeb,
         ),
         AnimatedCrossFade(
           firstChild: SizedBox(), // Thay thế CategoryBar bằng SizedBox
@@ -103,7 +184,13 @@ class _Category45 extends State<Category45> {
               onSubmitted: (text) {
                 setState(() {
                   _showWidgetB = !_showWidgetB;
-                  filterTitleCategory = text;
+                  if (text.isNotEmpty) {
+                    getCategoryRecords(
+                        dishProvider: dishProvider,
+                        where: 'title = ? AND menuId = ?',
+                        whereArgs: [text, dishProvider.menuId]);
+                    filterTitleCategory = text;
+                  }
                 });
               },
             ),
@@ -125,7 +212,10 @@ class _Category45 extends State<Category45> {
           () {
             setState(() {
               _showWidgetB = !_showWidgetB;
-              filterTitleCategory = "";
+              if (filterTitleCategory.isNotEmpty) {
+                getCategoryRecords(dishProvider: dishProvider);
+                filterTitleCategory = "";
+              }
             });
           }
         ], icons: [
@@ -140,5 +230,68 @@ class _Category45 extends State<Category45> {
         ]),
       ]),
     );
+  }
+
+  bool get _isOnDesktopAndWeb {
+    if (kIsWeb) {
+      return true;
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.macOS:
+      case TargetPlatform.linux:
+      case TargetPlatform.windows:
+        return true;
+      case TargetPlatform.android:
+      case TargetPlatform.iOS:
+      case TargetPlatform.fuchsia:
+        return false;
+    }
+  }
+}
+
+class CategoryView45 extends StatelessWidget {
+  const CategoryView45(
+      {super.key,
+      required this.categoryRecords,
+      required this.filterTitleCategory,
+      required this.callback});
+  final List<CategoryRecord> categoryRecords;
+  final String filterTitleCategory;
+
+  final Function callback;
+
+  @override
+  Widget build(BuildContext context) {
+    List<CategoryRecord> filterCategoryRecoreds = (filterTitleCategory.isEmpty)
+        ? categoryRecords
+        : categoryRecords
+            .where((e) => e.title.contains(filterTitleCategory))
+            .toList();
+
+    return ListView.builder(
+        itemCount: filterCategoryRecoreds.length,
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              SizedBox(
+                height: 64,
+                width: 288.0, // 320 * 0.9
+                child: ElevatedButton(
+                    style: ButtonStyle(
+                        shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+                            RoundedRectangleBorder(
+                          borderRadius: BorderRadiusDirectional.only(
+                              topEnd: Radius.circular(20),
+                              bottomStart: Radius.circular(20)),
+                        )),
+                        minimumSize: WidgetStateProperty.all(Size(50, 50))),
+                    onPressed: () => callback(filterCategoryRecoreds[index]),
+                    child: Text(
+                        '${filterCategoryRecoreds[index].id!} . ${filterCategoryRecoreds[index].title}')),
+              )
+            ]),
+          );
+        });
   }
 }

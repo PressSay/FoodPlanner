@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:logger/logger.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/pre_ordered_dish.dart';
 import 'package:menu_qr/models/table_record.dart';
@@ -30,7 +29,6 @@ class ListDetail40 extends StatefulWidget {
 }
 
 class _ListDetail40State extends State<ListDetail40> {
-  final Logger logger = Logger();
   String timeZone = 'vi_VN';
   BillRecord? billRecord; // lam sao de chinh gia tri default nay day
   List<BillRecord> billRecords = [];
@@ -46,7 +44,7 @@ class _ListDetail40State extends State<ListDetail40> {
 
   final List<List<PreOrderedDishRecord>> preOrderedDishRecords = [];
   final pageViewSize = 3;
-  final pageSize = 4;
+  final pageSize = 40;
   final List<int> tableRecordOldAndNew = [];
   final DataHelper dataHelper = DataHelper();
 
@@ -65,7 +63,7 @@ class _ListDetail40State extends State<ListDetail40> {
     }
 
     List<BillRecord> tmpBillRecords =
-        await dataHelper.billRecordsTypeListOnly(where: sql, whereArgs: A);
+        await dataHelper.billRecords(where: sql, whereArgs: A);
     setState(() {
       billRecords.clear();
       billRecords.addAll(tmpBillRecords);
@@ -139,6 +137,25 @@ class _ListDetail40State extends State<ListDetail40> {
               padding: EdgeInsets.fromLTRB(16, 0, 16, 10),
               child: Row(children: [
                 Text(
+                  "Tax(5%):",
+                  style: TextStyle(
+                      fontSize: 18,
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.bold),
+                ),
+                Padding(padding: EdgeInsets.all(4)),
+                Text(
+                    NumberFormat.currency(locale: timeZone)
+                        .format(total * 0.05),
+                    style: TextStyle(
+                        fontSize: 16,
+                        color: colorScheme.secondary,
+                        fontWeight: FontWeight.bold))
+              ])),
+          Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 10),
+              child: Row(children: [
+                Text(
                   "Toltal:",
                   style: TextStyle(
                       fontSize: 18,
@@ -202,7 +219,6 @@ class _ListDetail40State extends State<ListDetail40> {
         itemCount: billRecords.length,
         itemBuilder: (context, index) {
           if (isInitBillId) {
-            logger.d("isInitBillId $isInitBillId");
             billRecord = billRecords[index];
             indexBillIdCurrent = index;
             getPreOrderedDishRecords(billRecords[index].id!);
@@ -245,6 +261,11 @@ class _ListDetail40State extends State<ListDetail40> {
                 Expanded(
                   child: dishPageView(),
                 ),
+                PageIndicator(
+                  currentPageIndex: _currentPageIndex,
+                  onUpdateCurrentPageIndex: _updateCurrentPageIndex,
+                  isOnDesktopAndWeb: _isOnDesktopAndWeb,
+                ),
                 infoPrice(colorScheme, billRecord?.amountPaid ?? 0, total),
                 Padding(
                   padding: EdgeInsets.all(16),
@@ -263,11 +284,6 @@ class _ListDetail40State extends State<ListDetail40> {
               ]),
             ),
           ),
-          PageIndicator(
-            currentPageIndex: _currentPageIndex,
-            onUpdateCurrentPageIndex: _updateCurrentPageIndex,
-            isOnDesktopAndWeb: _isOnDesktopAndWeb,
-          ),
           BottomNavigatorCustomize(listEnableBtn: [
             true,
             true,
@@ -276,12 +292,12 @@ class _ListDetail40State extends State<ListDetail40> {
           ], listCallback: [
             () {
               // 40 -> 36 -> 35
-              dishProvider.clearRam();
+              dishProvider.clearIndexListRam();
               Navigator.pop(context, tableRecordOldAndNew);
             },
             () {
               // free RAM
-              dishProvider.clearRam();
+              dishProvider.clearIndexListRam();
               Navigator.popUntil(context, (route) => route.isFirst);
             },
             () async {
@@ -299,19 +315,15 @@ class _ListDetail40State extends State<ListDetail40> {
                       ),
                     )).then((value) {
                   getPreOrderedDishRecords(value.id);
-                  logger.d('old: $currenTableId, new: ${value.tableId}');
                   setState(() {
                     /* Nên đổi cách khác để xét xem tableId đã thay đổi hay chưa */
                     if (currenTableId == value.tableId) {
-                      logger.d('indexBillRecord: $indexBillIdCurrent');
                       billRecords[indexBillIdCurrent] = value;
                     } else {
                       // nếu old khác new thì nó mới thêm vào [tableRecordOldAndNew]
                       tableRecordOldAndNew.clear();
                       tableRecordOldAndNew
                           .addAll([currenTableId, value.tableId]);
-                      logger.d(
-                          'widget.listBillId is null ? ${widget.listBillId == null}');
                       if (widget.listBillId == null) {
                         updateTableRecordOfPage36(currenTableId);
                         billRecords
@@ -409,7 +421,6 @@ class _ListDetail40State extends State<ListDetail40> {
     if (!_isOnDesktopAndWeb) {
       return;
     }
-    logger.d("currentPageIndex $currentPageIndex");
 
     final index = currentPageIndex;
     final newIndex = index % pageViewSize;

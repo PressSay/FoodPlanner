@@ -18,38 +18,35 @@ class PageIndicator extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          IconButton(
-            splashRadius: 16.0,
-            padding: EdgeInsets.zero,
-            onPressed: () {
-              if (currentPageIndex == 0) {
-                return;
-              }
-              onUpdateCurrentPageIndex(currentPageIndex - 1);
-            },
-            icon: const Icon(
-              Icons.arrow_left_rounded,
-              size: 32.0,
-            ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        IconButton(
+          splashRadius: 16.0,
+          padding: EdgeInsets.zero,
+          onPressed: () {
+            if (currentPageIndex == 0) {
+              return;
+            }
+            onUpdateCurrentPageIndex(currentPageIndex - 1);
+          },
+          icon: const Icon(
+            Icons.arrow_left_rounded,
+            size: 32.0,
           ),
-          IconButton(
-            splashRadius: 16.0,
-            padding: EdgeInsets.zero,
-            onPressed: () {
-              onUpdateCurrentPageIndex(currentPageIndex + 1);
-            },
-            icon: const Icon(
-              Icons.arrow_right_rounded,
-              size: 32.0,
-            ),
+        ),
+        IconButton(
+          splashRadius: 16.0,
+          padding: EdgeInsets.zero,
+          onPressed: () {
+            onUpdateCurrentPageIndex(currentPageIndex + 1);
+          },
+          icon: const Icon(
+            Icons.arrow_right_rounded,
+            size: 32.0,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

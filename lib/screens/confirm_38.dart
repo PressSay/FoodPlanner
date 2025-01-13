@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
@@ -9,6 +10,7 @@ import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/dish_cofirm.dart';
+import 'package:menu_qr/widgets/page_indicator.dart';
 import 'package:provider/provider.dart';
 
 class Confirm38 extends StatefulWidget {
@@ -19,13 +21,68 @@ class Confirm38 extends StatefulWidget {
 }
 
 class _Confirm38 extends State<Confirm38> {
-  int categoryId = 0;
-  double total = 0;
   String timeZone = 'vi_VN';
   bool isAddedDishRecordSorted = false;
-  final logger = Logger();
+  int offset = 1;
 
-  final DataHelper dataHelper = DataHelper();
+  int _currentPageIndex = 0;
+  int iBackward = (1 - 1) % 3; // pageViewSize;
+  int iForward = (1 + 1) % 3; //pageViewSize;
+
+  final logger = Logger();
+  // độ rộng [preOrderedDishRecords] có thể vô cực
+  // và phải cộng với bộ nhớ map của chính nó
+  final List<List<PreOrderedDishRecord>> preOrderedDishRecordsView = [
+    [],
+    [],
+    []
+  ];
+  final dataHelper = DataHelper();
+  final pageViewSize = 3;
+  final pageSize = 40;
+  late PageController _pageViewController;
+  late final int lastLength;
+  late final double pageViewNum;
+  late final int pageViewNumInt;
+  late final double total;
+
+  void getPreOrderedDishRecordSorted(DishProvider dishProvider) {
+    var tmpTotal = 0.0;
+    dishProvider.importDataToIndexDishListSorted(
+        dishProvider.indexDishList.values.toList());
+    pageViewNum = dishProvider.indexDishListSorted.length / pageSize;
+    pageViewNumInt = pageViewNum.ceil();
+    lastLength = ((pageViewNum - pageViewNum.floor()) * pageSize).toInt();
+    logger.d("pageViewNumInt $pageViewNumInt, lastLength $lastLength");
+    for (var i = 0; i < pageViewSize; i++) {
+      if ((i + 1) > pageViewNumInt) break;
+      final offset = i * pageSize;
+      var end = pageSize + offset;
+      end = (end > lastLength && lastLength != 0) ? lastLength : end;
+      logger.d("offset $offset, end $end");
+      if (end == 0) break;
+      preOrderedDishRecordsView[i]
+          .addAll(dishProvider.indexDishListSorted.getRange(offset, end));
+      for (var e in preOrderedDishRecordsView[i]) {
+        tmpTotal = tmpTotal + e.amount * e.price;
+      }
+    }
+    total = tmpTotal;
+  }
+
+  @override
+  void initState() {
+    final DishProvider dishProvider = context.read<DishProvider>();
+    getPreOrderedDishRecordSorted(dishProvider);
+    super.initState();
+    _pageViewController = PageController();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _pageViewController.dispose();
+  }
 
   void saveBillImmediately(DishProvider dishProvider) async {
     BillRecord newBillRecord = BillRecord(
@@ -40,7 +97,7 @@ class _Confirm38 extends State<Confirm38> {
     newBillRecord.preOrderedDishRecords = await dataHelper.insertDishesAtBillId(
         dishProvider.indexDishListSorted, lastId);
     newBillRecord.id = lastId;
-    dishProvider.clearRam();
+    dishProvider.clearIndexListRam();
     navigateToPaid41Immediately(newBillRecord);
   }
 
@@ -55,61 +112,96 @@ class _Confirm38 extends State<Confirm38> {
                 )));
   }
 
+  void getPreOrderdDishRecordsAtPageViewIndex(int index, int pageNum) {
+    final dishProvider = context.read<DishProvider>();
+    if (pageNum == 0) return;
+    preOrderedDishRecordsView[index].clear();
+    if (pageNum > pageViewNumInt) return;
+    final offset = (pageNum - 1) * pageSize;
+    var end = pageSize + offset;
+    end = (end > lastLength && lastLength != 0) ? lastLength : end;
+    if (end == 0) return;
+    preOrderedDishRecordsView[index]
+        .addAll(dishProvider.indexDishListSorted.getRange(offset, end));
+  }
+
+  void _handlePageViewChanged(int currentPageIndex) {
+    if (!_isOnDesktopAndWeb) {
+      return;
+    }
+
+    final index = currentPageIndex;
+    final newIndex = index % pageViewSize;
+    final pageNum = index + 1;
+
+    switch (newIndex) {
+      case 0:
+        if (iBackward == 0) {
+          getPreOrderdDishRecordsAtPageViewIndex(2, pageNum - 1);
+        }
+        if (iForward == 1) {
+          getPreOrderdDishRecordsAtPageViewIndex(1, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+      case 1:
+        if (iBackward == 1) {
+          getPreOrderdDishRecordsAtPageViewIndex(0, pageNum - 1);
+        }
+        if (iForward == 2) {
+          getPreOrderdDishRecordsAtPageViewIndex(2, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+      case 2:
+        if (iBackward == 2) {
+          getPreOrderdDishRecordsAtPageViewIndex(1, pageNum - 1);
+        }
+        if (iForward == 0) {
+          getPreOrderdDishRecordsAtPageViewIndex(0, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+    }
+
+    setState(() {
+      _currentPageIndex = currentPageIndex;
+    });
+  }
+
+  void _updateCurrentPageIndex(int index) {
+    _pageViewController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  PageView preOrderedDishPageView(DishProvider dishProvider) {
+    return PageView.builder(
+        controller: _pageViewController,
+        onPageChanged: _handlePageViewChanged,
+        itemBuilder: (context, index) {
+          return Confirm38View(
+            preOrderedDishRecords:
+                preOrderedDishRecordsView[index % pageViewSize],
+            deleteCallback:
+                (List<PreOrderedDishRecord> preOrderedDishRecords, int index) {
+              final e = preOrderedDishRecords[index];
+              preOrderedDishRecords.removeAt(index);
+              dishProvider.deleteAmount(e.dishId);
+            },
+          );
+        });
+  }
+
   @override
   Widget build(BuildContext context) {
-    total = 0;
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final DishProvider dishProvider = context.watch<DishProvider>();
-
-    List<Widget> itemDishBuilder = [Padding(padding: EdgeInsets.all(8))];
-    List<MapEntry<int, PreOrderedDishRecord>> dishRecordSorted =
-        dishProvider.indexDishList.entries.toList();
-    dishRecordSorted.sort((a, b) {
-      return a.value.categoryId - b.value.categoryId;
-    });
-
-    if (!isAddedDishRecordSorted) {
-      dishProvider.clearIndexDishListSorted();
-    }
-    for (var e in dishRecordSorted) {
-      if (!isAddedDishRecordSorted) {
-        dishProvider.addIndexDishListSorted(e.value);
-      }
-      if (e.value.categoryId != categoryId) {
-        logger.d('message category');
-        categoryId = e.value.categoryId;
-        itemDishBuilder.add(Center(
-          child: SizedBox(
-              width: 345,
-              child: Row(mainAxisAlignment: MainAxisAlignment.start, children: [
-                Text(
-                  e.value.titleCategory ?? "",
-                  style: TextStyle(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 17),
-                ),
-              ])),
-        ));
-        itemDishBuilder.add(Padding(padding: EdgeInsets.all(8)));
-      }
-      total += e.value.price * e.value.amount;
-      itemDishBuilder.add(DishCofirm(
-        onlyView: false,
-        imagePath: e.value.imagePath,
-        title: e.value.titleDish,
-        price: e.value.price,
-        amount: e.value.amount,
-        callBackDel: () {
-          dishProvider.deleteAmount(e.key);
-          dishProvider.deleteAmountSorted(e.key);
-        },
-      ));
-    }
-    if (!isAddedDishRecordSorted) {
-      isAddedDishRecordSorted = true;
-    }
-    categoryId = 0;
+    final dishProvider = context.watch<DishProvider>();
 
     return Scaffold(
       body: Column(
@@ -120,9 +212,12 @@ class _Confirm38 extends State<Confirm38> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
-                    child: ListView(
-                      children: itemDishBuilder,
-                    ),
+                    child: preOrderedDishPageView(dishProvider),
+                  ),
+                  PageIndicator(
+                    currentPageIndex: _currentPageIndex,
+                    onUpdateCurrentPageIndex: _updateCurrentPageIndex,
+                    isOnDesktopAndWeb: _isOnDesktopAndWeb,
                   ),
                   Container(
                     decoration: BoxDecoration(
@@ -214,6 +309,7 @@ class _Confirm38 extends State<Confirm38> {
                 saveBillImmediately(dishProvider);
                 return;
               }
+
               Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -240,5 +336,87 @@ class _Confirm38 extends State<Confirm38> {
         ],
       ),
     );
+  }
+
+  bool get _isOnDesktopAndWeb {
+    if (kIsWeb) {
+      return true;
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.macOS:
+      case TargetPlatform.linux:
+      case TargetPlatform.windows:
+        return true;
+      case TargetPlatform.android:
+      case TargetPlatform.iOS:
+      case TargetPlatform.fuchsia:
+        return false;
+    }
+  }
+}
+
+class Confirm38View extends StatelessWidget {
+  const Confirm38View(
+      {super.key,
+      required this.preOrderedDishRecords,
+      required this.deleteCallback});
+  final List<PreOrderedDishRecord> preOrderedDishRecords;
+
+  final Function deleteCallback;
+
+  @override
+  Widget build(BuildContext context) {
+    var categoryId = 0;
+    return ListView.builder(
+        itemCount: preOrderedDishRecords.length,
+        itemBuilder: (context, index) {
+          final colorScheme = Theme.of(context).colorScheme;
+          final e = preOrderedDishRecords[index];
+          final dishCofirm = DishCofirm(
+              onlyView: true,
+              imagePath: e.imagePath,
+              title: e.titleDish,
+              price: e.price,
+              amount: e.amount,
+              callBackDel: () => deleteCallback(preOrderedDishRecords, index));
+          if (e.categoryId != categoryId) {
+            categoryId = e.categoryId;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 0, 0, 8),
+                  child: Center(
+                    child: SizedBox(
+                        width: 345,
+                        child: Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Text(
+                                e.titleCategory,
+                                style: TextStyle(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 17),
+                              ),
+                            ])),
+                  ),
+                ),
+                dishCofirm
+              ],
+            );
+          }
+
+          return dishCofirm;
+        });
+  }
+}
+
+class NewStateLess extends StatelessWidget {
+  const NewStateLess({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Placeholder();
   }
 }

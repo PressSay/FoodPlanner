@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/category_record.dart';
 import 'package:menu_qr/models/dish_record.dart';
@@ -35,7 +34,6 @@ class Order44 extends StatefulWidget {
 
 class _Order44 extends State<Order44> {
   Alert? alert;
-  String filterTitleDish = "";
   bool _showWidgetB = false;
   bool isInitMenuIdAndCategoryId = false;
   bool isInited = false;
@@ -46,18 +44,23 @@ class _Order44 extends State<Order44> {
   int iForward = (1 + 1) % 3; //pageViewSize;
   int _currentPageIndex = 0;
 
+  String titleFilter = "";
+
   final pageViewSize = 3;
   final pageSize = 40;
   final TextEditingController _controller = TextEditingController();
   final DataHelper dataHelper = DataHelper();
   final List<List<DishRecord>> dishRecords = [];
-  final logger = Logger();
 
   late PageController _pageViewController;
 
   @override
   void initState() {
     alert = Alert(context: context);
+    DishProvider dishProvider = context.read<DishProvider>();
+    getDishRecords(
+      dishProvider: dishProvider,
+    );
     super.initState();
     _pageViewController = PageController();
   }
@@ -72,25 +75,18 @@ class _Order44 extends State<Order44> {
     if (!_isOnDesktopAndWeb) {
       return;
     }
-    logger.d("currentPageIndex $currentPageIndex");
 
     final index = currentPageIndex;
     final newIndex = index % pageViewSize;
     final pageNum = index + 1;
 
-    logger.d("newIndex $newIndex, iBackward $iBackward,"
-        " iForward $iForward, pageNum $pageNum, "
-        "previous ${pageNum - 1}, next ${pageNum + 1}");
-
     switch (newIndex) {
       case 0:
         if (iBackward == 0) {
           getDishRecordsAtPageViewIndex(2, pageNum - 1);
-          logger.d("iBackward = 0");
         }
         if (iForward == 1) {
           getDishRecordsAtPageViewIndex(1, pageNum + 1);
-          logger.d("iForward = 1");
         }
         iBackward = (index - 1) % pageViewSize;
         iForward = (index + 2) % pageViewSize;
@@ -98,11 +94,9 @@ class _Order44 extends State<Order44> {
       case 1:
         if (iBackward == 1) {
           getDishRecordsAtPageViewIndex(0, pageNum - 1);
-          logger.d("iBackward = 1");
         }
         if (iForward == 2) {
           getDishRecordsAtPageViewIndex(2, pageNum + 1);
-          logger.d("iForward = 2");
         }
         iBackward = (index - 1) % pageViewSize;
         iForward = (index + 2) % pageViewSize;
@@ -110,11 +104,9 @@ class _Order44 extends State<Order44> {
       case 2:
         if (iBackward == 2) {
           getDishRecordsAtPageViewIndex(1, pageNum - 1);
-          logger.d("iBackward = 1");
         }
         if (iForward == 0) {
           getDishRecordsAtPageViewIndex(0, pageNum + 1);
-          logger.d("iForward = 0");
         }
         iBackward = (index - 1) % pageViewSize;
         iForward = (index + 2) % pageViewSize;
@@ -126,7 +118,10 @@ class _Order44 extends State<Order44> {
     });
   }
 
-  Future<void> getDishRecords(DishProvider dishProvider) async {
+  Future<void> getDishRecords(
+      {required DishProvider dishProvider,
+      String? where,
+      List<Object?>? whereArgs}) async {
     if (!isInitMenuIdAndCategoryId && dishProvider.categoryId == 0) {
       final List<MenuRecord> menuRecordSeleted = await dataHelper.menuRecords(
           where: 'isSelected = ?', whereArgs: [1], limit: 1);
@@ -135,6 +130,7 @@ class _Order44 extends State<Order44> {
         isInitMenuIdAndCategoryId = false;
         return;
       }
+
       final List<CategoryRecord> categoryRecords =
           await dataHelper.categoryRecords(
               where: 'menuId = ?',
@@ -149,8 +145,8 @@ class _Order44 extends State<Order44> {
     final List<List<DishRecord>> listTmpDishRecords = [];
     for (var i = 0; i < (pageViewSize - 1); i++) {
       final List<DishRecord> tmpDishRecords = await dataHelper.dishRecords(
-          where: 'categoryId = ?',
-          whereArgs: [dishProvider.categoryId],
+          where: 'categoryId = ? ${(where != null) ? 'AND $where' : ''}',
+          whereArgs: [dishProvider.categoryId, ...(whereArgs ?? [])],
           pageNum: i + 1,
           pageSize: pageSize);
       listTmpDishRecords.add(tmpDishRecords);
@@ -164,9 +160,16 @@ class _Order44 extends State<Order44> {
   }
 
   Future<void> getDishRecordsAtPageViewIndex(int index, int pageNum) async {
+    if (pageNum == 0) return;
+    final where = titleFilter.isNotEmpty
+        ? 'categoryId = ? AND title LIKE ?'
+        : 'categoryId = ?';
+    final whereArgs = titleFilter.isNotEmpty
+        ? [categoryIdInScreen, '%$titleFilter%']
+        : [categoryIdInScreen];
     final tmpDishRecords = await dataHelper.dishRecords(
-        where: 'categoryId = ?',
-        whereArgs: [categoryIdInScreen],
+        where: where,
+        whereArgs: whereArgs,
         pageNum: pageNum,
         pageSize: pageSize);
 
@@ -207,7 +210,6 @@ class _Order44 extends State<Order44> {
             dishProvider: dishProvider,
             dishRecords:
                 dishRecords.elementAtOrNull(index % pageViewSize) ?? [],
-            filterTitleDish: filterTitleDish,
           );
         });
   }
@@ -218,11 +220,6 @@ class _Order44 extends State<Order44> {
     final DishProvider dishProvider = context.watch<DishProvider>();
     final BillProvider billProvider = context.watch<BillProvider>();
     final currentWidth = MediaQuery.of(context).size.width;
-
-    if (categoryIdInScreen != dishProvider.categoryId || !isInited) {
-      getDishRecords(dishProvider);
-      isInited = true;
-    }
 
     return PopScope(
         canPop: true,
@@ -252,9 +249,13 @@ class _Order44 extends State<Order44> {
                           context,
                           MaterialPageRoute(
                             builder: (BuildContext context) => Category45(),
-                          ));
+                          )).then((onValue) {
+                        if (categoryIdInScreen != dishProvider.categoryId) {
+                          getDishRecords(dishProvider: dishProvider);
+                        }
+                      });
                     }, orderFunc: () {
-                      dishProvider.deleteZero();
+                      dishProvider.deleteEmptyIndexDishList();
                       if (dishProvider.indexDishList.isEmpty) {
                         return;
                       }
@@ -285,7 +286,13 @@ class _Order44 extends State<Order44> {
                         onSubmitted: (text) {
                           setState(() {
                             _showWidgetB = !_showWidgetB;
-                            filterTitleDish = text;
+                            if (text.isNotEmpty) {
+                              getDishRecords(
+                                  dishProvider: dishProvider,
+                                  where: 'title LIKE ?',
+                                  whereArgs: ['%$text%']);
+                              titleFilter = text;
+                            }
                           });
                         })),
                 crossFadeState: _showWidgetB
@@ -303,12 +310,15 @@ class _Order44 extends State<Order44> {
                   Navigator.pop(context);
                 },
                 () {
-                  dishProvider.clearRamWithNotify();
+                  dishProvider.clearIndexListWithNotify();
                 },
                 () {
                   setState(() {
                     _showWidgetB = !_showWidgetB;
-                    filterTitleDish = "";
+                    if (titleFilter.isNotEmpty) {
+                      getDishRecords(dishProvider: dishProvider);
+                      titleFilter = "";
+                    }
                   });
                 }
               ], icons: [
@@ -352,21 +362,16 @@ class DishesView44 extends StatelessWidget {
     super.key,
     required this.dishRecords,
     required this.dishProvider,
-    required this.filterTitleDish,
   });
   final List<DishRecord> dishRecords;
   final DishProvider dishProvider;
-  final String filterTitleDish;
 
   @override
   Widget build(BuildContext context) {
-    final List<DishRecord> dishRecordsFiltered = (filterTitleDish.isEmpty)
-        ? dishRecords
-        : dishRecords.where((e) => e.title.contains(filterTitleDish)).toList();
     return ListView.builder(
-        itemCount: dishRecordsFiltered.length,
+        itemCount: dishRecords.length,
         itemBuilder: (context, index) {
-          final value = dishRecordsFiltered[index];
+          final value = dishRecords[index];
           return Padding(
               padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
               child: DishButton(

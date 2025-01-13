@@ -5,7 +5,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
-import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/screens/list_23.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
@@ -70,7 +69,7 @@ class _Overview20State extends State<Overview20> {
 
   void getBillRecords(DateTime now1) async {
     final now = DateTime(now1.year, now1.month, now1.day);
-    final tmpBillRecords = await dataHelper.billRecordsTypeListOnly(
+    final tmpBillRecords = await dataHelper.billRecords(
         where: ("datetime >= ? AND datetime < ? "
             "ORDER BY datetime"),
         whereArgs: [

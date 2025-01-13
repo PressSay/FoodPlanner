@@ -1,8 +1,7 @@
-import 'dart:math';
-
+import 'package:date_field/date_field.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
+import 'package:intl/intl.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/screens/list_detail_40.dart';
 import 'package:menu_qr/services/alert.dart';
@@ -19,33 +18,27 @@ class ListScreen47 extends StatefulWidget {
 }
 
 class _ListScreen47State extends State<ListScreen47> {
-  final TextEditingController _controller = TextEditingController();
-  final DataHelper dataHelper = DataHelper();
-
   Alert? alert;
-  String filterTitleBillId = "";
+  DateTime? dateFilter;
   bool _showWidgetB = false;
-  bool isInit = false;
   int iBackward = (1 - 1) % 3; // pageViewSize;
   int iForward = (1 + 1) % 3; //pageViewSize;
   int _currentPageIndex = 0;
 
+  final DataHelper dataHelper = DataHelper();
   final pageViewSize = 3;
   final pageSize = 40;
-
   final Map<int, bool> checkedBillIdList = {};
   final List<List<BillRecord>> billRecords = [];
 
-  final logger = Logger();
-
   late PageController _pageViewController;
 
-  void getBillRecords() async {
+  void getBillRecords({String? where, List<Object?>? whereArgs}) async {
     final List<List<BillRecord>> listTmpBillRecords = [];
     for (var i = 0; i < pageViewSize; i++) {
-      final tmpBillRecords = await dataHelper.billRecordsTypeListOnly(
-          where: 'isLeft = ?',
-          whereArgs: [0],
+      final tmpBillRecords = await dataHelper.billRecords(
+          where: where,
+          whereArgs: whereArgs,
           pageNum: (i + 1),
           pageSize: pageSize);
       listTmpBillRecords.add(tmpBillRecords);
@@ -54,13 +47,12 @@ class _ListScreen47State extends State<ListScreen47> {
       billRecords.clear();
       billRecords.addAll(listTmpBillRecords);
     });
-    isInit = true;
   }
 
   @override
   void initState() {
     alert = Alert(context: context);
-    getBillRecords();
+    getBillRecords(where: 'isLeft = ?', whereArgs: [0]);
     super.initState();
     _pageViewController = PageController();
   }
@@ -84,25 +76,18 @@ class _ListScreen47State extends State<ListScreen47> {
     if (!_isOnDesktopAndWeb) {
       return;
     }
-    logger.d("currentPageIndex $currentPageIndex");
 
     final index = currentPageIndex;
     final newIndex = index % pageViewSize;
     final pageNum = index + 1;
 
-    logger.d("newIndex $newIndex, iBackward $iBackward,"
-        " iForward $iForward, pageNum $pageNum, "
-        "previous ${pageNum - 1}, next ${pageNum + 1}");
-
     switch (newIndex) {
       case 0:
         if (iBackward == 0) {
           getBillRecordsAtPageViewIndex(2, pageNum - 1);
-          logger.d("iBackward = 0");
         }
         if (iForward == 1) {
           getBillRecordsAtPageViewIndex(1, pageNum + 1);
-          logger.d("iForward = 1");
         }
         iBackward = (index - 1) % pageViewSize;
         iForward = (index + 2) % pageViewSize;
@@ -110,11 +95,9 @@ class _ListScreen47State extends State<ListScreen47> {
       case 1:
         if (iBackward == 1) {
           getBillRecordsAtPageViewIndex(0, pageNum - 1);
-          logger.d("iBackward = 1");
         }
         if (iForward == 2) {
           getBillRecordsAtPageViewIndex(2, pageNum + 1);
-          logger.d("iForward = 2");
         }
         iBackward = (index - 1) % pageViewSize;
         iForward = (index + 2) % pageViewSize;
@@ -122,11 +105,9 @@ class _ListScreen47State extends State<ListScreen47> {
       case 2:
         if (iBackward == 2) {
           getBillRecordsAtPageViewIndex(1, pageNum - 1);
-          logger.d("iBackward = 1");
         }
         if (iForward == 0) {
           getBillRecordsAtPageViewIndex(0, pageNum + 1);
-          logger.d("iForward = 0");
         }
         iBackward = (index - 1) % pageViewSize;
         iForward = (index + 2) % pageViewSize;
@@ -139,9 +120,14 @@ class _ListScreen47State extends State<ListScreen47> {
   }
 
   Future<void> getBillRecordsAtPageViewIndex(int index, int pageNum) async {
-    final tmpBillRecords = await dataHelper.billRecordsTypeListOnly(
-        where: 'isLeft = ?',
-        whereArgs: [0],
+    if (pageNum == 0) return;
+    final where =
+        (dateFilter != null) ? 'dateTime = ? AND isLeft = ?' : 'isLeft = ?';
+    final whereArgs =
+        (dateFilter != null) ? [dateFilter!.millisecondsSinceEpoch, 0] : [0];
+    final tmpBillRecords = await dataHelper.billRecords(
+        where: where,
+        whereArgs: whereArgs,
         pageNum: pageNum,
         pageSize: pageSize);
 
@@ -157,24 +143,25 @@ class _ListScreen47State extends State<ListScreen47> {
           return BillsView47(
               billRecords:
                   billRecords.elementAtOrNull(index % pageViewSize) ?? [],
-              filterTitleBillId: filterTitleBillId,
               checkedBillIdList: checkedBillIdList,
-              callbackRebuild: (int billId) {
+              callbackRebuild:
+                  (List<BillRecord> inSideBillRecords, int index1) {
                 setState(() {
-                  if (!checkedBillIdList.containsKey(billId)) {
-                    checkedBillIdList.addAll({billId: false});
+                  if (!checkedBillIdList
+                      .containsKey(inSideBillRecords[index1].id!)) {
+                    checkedBillIdList
+                        .addAll({inSideBillRecords[index1].id!: false});
                   }
-                  checkedBillIdList[billId] = !checkedBillIdList[billId]!;
+                  checkedBillIdList[inSideBillRecords[index1].id!] =
+                      !checkedBillIdList[inSideBillRecords[index1].id!]!;
                 });
               },
-              callbackDelete: (List<BillRecord> inSideBillRecords, int billId) {
+              callbackDelete: (List<BillRecord> inSideBillRecords, int index1) {
                 alert!.showAlert('Delete Bill', 'Are you Sure?', true,
                     () async {
-                  dataHelper.deleteBillRecord(billId);
-                  setState(() {
-                    inSideBillRecords.removeAt(index);
-                  });
-                  checkedBillIdList.remove(billId);
+                  dataHelper.deleteBillRecord(inSideBillRecords[index1].id!);
+                  inSideBillRecords.removeAt(index1);
+                  checkedBillIdList.remove(inSideBillRecords[index1].id!);
                 });
               });
         });
@@ -200,21 +187,25 @@ class _ListScreen47State extends State<ListScreen47> {
           AnimatedCrossFade(
             firstChild: SizedBox(), // Thay thế CategoryBar bằng SizedBox
             secondChild: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-              child: TextField(
-                controller: _controller,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Search BillId',
-                ),
-                onSubmitted: (text) {
-                  setState(() {
-                    _showWidgetB = !_showWidgetB;
-                    filterTitleBillId = text;
-                  });
-                },
-              ),
-            ),
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                child: DateTimeField(
+                    value: dateFilter,
+                    decoration: const InputDecoration(
+                      labelText: 'Enter Date',
+                      helperText: 'DD/MM/YYYY',
+                    ),
+                    dateFormat: DateFormat('dd/MM/yyyy'),
+                    initialPickerDateTime: DateTime.now(),
+                    mode: DateTimeFieldPickerMode.date,
+                    onChanged: (DateTime? value) {
+                      _showWidgetB = !_showWidgetB;
+                      if (value != null) {
+                        getBillRecords(
+                            where: 'dateTime = ? AND isLeft = ?',
+                            whereArgs: [value.millisecondsSinceEpoch, 0]);
+                        dateFilter = value;
+                      }
+                    })),
             crossFadeState: _showWidgetB
                 ? CrossFadeState.showSecond
                 : CrossFadeState.showFirst,
@@ -232,7 +223,10 @@ class _ListScreen47State extends State<ListScreen47> {
             () {
               setState(() {
                 _showWidgetB = !_showWidgetB;
-                filterTitleBillId = "";
+                if (dateFilter != null) {
+                  dateFilter = null;
+                  getBillRecords(where: 'isLeft = ?', whereArgs: [0]);
+                }
               });
             },
             () {
@@ -294,12 +288,10 @@ class BillsView47 extends StatelessWidget {
   const BillsView47(
       {super.key,
       required this.billRecords,
-      required this.filterTitleBillId,
       required this.checkedBillIdList,
       required this.callbackDelete,
       required this.callbackRebuild});
   final List<BillRecord> billRecords;
-  final String filterTitleBillId;
   final Map<int, bool> checkedBillIdList;
   final Function callbackDelete;
   final Function callbackRebuild;
@@ -307,17 +299,11 @@ class BillsView47 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final filteredBillRecords = (filterTitleBillId.isNotEmpty)
-        ? billRecords
-            .where((element) =>
-                element.dateTime.toString().contains(filterTitleBillId))
-            .toList()
-        : billRecords.toList();
 
     return ListView.builder(
-        itemCount: filteredBillRecords.length,
+        itemCount: billRecords.length,
         itemBuilder: (context, index1) {
-          final v = filteredBillRecords[index1];
+          final v = billRecords[index1];
           return Center(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
@@ -325,8 +311,8 @@ class BillsView47 extends StatelessWidget {
                   content: '${v.dateTime}',
                   colorScheme: colorScheme,
                   isChecked: checkedBillIdList[v.id!] ?? false,
-                  callbackCheck: () => callbackRebuild(v.id!),
-                  callbackDelete: () => callbackDelete(billRecords, v.id!)),
+                  callbackCheck: () => callbackRebuild(billRecords, index1),
+                  callbackDelete: () => callbackDelete(billRecords, index1)),
             ),
           );
         });

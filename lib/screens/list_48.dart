@@ -1,4 +1,7 @@
+import 'package:date_field/date_field.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/screens/list_detail_40.dart';
 import 'package:menu_qr/services/alert.dart';
@@ -17,88 +20,171 @@ class _ListOnline48State extends State<ListOnline48> {
   final TextEditingController _controller = TextEditingController();
   final DataHelper dataHelper = DataHelper();
 
-  String filterTitleBillId = "";
+  DateTime? dateFilter;
   bool _showWidgetB = false;
   bool _showWidgetC = false;
+  int iBackward = (1 - 1) % 3; // pageViewSize;
+  int iForward = (1 + 1) % 3; //pageViewSize;
+  int _currentPageIndex = 0;
 
   Alert? alert;
   final Map<int, bool> checkedBillIdList = {};
   final Map<int, BillRecord> billRecordsArg = {};
-  final Map<int, BillRecord> billRecords = {};
+  final List<List<BillRecord>> billRecords = [];
+  final pageViewSize = 3;
+  final pageSize = 40;
 
-  void getBillRecords() async {
-    final Map<int, BillRecord> tmpBillRecords = await dataHelper.billRecords(
-        where: 'isLeft = ?', whereArgs: [0], limit: null);
+  late PageController _pageViewController;
+
+  void getBillRecords({String? where, List<Object?>? whereArgs}) async {
+    final List<List<BillRecord>> listTmpBillRecords = [];
+    for (var i = 0; i < pageViewSize; i++) {
+      final tmpBillRecords = await dataHelper.billRecords(
+          where: where,
+          whereArgs: whereArgs,
+          pageNum: (i + 1),
+          pageSize: pageSize);
+      listTmpBillRecords.add(tmpBillRecords);
+    }
     setState(() {
       billRecords.clear();
-      billRecords.addAll(tmpBillRecords);
+      billRecords.addAll(listTmpBillRecords);
     });
   }
 
   @override
   void initState() {
     alert = Alert(context: context);
-    getBillRecords();
+    getBillRecords(where: 'isLeft = ?', whereArgs: [0]);
     super.initState();
+    _pageViewController = PageController();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _pageViewController.dispose();
+  }
+
+  void _updateCurrentPageIndex(int index) {
+    // logger.d('_updateCurrentPageIndex $index');
+    _pageViewController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _handlePageViewChanged(int currentPageIndex) {
+    if (!_isOnDesktopAndWeb) {
+      return;
+    }
+
+    final index = currentPageIndex;
+    final newIndex = index % pageViewSize;
+    final pageNum = index + 1;
+
+    switch (newIndex) {
+      case 0:
+        if (iBackward == 0) {
+          getBillRecordsAtPageViewIndex(2, pageNum - 1);
+        }
+        if (iForward == 1) {
+          getBillRecordsAtPageViewIndex(1, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+      case 1:
+        if (iBackward == 1) {
+          getBillRecordsAtPageViewIndex(0, pageNum - 1);
+        }
+        if (iForward == 2) {
+          getBillRecordsAtPageViewIndex(2, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+      case 2:
+        if (iBackward == 2) {
+          getBillRecordsAtPageViewIndex(1, pageNum - 1);
+        }
+        if (iForward == 0) {
+          getBillRecordsAtPageViewIndex(0, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+    }
+
+    setState(() {
+      _currentPageIndex = currentPageIndex;
+    });
+  }
+
+  Future<void> getBillRecordsAtPageViewIndex(int index, int pageNum) async {
+    if (pageNum == 0) return;
+    final where =
+        (dateFilter != null) ? 'dateTime = ? AND isLeft = ?' : 'isLeft = ?';
+    final whereArgs =
+        (dateFilter != null) ? [dateFilter!.millisecondsSinceEpoch, 0] : [0];
+    final tmpBillRecords = await dataHelper.billRecords(
+        where: where,
+        whereArgs: whereArgs,
+        pageNum: pageNum,
+        pageSize: pageSize);
+
+    billRecords[index].clear();
+    billRecords[index].addAll(tmpBillRecords);
+  }
+
+  Widget pageViewBuilder(double currentWidth) {
+    return PageView.builder(
+        controller: _pageViewController,
+        onPageChanged: _handlePageViewChanged,
+        itemBuilder: (context, index) {
+          return BillsView48(
+              billRecords:
+                  billRecords.elementAtOrNull(index % pageViewSize) ?? [],
+              checkedBillIdList: checkedBillIdList,
+              callbackCheck: (List<BillRecord> inSideBillRecords, int index1) {
+                setState(() {
+                  if (!checkedBillIdList
+                      .containsKey(inSideBillRecords[index1].id!)) {
+                    checkedBillIdList
+                        .addAll({inSideBillRecords[index1].id!: false});
+                  }
+                  checkedBillIdList[inSideBillRecords[index1].id!] =
+                      !checkedBillIdList[inSideBillRecords[index1].id!]!;
+                });
+              },
+              callbackRebuild:
+                  (List<BillRecord> inSideBillRecords, int index1) {
+                setState(() {
+                  _showWidgetC = !_showWidgetC;
+                });
+              },
+              callbackDelete: (List<BillRecord> inSideBillRecords, int index1) {
+                alert!.showAlert('Delete Bill', 'Are you Sure?', true,
+                    () async {
+                  dataHelper.deleteBillRecord(inSideBillRecords[index1].id!);
+                  inSideBillRecords.removeAt(index1);
+                  checkedBillIdList.remove(inSideBillRecords[index1].id!);
+                });
+              });
+        });
   }
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
-    List<Widget> itemBuilder = [];
-    // this List Will be online
-    Map<int, BillRecord> filteredBillRecords = (filterTitleBillId.isEmpty)
-        ? (Map.from(billRecords)..removeWhere((k, v) => v.isLeft))
-        : (Map.from(billRecords)
-          ..removeWhere(
-              (k, v) => !'${v.dateTime}'.contains(filterTitleBillId)));
-
-    filteredBillRecords.forEach((k, v) {
-      Widget billButton = Center(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
-          child: OrderSettingButtonOnl(
-              content: '${v.dateTime}',
-              colorScheme: colorScheme,
-              isChecked: checkedBillIdList[k] ?? false,
-              callbackCheck: () {
-                setState(() {
-                  if (!checkedBillIdList.containsKey(k)) {
-                    checkedBillIdList.addAll({k: false});
-                    billRecordsArg.addAll({k: v});
-                  }
-                  checkedBillIdList[k] = !checkedBillIdList[k]!;
-                });
-              },
-              callbackRebuild: () {
-                setState(() {
-                  _showWidgetC = !_showWidgetC;
-                });
-              },
-              callbackDelete: () {
-                alert!.showAlert('Delete Bill', 'Are you Sure?', true,
-                    () async {
-                  dataHelper.deleteBillRecord(k);
-                  setState(() {
-                    billRecords.remove(k);
-                  });
-                  checkedBillIdList.remove(k);
-                });
-              }),
-        ),
-      );
-      itemBuilder.add(billButton);
-    });
-
     return Scaffold(
       body: Column(
         children: [
           Expanded(
               child: SafeArea(
-            child: ListView(
-              children: itemBuilder,
-            ),
+            child: pageViewBuilder(MediaQuery.of(context).size.width),
           )),
           AnimatedCrossFade(
             firstChild: SizedBox(),
@@ -157,21 +243,24 @@ class _ListOnline48State extends State<ListOnline48> {
           AnimatedCrossFade(
             firstChild: SizedBox(),
             secondChild: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-              child: TextField(
-                controller: _controller,
-                decoration: InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: 'Search BillId',
-                    fillColor: colorScheme.primaryContainer),
-                onSubmitted: (text) {
-                  setState(() {
-                    _showWidgetB = !_showWidgetB;
-                    filterTitleBillId = text;
-                  });
-                },
-              ),
-            ),
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+                child: DateTimeField(
+                    decoration: const InputDecoration(
+                      labelText: 'Enter Date',
+                      helperText: 'DD/MM/YYYY',
+                    ),
+                    dateFormat: DateFormat('dd/MM/yyyy'),
+                    initialPickerDateTime: DateTime.now(),
+                    mode: DateTimeFieldPickerMode.date,
+                    onChanged: (DateTime? value) {
+                      _showWidgetB = !_showWidgetB;
+                      if (value != null) {
+                        getBillRecords(
+                            where: 'dateTime = ? AND isLeft = ?',
+                            whereArgs: [value.millisecondsSinceEpoch, 0]);
+                        dateFilter = value;
+                      }
+                    })),
             crossFadeState: _showWidgetB
                 ? CrossFadeState.showSecond
                 : CrossFadeState.showFirst,
@@ -189,7 +278,10 @@ class _ListOnline48State extends State<ListOnline48> {
             () {
               setState(() {
                 _showWidgetB = !_showWidgetB;
-                filterTitleBillId = "";
+                if (dateFilter != null) {
+                  dateFilter = null;
+                  getBillRecords(where: 'isLeft = ?', whereArgs: [0]);
+                }
               });
             },
             () {
@@ -228,5 +320,58 @@ class _ListOnline48State extends State<ListOnline48> {
         ],
       ),
     );
+  }
+
+  bool get _isOnDesktopAndWeb {
+    if (kIsWeb) {
+      return true;
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.macOS:
+      case TargetPlatform.linux:
+      case TargetPlatform.windows:
+        return true;
+      case TargetPlatform.android:
+      case TargetPlatform.iOS:
+      case TargetPlatform.fuchsia:
+        return false;
+    }
+  }
+}
+
+class BillsView48 extends StatelessWidget {
+  const BillsView48(
+      {super.key,
+      required this.billRecords,
+      required this.checkedBillIdList,
+      required this.callbackDelete,
+      required this.callbackRebuild,
+      required this.callbackCheck});
+  final List<BillRecord> billRecords;
+  final Map<int, bool> checkedBillIdList;
+  final Function callbackDelete;
+  final Function callbackRebuild;
+  final Function callbackCheck;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return ListView.builder(
+        itemCount: billRecords.length,
+        itemBuilder: (context, index1) {
+          final v = billRecords[index1];
+          return Center(
+              child: Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
+                  child: OrderSettingButtonOnl(
+                    content: '${v.dateTime}',
+                    colorScheme: colorScheme,
+                    isChecked: checkedBillIdList[v.id!] ?? false,
+                    callbackCheck: () => callbackCheck(billRecords, index1),
+                    callbackRebuild: () => callbackRebuild(),
+                    callbackDelete: () => callbackDelete(billRecords, index1),
+                  )));
+        });
   }
 }

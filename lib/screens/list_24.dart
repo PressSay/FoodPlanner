@@ -154,13 +154,13 @@ class _List24 extends State<List24> {
     );
   }
 
-  PageView preOrderedDishPageView() {
+  PageView preOrderedDishPageView(int columnSize) {
     return PageView.builder(
         controller: _pageViewController,
         onPageChanged: _handlePageViewChanged,
         itemBuilder: (context, index) {
           return List24View(
-            columnSize: 3,
+            columnSize: columnSize,
             preOrderedDishRecords: preOrderedDishRecordsList
                     .elementAtOrNull(index % pageViewSize) ??
                 [],
@@ -172,6 +172,8 @@ class _List24 extends State<List24> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final currentWidth = MediaQuery.of(context).size.width;
+    final columnSize = (currentWidth / 320).floor();
 
     return Scaffold(
       body: Column(
@@ -182,7 +184,7 @@ class _List24 extends State<List24> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
-                    child: preOrderedDishPageView(),
+                    child: preOrderedDishPageView(columnSize),
                   ),
                   PageIndicator(
                     currentPageIndex: _currentPageIndex,
@@ -379,33 +381,7 @@ class List24View extends StatelessWidget {
     return ListView.builder(
         itemCount: length,
         itemBuilder: (context, index) {
-          // khi thay đổi title sẽ return một column chứa Row title và row item
-          // điều kiện thứ 1: Mỗi một index chỉ có tối đa 3 lần đi tới nếu quá phải tạo thêm column
-          // điều kiện thứ 2: remainItemList chỉ có phần tử khi thay đổi titleCategory
-          // điều kiện thứ 3: khi lưu vào remainItemList thì chắc chắn phải tạo một column dư ra
-
-          // nếu lưu vào remainColumnList thì điều gì sẽ xẩy ra nếu đi tơi phần tử cuối cùng;
-          // thử nghiệm 1 xẩy ra khi không còn thay đổi titleCategory:
-          /*
-          ta sẽ thêm remainList còn lại theo logic vòng lạp sau: (giả sử có columnSize = 3)
-          1. remainList còn 2 và có thêm 3 index thõa điều kiện
-          ta sẽ thêm 2 item của remainList và 1 index thỏa điệu kiện hàng 1
-          2. 2 index thõa điều kiện còn lại sẽ thêm vào remainList (vấn đề xẩy khi)
-          2.1 nếu không có vòng lạp tiếp theo thì sẽ ra sau:
-          2.2 nếu có vòng lạp tiếp theo thì có thể giải quyết
-          => phải tìm ra xem có vòng lặp tiếp theo không.
-          nếu không thì sẽ thêm 2 index thỏa điều kiện vào hàng thứ 2 và trả về giá trị column
-          */
-          // thử nghiệm 2 xẩy ra khi có thay đổi titleCategory
-          /*
-          1. remainList còn lại 2 và có thêm 3 index thõa điệu kiện và ở vị trí thứ 1 của index đó
-          có thay đổi titleCategory
-          2. B1. thêm 2 item của remainList vào hàng 1, xóa remainList thêm 3 index thỏa điệu vào remainList
-          B2. Kiểm tra xem có phải là vòng lập cuối cùng hay không
-          nếu đúng sẽ tạo cột thêm 3 item thỏa điệu vào hàng 2
-          nếu sai quay lại B1
-          */
-
+          var isRow = false;
           final List<List<Widget>> itemRows = [];
           if (previousRow.isNotEmpty) {
             logger.d('previousRow.lastOrNull.length = '
@@ -414,21 +390,17 @@ class List24View extends StatelessWidget {
           } else {
             itemRows.add([]);
           }
-
           logger.d('itemRows[itemRows.length - 1].length = '
               '${itemRows[itemRows.length - 1].length}');
 
           final Map<String, dynamic> previousData = {
             'isLastItemInCategory': false,
           };
-
           final List<Widget> itemColumn = [];
-
           final isLastLoop =
               (index * columnSize + columnSize) >= preOrderedDishRecords.length;
 
           logger.d('isLastLoop $isLastLoop');
-
           var i = 0;
           for (; i < columnSize; i++) {
             final newIndex = index * columnSize + i;
@@ -449,8 +421,10 @@ class List24View extends StatelessWidget {
             logger.d('columnSizeE = $columnSizeE');
             if (columnSizeE != columnSize && previousRow.isNotEmpty) {
               itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
+              isRow = false;
             }
             itemRows[itemRows.length - 1].add(dishCofirm);
+            isRow = true;
             final isLastItemInCategory = (preOrderedDishRecords
                         .elementAtOrNull(newIndex + 1)
                         ?.categoryId ??
@@ -479,13 +453,6 @@ class List24View extends StatelessWidget {
               ));
               logger.d('title != categoryId, i = $i, (columnSize - 1) = '
                   '${(columnSize - 1)}');
-              // if ((length > 1 && !isLastLoop && i < (columnSize - 1)) ||
-              //     index == 0) {
-              //   logger.d('add Row success');
-              //   itemColumn.add(Row(
-              //       mainAxisAlignment: MainAxisAlignment.center,
-              //       children: itemRows[itemRows.length - 1]));
-              // }
             }
             if (isLastItemInCategory ||
                 (newIndex == preOrderedDishRecords.length - 1)) {
@@ -495,7 +462,7 @@ class List24View extends StatelessWidget {
               columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
               final remainColumn = columnSize - columnSizeE;
 
-              if (itemRows[itemRows.length - 1].length == 1) {
+              if (isRow) {
                 itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
               }
 
@@ -507,7 +474,6 @@ class List24View extends StatelessWidget {
               }
               columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
               logger.d('remainColumn $remainColumn, index i = $i');
-              // tạo một Row mới
               itemRows.add([]);
             }
             if (i != columnSize - 1 &&
@@ -526,7 +492,6 @@ class List24View extends StatelessWidget {
               logger.d('previousRow has value\n '
                   'previousRow is Empty: ${previousRow.isEmpty}\n '
                   'previousRow.last.length: ${previousRow.last.length}\n ');
-              // itemColumn.removeLast();
             }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.center,

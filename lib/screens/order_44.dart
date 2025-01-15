@@ -201,7 +201,7 @@ class _Order44 extends State<Order44> {
     );
   }
 
-  PageView pageViewBuilder(DishProvider dishProvider, double currentWidth) {
+  PageView pageViewBuilder(DishProvider dishProvider, int columnSize) {
     return PageView.builder(
         controller: _pageViewController,
         onPageChanged: _handlePageViewChanged,
@@ -210,7 +210,7 @@ class _Order44 extends State<Order44> {
             dishProvider: dishProvider,
             dishRecords:
                 dishRecords.elementAtOrNull(index % pageViewSize) ?? [],
-            columnSize: (currentWidth / 320).floor(),
+            columnSize: columnSize,
           );
         });
   }
@@ -221,6 +221,7 @@ class _Order44 extends State<Order44> {
     final DishProvider dishProvider = context.watch<DishProvider>();
     final BillProvider billProvider = context.watch<BillProvider>();
     final currentWidth = MediaQuery.of(context).size.width;
+    final columnSize = (currentWidth / 320).floor();
 
     return PopScope(
         canPop: true,
@@ -237,7 +238,8 @@ class _Order44 extends State<Order44> {
                     child: Column(
                   children: [
                     Expanded(
-                        child: pageViewBuilder(dishProvider, currentWidth)),
+                        child: pageViewBuilder(
+                            dishProvider, (columnSize == 0) ? 1 : columnSize)),
                     PageIndicator(
                       currentPageIndex: _currentPageIndex,
                       onUpdateCurrentPageIndex: _updateCurrentPageIndex,
@@ -400,7 +402,7 @@ class DishesView44 extends StatelessWidget {
             }
           }
           return Padding(
-            padding: const EdgeInsets.fromLTRB(8.0, 20.0, 8.0, 0),
+            padding: const EdgeInsets.fromLTRB(0, 20.0, 0, 0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: itemRow,

@@ -173,7 +173,7 @@ class _List24 extends State<List24> {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final currentWidth = MediaQuery.of(context).size.width;
-    final columnSize = (currentWidth / 320).floor();
+    final columnSize = (currentWidth / 320).floor() - 1;
 
     return Scaffold(
       body: Column(
@@ -184,7 +184,8 @@ class _List24 extends State<List24> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
-                    child: preOrderedDishPageView(columnSize),
+                    child: preOrderedDishPageView(
+                        (columnSize == 0) ? 1 : columnSize),
                   ),
                   PageIndicator(
                     currentPageIndex: _currentPageIndex,
@@ -371,12 +372,10 @@ class List24View extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final logger = Logger();
     final length = (preOrderedDishRecords.length / columnSize).ceil();
     final List<List<Widget>> previousRow = [];
-    final Map<String, dynamic> categoryData = {'title': '', 'categoryId': 0};
-    logger.d('length $length, preOrderedDishRecords.length '
-        '${preOrderedDishRecords.length}');
+    final colorScheme = Theme.of(context).colorScheme;
+    var categoryId = 0;
 
     return ListView.builder(
         itemCount: length,
@@ -384,14 +383,10 @@ class List24View extends StatelessWidget {
           var isRow = false;
           final List<List<Widget>> itemRows = [];
           if (previousRow.isNotEmpty) {
-            logger.d('previousRow.lastOrNull.length = '
-                '${previousRow.lastOrNull?.length}');
             itemRows.add(previousRow.last);
           } else {
             itemRows.add([]);
           }
-          logger.d('itemRows[itemRows.length - 1].length = '
-              '${itemRows[itemRows.length - 1].length}');
 
           final Map<String, dynamic> previousData = {
             'isLastItemInCategory': false,
@@ -400,7 +395,6 @@ class List24View extends StatelessWidget {
           final isLastLoop =
               (index * columnSize + columnSize) >= preOrderedDishRecords.length;
 
-          logger.d('isLastLoop $isLastLoop');
           var i = 0;
           for (; i < columnSize; i++) {
             final newIndex = index * columnSize + i;
@@ -409,7 +403,11 @@ class List24View extends StatelessWidget {
               break;
             }
             final e = preOrderedDishRecords[newIndex];
-
+            final isLastItemInCategory = (preOrderedDishRecords
+                        .elementAtOrNull(newIndex + 1)
+                        ?.categoryId ??
+                    e.categoryId) !=
+                e.categoryId;
             final dishCofirm = DishCofirm(
                 onlyView: true,
                 imagePath: e.imagePath,
@@ -417,21 +415,38 @@ class List24View extends StatelessWidget {
                 price: e.price,
                 amount: e.amount,
                 callBackDel: () {});
+
             var columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
-            logger.d('columnSizeE = $columnSizeE');
-            if (columnSizeE != columnSize && previousRow.isNotEmpty) {
+
+            if (columnSizeE != columnSize &&
+                previousRow.isNotEmpty &&
+                columnSize > 1) {
               itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
               isRow = false;
             }
             itemRows[itemRows.length - 1].add(dishCofirm);
             isRow = true;
-            final isLastItemInCategory = (preOrderedDishRecords
-                        .elementAtOrNull(newIndex + 1)
-                        ?.categoryId ??
-                    e.categoryId) !=
-                e.categoryId;
+
             previousData['isLastItemInCategory'] = isLastItemInCategory;
             columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
+
+            if (e.categoryId != categoryId) {
+              categoryId = e.categoryId;
+              // cần phải xét nó có phải là phần tử cuối cùng trong danh mục không
+
+              itemColumn.add(Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 20, 8, 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Text(e.titleCategory,
+                          style: TextStyle(
+                              color: colorScheme.primary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold))
+                    ],
+                  )));
+            }
             if (columnSizeE == columnSize && previousRow.isNotEmpty) {
               itemColumn.add(Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -440,20 +455,7 @@ class List24View extends StatelessWidget {
               previousRow.clear();
               continue;
             }
-            if (e.categoryId != categoryData['categoryId']) {
-              categoryData['categoryId'] = e.categoryId;
-              categoryData['title'] = e.titleCategory;
-              // cần phải xét nó có phải là phần tử cuối cùng trong danh mục không
-              itemColumn.add(Padding(
-                padding: const EdgeInsets.fromLTRB(0, 20, 0, 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [Text(e.titleCategory)],
-                ),
-              ));
-              logger.d('title != categoryId, i = $i, (columnSize - 1) = '
-                  '${(columnSize - 1)}');
-            }
+
             if (isLastItemInCategory ||
                 (newIndex == preOrderedDishRecords.length - 1)) {
               itemColumn.add(Row(
@@ -462,7 +464,7 @@ class List24View extends StatelessWidget {
               columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
               final remainColumn = columnSize - columnSizeE;
 
-              if (isRow) {
+              if (isRow && remainColumn > 0) {
                 itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
               }
 
@@ -473,7 +475,6 @@ class List24View extends StatelessWidget {
                 }
               }
               columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
-              logger.d('remainColumn $remainColumn, index i = $i');
               itemRows.add([]);
             }
             if (i != columnSize - 1 &&
@@ -481,17 +482,11 @@ class List24View extends StatelessWidget {
                 previousRow.isEmpty) {
               itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
             }
-            logger.d('e.titleDish = ${e.titleDish}, '
-                'isLastItemInCategory = $isLastItemInCategory '
-                'index $index');
           }
 
           if (!isLastLoop) {
             if (itemRows[itemRows.length - 1].length != columnSize) {
               previousRow.add(itemRows[itemRows.length - 1]);
-              logger.d('previousRow has value\n '
-                  'previousRow is Empty: ${previousRow.isEmpty}\n '
-                  'previousRow.last.length: ${previousRow.last.length}\n ');
             }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -503,16 +498,12 @@ class List24View extends StatelessWidget {
           }
           final columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
           final remainColumn = columnSize - columnSizeE;
-          logger.d(
-              'last loop remainColumn = $remainColumn, columnSize $columnSizeE '
-              'itemRows[itemRows.length - 1].length ${itemRows[itemRows.length - 1].length}');
           for (var j = 0; j < remainColumn; j++) {
             itemRows[itemRows.length - 1].add(const SizedBox(width: 345));
             if (i != remainColumn - 1) {
               itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
             }
           }
-
           return Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: itemColumn,

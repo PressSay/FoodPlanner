@@ -221,7 +221,7 @@ class _Order44 extends State<Order44> {
     final DishProvider dishProvider = context.watch<DishProvider>();
     final BillProvider billProvider = context.watch<BillProvider>();
     final currentWidth = MediaQuery.of(context).size.width;
-    final columnSize = (currentWidth / 320).floor();
+    final columnSize = (currentWidth / 320).floor() - 1;
 
     return PopScope(
         canPop: true,

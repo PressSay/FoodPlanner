@@ -13,9 +13,17 @@ import 'package:menu_qr/widgets/table_cofirm.dart';
 import 'package:provider/provider.dart';
 
 class Table36 extends StatefulWidget {
-  const Table36({super.key, required this.isList, required this.tableRecord});
+  const Table36(
+      {super.key,
+      required this.isList,
+      required this.tableRecord,
+      required this.oldIndexTableRecordsList,
+      required this.oldIndexTableRecords});
   final bool isList;
   final TableRecord tableRecord;
+  final int oldIndexTableRecordsList;
+  final int oldIndexTableRecords;
+
   @override
   State<Table36> createState() => _Table36State();
 }
@@ -24,7 +32,14 @@ class _Table36State extends State<Table36> {
   final TextEditingController _controller = TextEditingController();
   final DataHelper dataHelper = DataHelper();
   final logger = Logger();
-  List<int> tableRecordOldNew = [];
+  final onValueData = {
+    'oldId': 0,
+    'newId': 0,
+    'oldIndexTableRecordsList': 0,
+    'oldIndexTableRecords': 0,
+    'newIndexTableRecordsList': 0,
+    'newIndexTableRecords': 0
+  };
 
   Alert? alert;
   String desc = "";
@@ -36,8 +51,10 @@ class _Table36State extends State<Table36> {
   }
 
   Future<void> saveInfoTable() async {
-    widget.tableRecord.desc = desc;
-    dataHelper.updateTableRecord(widget.tableRecord);
+    if (desc.isNotEmpty) {
+      widget.tableRecord.desc = desc;
+      dataHelper.updateTableRecord(widget.tableRecord);
+    }
   }
 
   void viewBillInTable(BillProvider billProvider) async {
@@ -51,12 +68,24 @@ class _Table36State extends State<Table36> {
             builder: (context) => ListDetail40(
                   onlyView: isView,
                   tableRecord: widget.tableRecord,
+                  oldIndexTableRecordsList: widget.oldIndexTableRecordsList,
+                  oldIndexTableRecords: widget.oldIndexTableRecords,
                 ))).then((onValue) {
       logger.d('${widget.tableRecord.numOfPeople}, onValue: $onValue');
-      if (onValue is List<int> && onValue.isNotEmpty) {
-        tableRecordOldNew.clear();
-        tableRecordOldNew.addAll(onValue);
-        setState(() {});
+      if (onValue is Map<String, int>) {
+        onValueData['oldId'] = onValue['oldId'] ?? 0;
+        onValueData['newId'] = onValue['newId'] ?? 0;
+        onValueData['oldIndexTableRecordsList'] =
+            onValue['oldIndexTableRecordsList'] ?? 0;
+        onValueData['oldIndexTableRecords'] =
+            onValue['oldIndexTableRecords'] ?? 0;
+        onValueData['newIndexTableRecordsList'] =
+            onValue['newIndexTableRecordsList'] ?? 0;
+        onValueData['newIndexTableRecords'] =
+            onValue['newIndexTableRecords'] ?? 0;
+        setState(() {
+          _controller.text = widget.tableRecord.desc;
+        });
       }
       // 40 -> 36 -> 35
     });
@@ -67,6 +96,7 @@ class _Table36State extends State<Table36> {
     // remember reassign value billId for billProvider,
     // this allow to back and select dish again
     final BillRecord newBillRecord = BillRecord(
+        tax: billProvider.billRecord.tax,
         amountPaid: billProvider.billRecord.amountPaid,
         discount: billProvider.billRecord.discount,
         tableId: billProvider.billRecord.tableId,
@@ -147,32 +177,6 @@ class _Table36State extends State<Table36> {
     final DishProvider dishProvider = context.watch<DishProvider>();
     final BillProvider billProvider = context.watch<BillProvider>();
 
-    final listEnableBtn = [true, true, false, widget.isList];
-    final listCallback = [
-      () {
-        Navigator.pop(context, tableRecordOldNew);
-        // 36 -> 35
-      },
-      () {
-        Navigator.popUntil(context, (route) => route.isFirst);
-      },
-      () {
-        saveInfoTable();
-        alert!.showAlert("Update Table", 'success!', false, null);
-      }
-    ];
-    final icons = [
-      Icon(
-        Icons.arrow_back,
-        color: colorScheme.primary,
-      ),
-      Icon(Icons.home, color: colorScheme.primary),
-      Icon(Icons.save, color: colorScheme.primary)
-    ];
-
-    final bottomNavigator = BottomNavigatorCustomize(
-        listEnableBtn: listEnableBtn, listCallback: listCallback, icons: icons);
-
     return Scaffold(
       body: Column(
         children: [
@@ -208,7 +212,31 @@ class _Table36State extends State<Table36> {
               warningText(widget.tableRecord.numOfPeople, colorScheme)
             ])),
           )),
-          bottomNavigator
+          BottomNavigatorCustomize(listEnableBtn: [
+            true,
+            true,
+            false,
+            widget.isList
+          ], listCallback: [
+            () {
+              Navigator.pop(context, onValueData);
+              // 36 -> 35
+            },
+            () {
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+            () {
+              saveInfoTable();
+              alert!.showAlert("Update Table", 'success!', false, null);
+            }
+          ], icons: [
+            Icon(
+              Icons.arrow_back,
+              color: colorScheme.primary,
+            ),
+            Icon(Icons.home, color: colorScheme.primary),
+            Icon(Icons.save, color: colorScheme.primary)
+          ])
         ],
       ),
     );

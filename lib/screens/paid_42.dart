@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:menu_qr/models/bill_record.dart';
+import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/pdf_api.dart';
 import 'package:menu_qr/services/pdf_invoice_api.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Paid42 extends StatefulWidget {
   const Paid42({super.key, required this.billRecord});
@@ -15,17 +17,22 @@ class Paid42 extends StatefulWidget {
 
 class _Paid42State extends State<Paid42> {
   final TextEditingController _controller = TextEditingController();
+  final String logoImage = 'assets/images/wislam.png';
+  final String logoText = 'https://wislam.ct.ws';
+  final dataHelper = DataHelper();
+
   String descFromShop = "";
   String timeZone = "vi_VN";
-  String nameShop = "My Shop";
-  String addressShop = "My Address Shop";
+  String nameShop = "";
+  String addressShop = "";
+
   double total = 0;
-  double tax = 0;
   double amountPaid = 0;
 
   List<Widget> infoCustomer(
       ColorScheme colorScheme,
       String taxString,
+      String discountString,
       String totalString,
       String amountPaidString,
       String changeString,
@@ -69,6 +76,19 @@ class _Paid42State extends State<Paid42> {
                     color: colorScheme.primary, fontWeight: FontWeight.bold)),
             TextSpan(
                 text: taxString,
+                style: TextStyle(
+                    color: colorScheme.secondary, fontWeight: FontWeight.bold))
+          ]))),
+      Padding(
+          padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
+          child: RichText(
+              text: TextSpan(children: [
+            TextSpan(
+                text: 'Discount: ',
+                style: TextStyle(
+                    color: colorScheme.primary, fontWeight: FontWeight.bold)),
+            TextSpan(
+                text: discountString,
                 style: TextStyle(
                     color: colorScheme.secondary, fontWeight: FontWeight.bold))
           ]))),
@@ -160,32 +180,34 @@ class _Paid42State extends State<Paid42> {
     ];
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    // int billId = billProvider.billRecord.id;
-    final int billId = widget.billRecord.id!;
-    final String logoPath = 'assets/images/wislam.png';
-    final String logoText = 'https://wislam.ct.ws';
-    final String qrImage = logoPath;
-    final String qrText = logoText;
+  Future<void> loadData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final name = prefs.getString('name');
+    final address = prefs.getString('address');
+    final tmpPreOrderedDishRecords = await dataHelper.preOrderedDishList(
+        where: 'billId = ?', whereArgs: [widget.billRecord.id!]);
 
-    // amountPaid = billProvider.billRecord.amountPaid;
+    var tmpTotal = 0.0;
+    for (var element in tmpPreOrderedDishRecords) {
+      tmpTotal += (element.amount * element.price);
+    }
+
     amountPaid = widget.billRecord.amountPaid;
-    total = 0;
-    widget.billRecord.preOrderedDishRecords?.forEach((element) {
-      total += (element.amount * element.price);
+    setState(() {
+      nameShop = name ?? "";
+      addressShop = address ?? "";
+      total = tmpTotal;
+      widget.billRecord.preOrderedDishRecords = tmpPreOrderedDishRecords;
     });
-    tax = total * 0.05;
-    double change = amountPaid - total;
+  }
 
-    String totalString = NumberFormat.currency(locale: timeZone).format(total);
-    String taxString = NumberFormat.currency(locale: timeZone).format(tax);
-    String changeString =
-        NumberFormat.currency(locale: timeZone).format(change);
-    String amountPaidString =
-        NumberFormat.currency(locale: timeZone).format(amountPaid);
+  @override
+  void initState() {
+    loadData();
+    super.initState();
+  }
 
+  Column contentView(ColorScheme colorScheme) {
     Widget descFieldW = Padding(
       padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 28.0),
       child: TextField(
@@ -203,11 +225,23 @@ class _Paid42State extends State<Paid42> {
               fillColor: colorScheme.primaryContainer)),
     );
 
-    List<Widget> itemBuilder = infoCustomer(colorScheme, taxString, totalString,
-        amountPaidString, changeString, billId);
+    List<Widget> itemBuilder = infoCustomer(
+        colorScheme,
+        moneyFormat(widget.billRecord.tax),
+        moneyFormat(widget.billRecord.discount),
+        moneyFormat(total - widget.billRecord.discount),
+        moneyFormat(amountPaid),
+        moneyFormat(amountPaid - total),
+        widget.billRecord.id!);
     itemBuilder.add(descFieldW);
-    itemBuilder.addAll(qrCode(colorScheme, logoPath, logoText));
+    itemBuilder.addAll(qrCode(colorScheme, logoImage, logoText));
+    return Column(
+        crossAxisAlignment: CrossAxisAlignment.start, children: itemBuilder);
+  }
 
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       body: Column(
         children: [
@@ -216,9 +250,7 @@ class _Paid42State extends State<Paid42> {
               child: ListView(children: [
                 Padding(
                     padding: EdgeInsets.all(12),
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: itemBuilder)),
+                    child: contentView(colorScheme)),
               ]),
             ),
           ),
@@ -229,6 +261,7 @@ class _Paid42State extends State<Paid42> {
             true
           ], listCallback: [
             () {
+              widget.billRecord.preOrderedDishRecords?.clear();
               Navigator.pop(context);
             },
             () {
@@ -240,19 +273,20 @@ class _Paid42State extends State<Paid42> {
                   widget.billRecord,
                   widget.billRecord.preOrderedDishRecords ?? [],
                   [
-                    'My Name Shop',
-                    'My Address Shop',
+                    nameShop,
+                    addressShop,
                     widget.billRecord.nameTable,
-                    taxString,
-                    totalString,
-                    amountPaidString,
-                    changeString,
-                    qrImage,
-                    qrText
+                    moneyFormat(widget.billRecord.tax),
+                    moneyFormat(widget.billRecord.discount),
+                    moneyFormat(total),
+                    moneyFormat(amountPaid),
+                    moneyFormat(amountPaid - total),
+                    logoImage,
+                    logoText
                   ],
                   descFromShop,
                   timeZone,
-                  "Bill-$billId");
+                  "Bill-${widget.billRecord.id!}");
               PdfApi.openFile(pdfFile);
             }
           ], icons: [
@@ -269,5 +303,9 @@ class _Paid42State extends State<Paid42> {
         ],
       ),
     );
+  }
+
+  String moneyFormat(double money) {
+    return NumberFormat.currency(locale: timeZone).format(money);
   }
 }

@@ -31,17 +31,21 @@ class _Paid41State extends State<Paid41> {
   final logger = Logger();
   final TextEditingController _controller = TextEditingController();
   bool isInit = true;
+
   double total = 0;
   double amountPaid = 0;
   double change = 0;
+
   String timeZone = "vi_VN";
   bool isTableIdChange = true;
   String tableName = "";
+  int indexTableRecordsList = 0;
+  int indexTableRecords = 0;
 
   final DataHelper dataHelper = DataHelper();
   final List<PreOrderedDishRecord> preOrderedDishRecords = [];
 
-  void getPreOrderedDishRecords() async {
+  Future<void> getPreOrderedDishRecords() async {
     final tmpPreOrderedDishRecords = await dataHelper.preOrderedDishList(
         where: 'billId = ?', whereArgs: [widget.billRecord.id!]);
     var tmpTotal = 0.0;
@@ -70,8 +74,8 @@ class _Paid41State extends State<Paid41> {
         await dataHelper.tableRecord(oldTableRecordId);
     oldTableRecord?.numOfPeople -= 1;
     newTableRecord_?.numOfPeople += 1;
-    logger.d(
-        "oldTableRecord: ${oldTableRecord?.numOfPeople}, newTableRecord_: ${newTableRecord_?.numOfPeople}");
+    logger.d('oldTableRecord: ${oldTableRecord?.numOfPeople}, '
+        'newTableRecord_: ${newTableRecord_?.numOfPeople}');
     if (newTableRecord_ != null) {
       await dataHelper.updateTableRecord(newTableRecord_);
     }
@@ -87,7 +91,12 @@ class _Paid41State extends State<Paid41> {
       () {
         dishProvider.clearIndexListRam();
         widget.billRecord.preOrderedDishRecords?.clear();
-        Navigator.pop(context, widget.billRecord);
+        Map<String, dynamic> onValue = {
+          'billRecord': widget.billRecord,
+          'indexTableRecords': indexTableRecords,
+          'indexTableRecordsList': indexTableRecordsList
+        };
+        Navigator.pop(context, onValue);
       },
       () {
         dishProvider.clearIndexListRam();
@@ -154,18 +163,8 @@ class _Paid41State extends State<Paid41> {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final DishProvider dishProvider = context.watch<DishProvider>();
-
-    final int tableId = widget.billRecord.tableId!;
     final String typeCustomer =
         (widget.billRecord.type) ? "Buy take away" : "Sit in place";
-
-    tableName = (tableId == 0) ? 'None' : widget.billRecord.nameTable;
-
-    String totalString = NumberFormat.currency(locale: timeZone).format(total);
-    String taxString =
-        NumberFormat.currency(locale: timeZone).format(total * 0.05);
-    String changeString =
-        NumberFormat.currency(locale: timeZone).format(change);
 
     return Scaffold(
       body: Column(
@@ -214,12 +213,29 @@ class _Paid41State extends State<Paid41> {
                     child: RichText(
                       text: TextSpan(children: [
                         TextSpan(
-                            text: 'Tax(5%): ',
+                            text: 'Tax: ',
                             style: TextStyle(
                                 color: colorScheme.primary,
                                 fontWeight: FontWeight.bold)),
                         TextSpan(
-                            text: taxString,
+                            text: moneyFormat(widget.billRecord.tax),
+                            style: TextStyle(
+                                color: colorScheme.secondary,
+                                fontWeight: FontWeight.bold))
+                      ]),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
+                    child: RichText(
+                      text: TextSpan(children: [
+                        TextSpan(
+                            text: 'Discount: ',
+                            style: TextStyle(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.bold)),
+                        TextSpan(
+                            text: moneyFormat(widget.billRecord.discount),
                             style: TextStyle(
                                 color: colorScheme.secondary,
                                 fontWeight: FontWeight.bold))
@@ -236,7 +252,7 @@ class _Paid41State extends State<Paid41> {
                                 color: colorScheme.primary,
                                 fontWeight: FontWeight.bold)),
                         TextSpan(
-                            text: totalString,
+                            text: moneyFormat(total),
                             style: TextStyle(
                                 color: colorScheme.secondary,
                                 fontWeight: FontWeight.bold))
@@ -284,7 +300,7 @@ class _Paid41State extends State<Paid41> {
                                 color: colorScheme.primary,
                                 fontWeight: FontWeight.bold)),
                         TextSpan(
-                            text: changeString,
+                            text: moneyFormat(change),
                             style: TextStyle(
                                 color: colorScheme.secondary,
                                 fontWeight: FontWeight.bold))
@@ -337,17 +353,23 @@ class _Paid41State extends State<Paid41> {
                                   billId: widget.billRecord.id!,
                                 ),
                               )).then((onValue) {
-                            if (onValue is TableRecord) {
-                              isTableIdChange =
-                                  onValue.id != widget.billRecord.tableId!;
+                            if (onValue is Map<String, dynamic>) {
+                              TableRecord tableRecordTmp =
+                                  onValue['tableRecord'];
+                              indexTableRecords = onValue['indexTableRecords'];
+                              indexTableRecordsList =
+                                  onValue['indexTableRecordsList'];
+                              isTableIdChange = tableRecordTmp.id !=
+                                  widget.billRecord.tableId!;
                               logger.d(
                                   'onValue.id != widget.billRecord.tableId! $isTableIdChange');
                               if (isTableIdChange) {
                                 saveTableRebuild(
-                                    onValue, widget.billRecord.tableId!);
+                                    tableRecordTmp, widget.billRecord.tableId!);
                                 setState(() {
-                                  widget.billRecord.tableId = onValue.id;
-                                  widget.billRecord.nameTable = onValue.name;
+                                  widget.billRecord.tableId = tableRecordTmp.id;
+                                  widget.billRecord.nameTable =
+                                      tableRecordTmp.name;
                                 });
                                 dataHelper.updateBillRecord(widget.billRecord);
                                 return;
@@ -362,18 +384,18 @@ class _Paid41State extends State<Paid41> {
                     padding: EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
                     child: ElevatedButton(
                         onPressed: () {
-                          var onValue = TableRecord(
+                          var onValueDate = TableRecord(
                               id: 0, name: "không", desc: "", numOfPeople: 0);
                           isTableIdChange =
-                              onValue.id != widget.billRecord.tableId!;
+                              onValueDate.id != widget.billRecord.tableId!;
                           logger.d(
                               'onValue.id != widget.billRecord.tableId! $isTableIdChange');
                           if (isTableIdChange) {
                             saveTableRebuild(
-                                onValue, widget.billRecord.tableId!);
+                                onValueDate, widget.billRecord.tableId!);
                             setState(() {
-                              widget.billRecord.tableId = onValue.id;
-                              widget.billRecord.nameTable = onValue.name;
+                              widget.billRecord.tableId = onValueDate.id;
+                              widget.billRecord.nameTable = onValueDate.name;
                             });
                             dataHelper.updateBillRecord(widget.billRecord);
                             return;
@@ -390,5 +412,9 @@ class _Paid41State extends State<Paid41> {
         ],
       ),
     );
+  }
+
+  String moneyFormat(double money) {
+    return NumberFormat.currency(locale: timeZone).format(money);
   }
 }

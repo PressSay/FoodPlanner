@@ -210,6 +210,7 @@ class _Order44 extends State<Order44> {
             dishProvider: dishProvider,
             dishRecords:
                 dishRecords.elementAtOrNull(index % pageViewSize) ?? [],
+            columnSize: (currentWidth / 320).floor(),
           );
         });
   }
@@ -235,7 +236,6 @@ class _Order44 extends State<Order44> {
                 child: SafeArea(
                     child: Column(
                   children: [
-                    Padding(padding: EdgeInsets.all(10)),
                     Expanded(
                         child: pageViewBuilder(dishProvider, currentWidth)),
                     PageIndicator(
@@ -362,26 +362,50 @@ class DishesView44 extends StatelessWidget {
     super.key,
     required this.dishRecords,
     required this.dishProvider,
+    required this.columnSize,
   });
   final List<DishRecord> dishRecords;
   final DishProvider dishProvider;
+  final int columnSize;
 
   @override
   Widget build(BuildContext context) {
+    final length = (dishRecords.length / columnSize).ceil();
     return ListView.builder(
-        itemCount: dishRecords.length,
+        itemCount: length,
         itemBuilder: (context, index) {
-          final value = dishRecords[index];
+          final List<Widget> itemRow = [];
+          var i = 0;
+          for (; i < columnSize; i++) {
+            final newIndex = index * columnSize + i;
+            if (newIndex >= dishRecords.length) {
+              break;
+            }
+            itemRow.add(DishButton(
+                id: dishRecords[newIndex].id!,
+                categoryId: dishRecords[newIndex].categoryId,
+                imagePath: dishRecords[newIndex].imagePath,
+                titleCategory: dishProvider.titleCategory,
+                title: dishRecords[newIndex].title,
+                desc: dishRecords[newIndex].desc,
+                price: dishRecords[newIndex].price));
+            if (i != columnSize - 1) {
+              itemRow.add(SizedBox(width: 20));
+            }
+          }
+          for (; i < columnSize; i++) {
+            itemRow.add(SizedBox(width: 320));
+            if (i != columnSize - 1) {
+              itemRow.add(SizedBox(width: 20));
+            }
+          }
           return Padding(
-              padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
-              child: DishButton(
-                  id: value.id!,
-                  categoryId: value.categoryId,
-                  imagePath: value.imagePath,
-                  titleCategory: dishProvider.titleCategory,
-                  title: value.title,
-                  desc: value.desc,
-                  price: value.price));
+            padding: const EdgeInsets.fromLTRB(8.0, 20.0, 8.0, 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: itemRow,
+            ),
+          );
         });
   }
 }

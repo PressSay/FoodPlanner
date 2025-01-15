@@ -58,7 +58,7 @@ class _List24 extends State<List24> {
     setState(() {
       preOrderedDishRecordsList.clear();
       preOrderedDishRecordsList.addAll(tmpPreOrderedDishRecordsList);
-      total = tmpTotal;
+      total = tmpTotal - widget.billRecord.discount;
     });
   }
 
@@ -160,6 +160,7 @@ class _List24 extends State<List24> {
         onPageChanged: _handlePageViewChanged,
         itemBuilder: (context, index) {
           return List24View(
+            columnSize: 3,
             preOrderedDishRecords: preOrderedDishRecordsList
                     .elementAtOrNull(index % pageViewSize) ??
                 [],
@@ -209,7 +210,7 @@ class _List24 extends State<List24> {
                               Padding(padding: EdgeInsets.all(4)),
                               Text(
                                   NumberFormat.currency(locale: timeZone)
-                                      .format(0.0),
+                                      .format(widget.billRecord.discount),
                                   style: TextStyle(
                                       fontSize: 16,
                                       color: colorScheme.secondary,
@@ -219,7 +220,7 @@ class _List24 extends State<List24> {
                             padding: EdgeInsets.fromLTRB(16, 0, 16, 10),
                             child: Row(children: [
                               Text(
-                                "Tax(5%):",
+                                "Tax:",
                                 style: TextStyle(
                                     fontSize: 18,
                                     color: colorScheme.primary,
@@ -228,7 +229,7 @@ class _List24 extends State<List24> {
                               Padding(padding: EdgeInsets.all(4)),
                               Text(
                                   NumberFormat.currency(locale: timeZone)
-                                      .format(total * 0.05),
+                                      .format(widget.billRecord.tax),
                                   style: TextStyle(
                                       fontSize: 16,
                                       color: colorScheme.secondary,
@@ -359,56 +360,198 @@ class _List24 extends State<List24> {
 class List24View extends StatelessWidget {
   const List24View(
       {super.key,
+      required this.columnSize,
       required this.preOrderedDishRecords,
       required this.filterTitleDish});
   final List<PreOrderedDishRecord> preOrderedDishRecords;
   final String filterTitleDish;
+  final int columnSize;
 
   @override
   Widget build(BuildContext context) {
-    var categoryId = 0;
+    final logger = Logger();
+    final length = (preOrderedDishRecords.length / columnSize).ceil();
+    final List<List<Widget>> previousRow = [];
+    final Map<String, dynamic> categoryData = {'title': '', 'categoryId': 0};
+    logger.d('length $length, preOrderedDishRecords.length '
+        '${preOrderedDishRecords.length}');
+
     return ListView.builder(
-        itemCount: preOrderedDishRecords.length,
+        itemCount: length,
         itemBuilder: (context, index) {
-          final colorScheme = Theme.of(context).colorScheme;
-          final e = preOrderedDishRecords[index];
-          final dishCofirm = DishCofirm(
-            onlyView: true,
-            imagePath: e.imagePath,
-            title: e.titleDish,
-            price: e.price,
-            amount: e.amount,
-            callBackDel: () {},
-          );
-          if (e.categoryId != categoryId) {
-            categoryId = e.categoryId;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 0, 0, 8),
-                  child: Center(
-                    child: SizedBox(
-                        width: 345,
-                        child: Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              Text(
-                                e.titleCategory,
-                                style: TextStyle(
-                                    color: colorScheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 17),
-                              ),
-                            ])),
-                  ),
-                ),
-                dishCofirm
-              ],
-            );
+          // khi thay đổi title sẽ return một column chứa Row title và row item
+          // điều kiện thứ 1: Mỗi một index chỉ có tối đa 3 lần đi tới nếu quá phải tạo thêm column
+          // điều kiện thứ 2: remainItemList chỉ có phần tử khi thay đổi titleCategory
+          // điều kiện thứ 3: khi lưu vào remainItemList thì chắc chắn phải tạo một column dư ra
+
+          // nếu lưu vào remainColumnList thì điều gì sẽ xẩy ra nếu đi tơi phần tử cuối cùng;
+          // thử nghiệm 1 xẩy ra khi không còn thay đổi titleCategory:
+          /*
+          ta sẽ thêm remainList còn lại theo logic vòng lạp sau: (giả sử có columnSize = 3)
+          1. remainList còn 2 và có thêm 3 index thõa điều kiện
+          ta sẽ thêm 2 item của remainList và 1 index thỏa điệu kiện hàng 1
+          2. 2 index thõa điều kiện còn lại sẽ thêm vào remainList (vấn đề xẩy khi)
+          2.1 nếu không có vòng lạp tiếp theo thì sẽ ra sau:
+          2.2 nếu có vòng lạp tiếp theo thì có thể giải quyết
+          => phải tìm ra xem có vòng lặp tiếp theo không.
+          nếu không thì sẽ thêm 2 index thỏa điều kiện vào hàng thứ 2 và trả về giá trị column
+          */
+          // thử nghiệm 2 xẩy ra khi có thay đổi titleCategory
+          /*
+          1. remainList còn lại 2 và có thêm 3 index thõa điệu kiện và ở vị trí thứ 1 của index đó
+          có thay đổi titleCategory
+          2. B1. thêm 2 item của remainList vào hàng 1, xóa remainList thêm 3 index thỏa điệu vào remainList
+          B2. Kiểm tra xem có phải là vòng lập cuối cùng hay không
+          nếu đúng sẽ tạo cột thêm 3 item thỏa điệu vào hàng 2
+          nếu sai quay lại B1
+          */
+
+          final List<List<Widget>> itemRows = [];
+          if (previousRow.isNotEmpty) {
+            logger.d('previousRow.lastOrNull.length = '
+                '${previousRow.lastOrNull?.length}');
+            itemRows.add(previousRow.last);
+          } else {
+            itemRows.add([]);
           }
 
-          return dishCofirm;
+          logger.d('itemRows[itemRows.length - 1].length = '
+              '${itemRows[itemRows.length - 1].length}');
+
+          final Map<String, dynamic> previousData = {
+            'isLastItemInCategory': false,
+          };
+
+          final List<Widget> itemColumn = [];
+
+          final isLastLoop =
+              (index * columnSize + columnSize) >= preOrderedDishRecords.length;
+
+          logger.d('isLastLoop $isLastLoop');
+
+          var i = 0;
+          for (; i < columnSize; i++) {
+            final newIndex = index * columnSize + i;
+
+            if (newIndex >= preOrderedDishRecords.length) {
+              break;
+            }
+            final e = preOrderedDishRecords[newIndex];
+
+            final dishCofirm = DishCofirm(
+                onlyView: true,
+                imagePath: e.imagePath,
+                title: e.titleDish,
+                price: e.price,
+                amount: e.amount,
+                callBackDel: () {});
+            var columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
+            logger.d('columnSizeE = $columnSizeE');
+            if (columnSizeE != columnSize && previousRow.isNotEmpty) {
+              itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
+            }
+            itemRows[itemRows.length - 1].add(dishCofirm);
+            final isLastItemInCategory = (preOrderedDishRecords
+                        .elementAtOrNull(newIndex + 1)
+                        ?.categoryId ??
+                    e.categoryId) !=
+                e.categoryId;
+            previousData['isLastItemInCategory'] = isLastItemInCategory;
+            columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
+            if (columnSizeE == columnSize && previousRow.isNotEmpty) {
+              itemColumn.add(Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: itemRows[itemRows.length - 1]));
+              itemRows.add([]);
+              previousRow.clear();
+              continue;
+            }
+            if (e.categoryId != categoryData['categoryId']) {
+              categoryData['categoryId'] = e.categoryId;
+              categoryData['title'] = e.titleCategory;
+              // cần phải xét nó có phải là phần tử cuối cùng trong danh mục không
+              itemColumn.add(Padding(
+                padding: const EdgeInsets.fromLTRB(0, 20, 0, 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [Text(e.titleCategory)],
+                ),
+              ));
+              logger.d('title != categoryId, i = $i, (columnSize - 1) = '
+                  '${(columnSize - 1)}');
+              // if ((length > 1 && !isLastLoop && i < (columnSize - 1)) ||
+              //     index == 0) {
+              //   logger.d('add Row success');
+              //   itemColumn.add(Row(
+              //       mainAxisAlignment: MainAxisAlignment.center,
+              //       children: itemRows[itemRows.length - 1]));
+              // }
+            }
+            if (isLastItemInCategory ||
+                (newIndex == preOrderedDishRecords.length - 1)) {
+              itemColumn.add(Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: itemRows[itemRows.length - 1]));
+              columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
+              final remainColumn = columnSize - columnSizeE;
+
+              if (itemRows[itemRows.length - 1].length == 1) {
+                itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
+              }
+
+              for (var j = 0; j < remainColumn; j++) {
+                itemRows[itemRows.length - 1].add(const SizedBox(width: 345));
+                if (j != remainColumn - 1) {
+                  itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
+                }
+              }
+              columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
+              logger.d('remainColumn $remainColumn, index i = $i');
+              // tạo một Row mới
+              itemRows.add([]);
+            }
+            if (i != columnSize - 1 &&
+                itemRows[itemRows.length - 1].isNotEmpty &&
+                previousRow.isEmpty) {
+              itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
+            }
+            logger.d('e.titleDish = ${e.titleDish}, '
+                'isLastItemInCategory = $isLastItemInCategory '
+                'index $index');
+          }
+
+          if (!isLastLoop) {
+            if (itemRows[itemRows.length - 1].length != columnSize) {
+              previousRow.add(itemRows[itemRows.length - 1]);
+              logger.d('previousRow has value\n '
+                  'previousRow is Empty: ${previousRow.isEmpty}\n '
+                  'previousRow.last.length: ${previousRow.last.length}\n ');
+              // itemColumn.removeLast();
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: itemColumn,
+            );
+          }
+          if (itemRows[itemRows.length - 1].isEmpty) {
+            itemRows.removeLast();
+          }
+          final columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
+          final remainColumn = columnSize - columnSizeE;
+          logger.d(
+              'last loop remainColumn = $remainColumn, columnSize $columnSizeE '
+              'itemRows[itemRows.length - 1].length ${itemRows[itemRows.length - 1].length}');
+          for (var j = 0; j < remainColumn; j++) {
+            itemRows[itemRows.length - 1].add(const SizedBox(width: 345));
+            if (i != remainColumn - 1) {
+              itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
+            }
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: itemColumn,
+          );
         });
   }
 }

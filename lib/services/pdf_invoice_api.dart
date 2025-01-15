@@ -31,7 +31,7 @@ class PdfInvoiceApi {
     );
 
     final pdf = Document(theme: themeData);
-    final img = await rootBundle.load(info[7]);
+    final img = await rootBundle.load(info[8]);
     // final netImage = await networkImage('https://www.nfet.net/nfet.jpg');
     final imageBytes = img.buffer.asUint8List();
     Image qrImage = Image(MemoryImage(imageBytes)); // Image(netImage)
@@ -101,7 +101,7 @@ class PdfInvoiceApi {
         child: RichText(
           text: TextSpan(children: [
             TextSpan(
-                text: 'Adress name: ',
+                text: 'Address: ',
                 style: TextStyle(fontWeight: FontWeight.bold)),
             TextSpan(text: info[1])
           ]),
@@ -155,26 +155,27 @@ class PdfInvoiceApi {
         Expanded(
             flex: 4,
             child: Column(children: [
-              buildText(title: 'VAT (5%)', value: info[3], unite: false),
+              buildText(title: 'VAT', value: info[3], unite: false),
+              buildText(title: 'Discount', value: info[4], unite: false),
               buildText(
                 title: 'Total (VAT)',
-                value: info[4],
+                value: info[5],
                 unite: true,
               ),
               Divider(),
               buildText(
                 title: 'Paid',
-                value: info[5],
+                value: info[6],
                 unite: false,
               ),
               buildText(
                 title: '',
-                value: '-${info[4]}',
+                value: '-${info[5]}',
                 unite: false,
               ),
               buildText(
                 title: 'Change',
-                value: info[6],
+                value: info[7],
                 unite: true,
               ),
               SizedBox(height: 2 * PdfPageFormat.mm),

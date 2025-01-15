@@ -4,6 +4,7 @@ class BillRecord {
   int? id;
   // sau khi đã hoàn thành giao dịch thì tableId chỉ là liên kết lỏng lẻo
   int? tableId;
+  double tax;
   double amountPaid;
   double discount;
   String nameTable;
@@ -22,6 +23,7 @@ class BillRecord {
       this.tableId,
       required this.amountPaid,
       required this.discount,
+      required this.tax,
       required this.nameTable,
       required this.isLeft,
       required this.type,
@@ -33,6 +35,7 @@ class BillRecord {
             id: from.id,
             tableId: from.tableId,
             amountPaid: from.amountPaid,
+            tax: from.tax,
             discount: from.discount,
             nameTable: from.nameTable,
             isLeft: from.isLeft,
@@ -49,7 +52,8 @@ class BillRecord {
       'nameTable': nameTable,
       'isLeft': (isLeft) ? 1 : 0,
       'type': (type) ? 1 : 0,
-      'dateTime': dateTime
+      'dateTime': dateTime,
+      'tax': tax
     };
   }
 
@@ -62,6 +66,7 @@ class BillRecord {
         nameTable: map['nameTable'],
         isLeft: map['isLeft'] == 1,
         type: map['type'] == 1,
-        dateTime: map['dateTime']);
+        dateTime: map['dateTime'],
+        tax: map['tax']);
   }
 }

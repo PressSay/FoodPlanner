@@ -315,7 +315,11 @@ class _Dish31State extends State<Dish31> {
                                 height: 48,
                                 child: TextField(
                                     onChanged: (value) {
-                                      price = double.parse(value);
+                                      try {
+                                        price = double.parse(value);
+                                      } catch (e) {
+                                        price = 0;
+                                      }
                                     },
                                     style:
                                         TextStyle(color: colorScheme.primary),

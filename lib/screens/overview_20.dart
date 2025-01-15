@@ -85,7 +85,8 @@ class _Overview20State extends State<Overview20> {
     var sumOfbillNumber = 0.0;
     for (var e in tmpBillRecords) {
       final date = DateTime.fromMillisecondsSinceEpoch(e.dateTime);
-      final billMoney = await dataHelper.revenueBillRecord(e.id ?? 0);
+      final billMoney =
+          (await dataHelper.revenueBillRecord(e.id ?? 0)) - e.discount;
       final hour = date.hour + (date.minute / 60).ceil();
       final minute = date.hour * 60 + date.minute;
       tmpAmountBill += 1;

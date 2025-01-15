@@ -135,13 +135,13 @@ class _List23State extends State<List23> {
     );
   }
 
-  PageView billPageView() {
+  PageView billPageView(double currentWidth) {
     return PageView.builder(
         controller: _pageViewController,
         onPageChanged: _handlePageViewChanged,
         itemBuilder: (context, index) {
           return List23View(
-              filterDateTime: filterDateTime,
+              columnSize: (currentWidth / 322).floor(),
               billRecords:
                   billRecordsList.elementAtOrNull(index % pageViewSize) ?? [],
               deleteCallback: (List<BillRecord> billRecords, int index) {
@@ -166,11 +166,11 @@ class _List23State extends State<List23> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
+    final currentWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       body: Column(
         children: [
-          Expanded(child: SafeArea(child: billPageView())),
+          Expanded(child: SafeArea(child: billPageView(currentWidth))),
           PageIndicator(
             currentPageIndex: _currentPageIndex,
             onUpdateCurrentPageIndex: _updateCurrentPageIndex,
@@ -266,43 +266,54 @@ class _List23State extends State<List23> {
 class List23View extends StatelessWidget {
   const List23View(
       {super.key,
-      required this.filterDateTime,
       required this.billRecords,
       required this.deleteCallback,
-      required this.rebuildCallback});
+      required this.rebuildCallback,
+      required this.columnSize});
   final Function deleteCallback;
   final Function rebuildCallback;
   final List<BillRecord> billRecords;
-  final DateTime? filterDateTime;
+  final int columnSize;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    List<BillRecord> filteredBillRecords = billRecords.where((e) {
-      final date = DateTime.fromMillisecondsSinceEpoch(e.dateTime);
-      if (filterDateTime != null) {
-        final isEqual = date.day == (filterDateTime?.day) &&
-            date.month == (filterDateTime?.month) &&
-            date.year == (filterDateTime?.year);
-        return isEqual;
-      }
-      return true;
-    }).toList();
+    final length = (billRecords.length / columnSize).ceil();
 
     return ListView.builder(
-        itemCount: filteredBillRecords.length,
+        itemCount: length,
         itemBuilder: (context, index) {
-          return Center(
-              child: Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
-                  child: SettingButton(
-                    colorScheme: colorScheme,
-                    callbackRebuild: () =>
-                        rebuildCallback(filteredBillRecords, index),
-                    callbackDelete: () =>
-                        deleteCallback(filteredBillRecords, index),
-                    content: filteredBillRecords[index].dateTime.toString(),
-                  )));
+          final List<Widget> itemRow = [];
+          var i = 0;
+          for (; i < columnSize; i++) {
+            final idx = (index * columnSize) + i;
+            if (idx >= billRecords.length) {
+              break;
+            }
+            itemRow.add(SettingButton(
+              colorScheme: colorScheme,
+              callbackRebuild: () => rebuildCallback(billRecords, idx),
+              callbackDelete: () => deleteCallback(billRecords, idx),
+              content: billRecords[idx].dateTime.toString(),
+            ));
+            if (i != columnSize - 1) {
+              itemRow.add(const SizedBox(width: 20));
+            }
+          }
+          for (; i < columnSize; i++) {
+            itemRow.add(const SizedBox(
+              width: 322,
+            ));
+            if (i != columnSize - 1) {
+              itemRow.add(const SizedBox(width: 20));
+            }
+          }
+          return Padding(
+              padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: itemRow,
+              ));
         });
   }
 }

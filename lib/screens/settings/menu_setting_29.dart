@@ -79,6 +79,9 @@ class _Menu29State extends State<Menu29> {
   void deleteMenu(int menuId) {
     alert!.showAlert('Delete Menu', 'Are You Sure?', true, () async {
       dataHelper.deleteMenuRecord(menuId);
+      setState(() {
+        menuRecords.removeWhere((e1) => e1.id == menuId);
+      });
     });
   }
 
@@ -288,9 +291,6 @@ class _Menu29State extends State<Menu29> {
                   },
                   callbackDelete: () {
                     deleteMenu(e.id!);
-                    setState(() {
-                      menuRecords.removeWhere((e1) => e1.id == e.id);
-                    });
                   },
                   content: e.title))));
     }

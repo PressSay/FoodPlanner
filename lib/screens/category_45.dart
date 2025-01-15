@@ -134,7 +134,7 @@ class _Category45 extends State<Category45> {
     );
   }
 
-  PageView categoryPageView(DishProvider dishProvider) {
+  PageView categoryPageView(DishProvider dishProvider, double currentWidth) {
     return PageView.builder(
         controller: _pageViewController,
         onPageChanged: _handlePageViewChanged,
@@ -142,7 +142,7 @@ class _Category45 extends State<Category45> {
           return CategoryView45(
             categoryRecords:
                 categoryRecords.elementAtOrNull(index % pageViewSize) ?? [],
-            filterTitleCategory: filterTitleCategory,
+            columnSize: (currentWidth / 288).floor(),
             callback: (CategoryRecord e) {
               dishProvider.setCateogry(e.id!, e.title);
               Navigator.pop(context);
@@ -155,6 +155,7 @@ class _Category45 extends State<Category45> {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final DishProvider dishProvider = context.watch<DishProvider>();
+    final currentWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       body: Column(children: [
@@ -162,7 +163,7 @@ class _Category45 extends State<Category45> {
           child: SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(0, 15, 0, 0),
-              child: categoryPageView(dishProvider),
+              child: categoryPageView(dishProvider, currentWidth),
             ),
           ),
         ),
@@ -187,8 +188,8 @@ class _Category45 extends State<Category45> {
                   if (text.isNotEmpty) {
                     getCategoryRecords(
                         dishProvider: dishProvider,
-                        where: 'title = ? AND menuId = ?',
-                        whereArgs: [text, dishProvider.menuId]);
+                        where: 'title LIKE ? AND menuId = ?',
+                        whereArgs: ['%$text%', dishProvider.menuId]);
                     filterTitleCategory = text;
                   }
                 });
@@ -253,44 +254,57 @@ class CategoryView45 extends StatelessWidget {
   const CategoryView45(
       {super.key,
       required this.categoryRecords,
-      required this.filterTitleCategory,
-      required this.callback});
+      required this.callback,
+      required this.columnSize});
   final List<CategoryRecord> categoryRecords;
-  final String filterTitleCategory;
-
+  final int columnSize;
   final Function callback;
 
   @override
   Widget build(BuildContext context) {
-    List<CategoryRecord> filterCategoryRecoreds = (filterTitleCategory.isEmpty)
-        ? categoryRecords
-        : categoryRecords
-            .where((e) => e.title.contains(filterTitleCategory))
-            .toList();
+    final length = (categoryRecords.length / columnSize).ceil();
 
     return ListView.builder(
-        itemCount: filterCategoryRecoreds.length,
+        itemCount: length,
         itemBuilder: (context, index) {
+          final List<Widget> itemRow = [];
+          var i = 0;
+          for (; i < columnSize; i++) {
+            final int idx = index * columnSize + i;
+            if (idx >= categoryRecords.length) {
+              break;
+            }
+            itemRow.add(SizedBox(
+              height: 64,
+              width: 288.0, // 320 * 0.9
+              child: ElevatedButton(
+                  style: ButtonStyle(
+                      shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+                          RoundedRectangleBorder(
+                        borderRadius: BorderRadiusDirectional.only(
+                            topEnd: Radius.circular(20),
+                            bottomStart: Radius.circular(20)),
+                      )),
+                      minimumSize: WidgetStateProperty.all(Size(50, 50))),
+                  onPressed: () => callback(categoryRecords[idx]),
+                  child: Text(
+                      '${categoryRecords[idx].id!} . ${categoryRecords[idx].title}')),
+            ));
+            if (i < columnSize - 1) {
+              itemRow.add(SizedBox(width: 20));
+            }
+          }
+          for (; i < columnSize; i++) {
+            itemRow.add(SizedBox(width: 288.0));
+            if (i < columnSize - 1) {
+              itemRow.add(SizedBox(width: 20));
+            }
+          }
+
           return Padding(
-            padding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
-            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              SizedBox(
-                height: 64,
-                width: 288.0, // 320 * 0.9
-                child: ElevatedButton(
-                    style: ButtonStyle(
-                        shape: WidgetStateProperty.all<RoundedRectangleBorder>(
-                            RoundedRectangleBorder(
-                          borderRadius: BorderRadiusDirectional.only(
-                              topEnd: Radius.circular(20),
-                              bottomStart: Radius.circular(20)),
-                        )),
-                        minimumSize: WidgetStateProperty.all(Size(50, 50))),
-                    onPressed: () => callback(filterCategoryRecoreds[index]),
-                    child: Text(
-                        '${filterCategoryRecoreds[index].id!} . ${filterCategoryRecoreds[index].title}')),
-              )
-            ]),
+            padding: const EdgeInsets.fromLTRB(12, 0, 0, 0),
+            child: Row(
+                mainAxisAlignment: MainAxisAlignment.center, children: itemRow),
           );
         });
   }

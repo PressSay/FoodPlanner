@@ -16,14 +16,20 @@ import 'package:menu_qr/widgets/page_indicator.dart';
 import 'package:provider/provider.dart';
 
 class ListDetail40 extends StatefulWidget {
-  const ListDetail40(
-      {super.key,
-      required this.onlyView,
-      this.listBillId,
-      this.tableRecord}); // billRecords must not empty
+  const ListDetail40({
+    super.key,
+    required this.onlyView,
+    this.listBillId,
+    this.tableRecord,
+    this.oldIndexTableRecordsList,
+    this.oldIndexTableRecords,
+  }); // billRecords must not empty
   final bool onlyView;
   final List<int>? listBillId;
   final TableRecord? tableRecord;
+  final int? oldIndexTableRecordsList;
+  final int? oldIndexTableRecords;
+
   @override
   State<ListDetail40> createState() => _ListDetail40State();
 }
@@ -40,6 +46,12 @@ class _ListDetail40State extends State<ListDetail40> {
   int iForward = (1 + 1) % 3; //pageViewSize;
   int _currentPageIndex = 0;
   Alert? alert;
+
+  int newIndexTableRecordsList = 0;
+  int newIndexTableRecords = 0;
+  int oldIdTable = 0;
+  int newIdTable = 0;
+
   late PageController _pageViewController;
 
   final List<List<PreOrderedDishRecord>> preOrderedDishRecords = [];
@@ -109,7 +121,8 @@ class _ListDetail40State extends State<ListDetail40> {
     dataHelper.updateTableRecord(tableRecord);
   }
 
-  Widget infoPrice(ColorScheme colorScheme, double paid, double total) {
+  Widget infoPrice(
+      ColorScheme colorScheme, double paid, double total, double tax) {
     return Container(
         decoration: BoxDecoration(
             border: Border(
@@ -144,9 +157,7 @@ class _ListDetail40State extends State<ListDetail40> {
                       fontWeight: FontWeight.bold),
                 ),
                 Padding(padding: EdgeInsets.all(4)),
-                Text(
-                    NumberFormat.currency(locale: timeZone)
-                        .format(total * 0.05),
+                Text(NumberFormat.currency(locale: timeZone).format(tax),
                     style: TextStyle(
                         fontSize: 16,
                         color: colorScheme.secondary,
@@ -206,7 +217,7 @@ class _ListDetail40State extends State<ListDetail40> {
       listTmpPreOrderedDishRecords.add(tmpPreOrderedDishRecords);
     }
     setState(() {
-      total = tmpTotal;
+      total = tmpTotal - (billRecord?.discount ?? 0);
       preOrderedDishRecords.clear();
       preOrderedDishRecords.addAll(listTmpPreOrderedDishRecords);
     });
@@ -266,7 +277,8 @@ class _ListDetail40State extends State<ListDetail40> {
                   onUpdateCurrentPageIndex: _updateCurrentPageIndex,
                   isOnDesktopAndWeb: _isOnDesktopAndWeb,
                 ),
-                infoPrice(colorScheme, billRecord?.amountPaid ?? 0, total),
+                infoPrice(colorScheme, billRecord?.amountPaid ?? 0, total,
+                    billRecord?.tax ?? 0),
                 Padding(
                   padding: EdgeInsets.all(16),
                   child: Container(
@@ -293,7 +305,16 @@ class _ListDetail40State extends State<ListDetail40> {
             () {
               // 40 -> 36 -> 35
               dishProvider.clearIndexListRam();
-              Navigator.pop(context, tableRecordOldAndNew);
+              Map<String, int> onValue = {
+                'oldId': oldIdTable,
+                'newId': newIdTable,
+                'oldIndexTableRecordsList':
+                    widget.oldIndexTableRecordsList ?? 0,
+                'oldIndexTableRecords': widget.oldIndexTableRecords ?? 0,
+                'newIndexTableRecordsList': newIndexTableRecordsList,
+                'newIndexTableRecords': newIndexTableRecords
+              };
+              Navigator.pop(context, onValue);
             },
             () {
               // free RAM
@@ -314,26 +335,30 @@ class _ListDetail40State extends State<ListDetail40> {
                         isImmediate: false,
                       ),
                     )).then((value) {
-                  getPreOrderedDishRecords(value.id);
+                  if (value == null) return;
+                  newIndexTableRecordsList = value['indexTableRecordsList']!;
+                  newIndexTableRecords = value['indexTableRecords']!;
+                  BillRecord billRecordTmp = value['billRecord'];
+
                   setState(() {
                     /* Nên đổi cách khác để xét xem tableId đã thay đổi hay chưa */
-                    if (currenTableId == value.tableId) {
-                      billRecords[indexBillIdCurrent] = value;
+                    if (currenTableId == billRecordTmp.tableId) {
+                      billRecords[indexBillIdCurrent] = billRecordTmp;
                     } else {
                       // nếu old khác new thì nó mới thêm vào [tableRecordOldAndNew]
-                      tableRecordOldAndNew.clear();
-                      tableRecordOldAndNew
-                          .addAll([currenTableId, value.tableId]);
+                      oldIdTable = currenTableId;
+                      newIdTable = billRecordTmp.tableId!;
                       if (widget.listBillId == null) {
+                        total = 0;
                         updateTableRecordOfPage36(currenTableId);
-                        billRecords
-                            .removeWhere((e1) => e1.id! == billRecord!.id!);
-                        setState(() {
-                          billRecord = billRecords.firstOrNull;
-                          if (billRecord != null) {
-                            getPreOrderedDishRecords(billRecord!.id!);
-                          }
-                        });
+                        // billRecords
+                        //     .removeWhere((e1) => e1.id! == billRecord!.id!);
+                        billRecords.removeAt(indexBillIdCurrent);
+                        preOrderedDishRecords.clear();
+                        billRecord = billRecords.firstOrNull;
+                        if (billRecord != null) {
+                          getPreOrderedDishRecords(billRecord!.id!);
+                        }
                       }
                     }
                     // 40 -> 36 -> 35

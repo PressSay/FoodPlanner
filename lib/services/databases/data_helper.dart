@@ -32,10 +32,14 @@ class DataHelper {
   }
 
   Future<Database> _initDatabase() async {
+    // delete this if you want to use sqflite on mobile
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
+    // delete this if you want to use sqflite on mobile
+
     final databasePath = await getDatabasesPath();
     final path = join(databasePath, 'flutter_sqflite_database.db');
+
     return await openDatabase(path,
         onCreate: _onCreate,
         version: 1,
@@ -77,6 +81,7 @@ class DataHelper {
 
     await db.execute('''CREATE TABLE $sqlBillRecords (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tax REAL,
       amountPaid REAL,
       discount REAL,
       tableId INTEGER,
@@ -481,7 +486,10 @@ class DataHelper {
           ? (pageNum - 1) * pageSize
           : null;
       final maps = await db.query(sqlBillRecords,
-          where: where, whereArgs: whereArgs, limit: pageSize, offset: offset);
+          where: where,
+          whereArgs: whereArgs,
+          limit: pageSize ?? limit,
+          offset: offset);
 
       logger.d("maps.isEmpty ${maps.isEmpty}");
 

@@ -7,13 +7,25 @@ class DishProvider extends ChangeNotifier {
   int _categoryId = 0;
   String _titleCategory = "";
   int _menuId = 0;
+  double _total = 0;
+  double _discount = 0;
+  double _tax = 0;
 
   final Map<int, PreOrderedDishRecord> _indexDishList = {};
   // [_indexDishListSorted] có tác dụng import vào Database
   final List<PreOrderedDishRecord> _indexDishListSorted = [];
 
+  double get total => _total;
+  double get discount => _discount;
+  double get tax => _tax;
   Map<int, PreOrderedDishRecord> get indexDishList => _indexDishList;
   List<PreOrderedDishRecord> get indexDishListSorted => _indexDishListSorted;
+
+  void setTotalAndDiscountAndTax(double total, double discount, double tax) {
+    _total = total;
+    _discount = discount;
+    _tax = tax;
+  }
 
   void setCateogry(int categoryId, String titleCategory) {
     _categoryId = categoryId;

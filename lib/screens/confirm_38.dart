@@ -12,6 +12,7 @@ import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/dish_cofirm.dart';
 import 'package:menu_qr/widgets/page_indicator.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Confirm38 extends StatefulWidget {
   const Confirm38({super.key, required this.isImmediate});
@@ -24,6 +25,9 @@ class _Confirm38 extends State<Confirm38> {
   String timeZone = 'vi_VN';
   bool isAddedDishRecordSorted = false;
   int offset = 1;
+  double tax = 0;
+  double systemDiscount = 0;
+  double discount = 0;
 
   int _currentPageIndex = 0;
   int iBackward = (1 - 1) % 3; // pageViewSize;
@@ -42,19 +46,21 @@ class _Confirm38 extends State<Confirm38> {
   final pageSize = 40;
   late PageController _pageViewController;
   late final int lastLength;
-  late final double pageViewNum;
   late final int pageViewNumInt;
-  late final double total;
+  final TextEditingController _controller = TextEditingController();
+
+  double total = 0;
 
   void getPreOrderedDishRecordSorted(DishProvider dishProvider) {
     var tmpTotal = 0.0;
     dishProvider.importDataToIndexDishListSorted(
         dishProvider.indexDishList.values.toList());
-    pageViewNum = dishProvider.indexDishListSorted.length / pageSize;
-    pageViewNumInt = pageViewNum.ceil();
-    lastLength = ((pageViewNum - pageViewNum.floor()) * pageSize).toInt();
+    pageViewNumInt =
+        (dishProvider.indexDishListSorted.length / pageSize).ceil();
+    lastLength = dishProvider.indexDishListSorted.length % pageSize;
     logger.d("pageViewNumInt $pageViewNumInt, lastLength $lastLength");
     for (var i = 0; i < pageViewSize; i++) {
+      // trường hợp đặc biệt khi chỉ có 1 trang
       if ((i + 1) > pageViewNumInt) break;
       final offset = i * pageSize;
       var end = pageSize + offset;
@@ -73,7 +79,7 @@ class _Confirm38 extends State<Confirm38> {
   @override
   void initState() {
     final DishProvider dishProvider = context.read<DishProvider>();
-    getPreOrderedDishRecordSorted(dishProvider);
+    loadData(dishProvider);
     super.initState();
     _pageViewController = PageController();
   }
@@ -87,7 +93,8 @@ class _Confirm38 extends State<Confirm38> {
   void saveBillImmediately(DishProvider dishProvider) async {
     BillRecord newBillRecord = BillRecord(
         amountPaid: 0,
-        discount: 0,
+        discount: discount,
+        tax: tax,
         tableId: 0,
         nameTable: "không",
         isLeft: false,
@@ -238,13 +245,30 @@ class _Confirm38 extends State<Confirm38> {
                                     fontWeight: FontWeight.bold),
                               ),
                               Padding(padding: EdgeInsets.all(4)),
-                              Text(
-                                  NumberFormat.currency(locale: timeZone)
-                                      .format(0.0),
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      color: colorScheme.secondary,
-                                      fontWeight: FontWeight.bold))
+                              SizedBox(
+                                  width: 100,
+                                  child: TextField(
+                                      controller: _controller,
+                                      decoration: InputDecoration(
+                                        border: OutlineInputBorder(),
+                                        hintText: 'Discount Absolute',
+                                      ),
+                                      onChanged: (value) => setState(() {
+                                            try {
+                                              discount = double.parse(value);
+                                            } catch (e) {
+                                              discount = 0;
+                                            }
+                                          }))),
+                              Padding(padding: EdgeInsets.all(6)),
+                              ElevatedButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      discount = systemDiscount;
+                                      _controller.text = discount.toString();
+                                    });
+                                  },
+                                  child: Text('Use System\nDiscount'))
                             ])),
                         Padding(
                             padding: EdgeInsets.fromLTRB(16, 0, 16, 10),
@@ -259,7 +283,7 @@ class _Confirm38 extends State<Confirm38> {
                               Padding(padding: EdgeInsets.all(4)),
                               Text(
                                   NumberFormat.currency(locale: timeZone)
-                                      .format(total * 0.05),
+                                      .format(tax),
                                   style: TextStyle(
                                       fontSize: 16,
                                       color: colorScheme.secondary,
@@ -278,7 +302,7 @@ class _Confirm38 extends State<Confirm38> {
                               Padding(padding: EdgeInsets.all(4)),
                               Text(
                                   NumberFormat.currency(locale: 'vi_VN')
-                                      .format(total),
+                                      .format(total - discount),
                                   style: TextStyle(
                                       fontSize: 16,
                                       color: colorScheme.secondary,
@@ -309,7 +333,7 @@ class _Confirm38 extends State<Confirm38> {
                 saveBillImmediately(dishProvider);
                 return;
               }
-
+              dishProvider.setTotalAndDiscountAndTax(total, discount, tax);
               Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -336,6 +360,18 @@ class _Confirm38 extends State<Confirm38> {
         ],
       ),
     );
+  }
+
+  Future<void> loadData(DishProvider dishProvider) async {
+    final prefs = await SharedPreferences.getInstance();
+    final tax = prefs.getDouble('tax');
+    final discount = prefs.getDouble('discount');
+    getPreOrderedDishRecordSorted(dishProvider);
+
+    setState(() {
+      this.tax = ((tax ?? 0) / 100) * total;
+      systemDiscount = total * ((discount ?? 0) / 100);
+    });
   }
 
   bool get _isOnDesktopAndWeb {

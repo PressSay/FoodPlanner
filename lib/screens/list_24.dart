@@ -164,7 +164,6 @@ class _List24 extends State<List24> {
             preOrderedDishRecords: preOrderedDishRecordsList
                     .elementAtOrNull(index % pageViewSize) ??
                 [],
-            filterTitleDish: filterTitleDish,
           );
         });
   }
@@ -364,10 +363,8 @@ class List24View extends StatelessWidget {
   const List24View(
       {super.key,
       required this.columnSize,
-      required this.preOrderedDishRecords,
-      required this.filterTitleDish});
+      required this.preOrderedDishRecords});
   final List<PreOrderedDishRecord> preOrderedDishRecords;
-  final String filterTitleDish;
   final int columnSize;
 
   @override
@@ -388,9 +385,6 @@ class List24View extends StatelessWidget {
             itemRows.add([]);
           }
 
-          final Map<String, dynamic> previousData = {
-            'isLastItemInCategory': false,
-          };
           final List<Widget> itemColumn = [];
           final isLastLoop =
               (index * columnSize + columnSize) >= preOrderedDishRecords.length;
@@ -427,7 +421,6 @@ class List24View extends StatelessWidget {
             itemRows[itemRows.length - 1].add(dishCofirm);
             isRow = true;
 
-            previousData['isLastItemInCategory'] = isLastItemInCategory;
             columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
 
             if (e.categoryId != categoryId) {

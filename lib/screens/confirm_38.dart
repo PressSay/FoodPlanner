@@ -187,18 +187,21 @@ class _Confirm38 extends State<Confirm38> {
     );
   }
 
-  PageView preOrderedDishPageView(DishProvider dishProvider) {
+  PageView preOrderedDishPageView(DishProvider dishProvider, int columnSize) {
     return PageView.builder(
         controller: _pageViewController,
         onPageChanged: _handlePageViewChanged,
         itemBuilder: (context, index) {
           return Confirm38View(
+            columnSize: columnSize,
             preOrderedDishRecords:
                 preOrderedDishRecordsView[index % pageViewSize],
             deleteCallback:
                 (List<PreOrderedDishRecord> preOrderedDishRecords, int index) {
               final e = preOrderedDishRecords[index];
-              preOrderedDishRecords.removeAt(index);
+              setState(() {
+                preOrderedDishRecords.removeAt(index);
+              });
               dishProvider.deleteAmount(e.dishId);
             },
           );
@@ -209,6 +212,8 @@ class _Confirm38 extends State<Confirm38> {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final dishProvider = context.watch<DishProvider>();
+    final currentWidth = MediaQuery.of(context).size.width;
+    final columnSize = (currentWidth / 320).floor() - 1;
 
     return Scaffold(
       body: Column(
@@ -219,7 +224,8 @@ class _Confirm38 extends State<Confirm38> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
-                    child: preOrderedDishPageView(dishProvider),
+                    child: preOrderedDishPageView(
+                        dishProvider, (columnSize == 0) ? 1 : columnSize),
                   ),
                   PageIndicator(
                     currentPageIndex: _currentPageIndex,
@@ -394,65 +400,146 @@ class _Confirm38 extends State<Confirm38> {
 class Confirm38View extends StatelessWidget {
   const Confirm38View(
       {super.key,
+      required this.columnSize,
       required this.preOrderedDishRecords,
       required this.deleteCallback});
   final List<PreOrderedDishRecord> preOrderedDishRecords;
-
   final Function deleteCallback;
+  final int columnSize;
 
   @override
   Widget build(BuildContext context) {
+    final length = (preOrderedDishRecords.length / columnSize).ceil();
+    final List<List<Widget>> previousRow = [];
+    final colorScheme = Theme.of(context).colorScheme;
     var categoryId = 0;
     return ListView.builder(
-        itemCount: preOrderedDishRecords.length,
+        itemCount: length,
         itemBuilder: (context, index) {
-          final colorScheme = Theme.of(context).colorScheme;
-          final e = preOrderedDishRecords[index];
-          final dishCofirm = DishCofirm(
-              onlyView: true,
-              imagePath: e.imagePath,
-              title: e.titleDish,
-              price: e.price,
-              amount: e.amount,
-              callBackDel: () => deleteCallback(preOrderedDishRecords, index));
-          if (e.categoryId != categoryId) {
-            categoryId = e.categoryId;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 0, 0, 8),
-                  child: Center(
-                    child: SizedBox(
-                        width: 345,
-                        child: Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              Text(
-                                e.titleCategory,
-                                style: TextStyle(
-                                    color: colorScheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 17),
-                              ),
-                            ])),
-                  ),
-                ),
-                dishCofirm
-              ],
-            );
+          var isRow = false;
+          final List<List<Widget>> itemRows = [];
+          if (previousRow.isNotEmpty) {
+            itemRows.add(previousRow.last);
+          } else {
+            itemRows.add([]);
           }
 
-          return dishCofirm;
+          final List<Widget> itemColumn = [];
+          final isLastLoop =
+              (index * columnSize + columnSize) >= preOrderedDishRecords.length;
+
+          var i = 0;
+          for (; i < columnSize; i++) {
+            final newIndex = index * columnSize + i;
+
+            if (newIndex >= preOrderedDishRecords.length) {
+              break;
+            }
+            final e = preOrderedDishRecords[newIndex];
+            final isLastItemInCategory = (preOrderedDishRecords
+                        .elementAtOrNull(newIndex + 1)
+                        ?.categoryId ??
+                    e.categoryId) !=
+                e.categoryId;
+            final dishCofirm = DishCofirm(
+                onlyView: false,
+                imagePath: e.imagePath,
+                title: e.titleDish,
+                price: e.price,
+                amount: e.amount,
+                callBackDel: () =>
+                    deleteCallback(preOrderedDishRecords, newIndex));
+
+            var columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
+
+            if (columnSizeE != columnSize &&
+                previousRow.isNotEmpty &&
+                columnSize > 1) {
+              itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
+              isRow = false;
+            }
+            itemRows[itemRows.length - 1].add(dishCofirm);
+            isRow = true;
+
+            columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
+
+            if (e.categoryId != categoryId) {
+              categoryId = e.categoryId;
+
+              itemColumn.add(Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 20, 8, 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Text(e.titleCategory,
+                          style: TextStyle(
+                              color: colorScheme.primary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold))
+                    ],
+                  )));
+            }
+            if (columnSizeE == columnSize && previousRow.isNotEmpty) {
+              itemColumn.add(Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: itemRows[itemRows.length - 1]));
+              itemRows.add([]);
+              previousRow.clear();
+              continue;
+            }
+
+            if (isLastItemInCategory ||
+                (newIndex == preOrderedDishRecords.length - 1)) {
+              itemColumn.add(Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: itemRows[itemRows.length - 1]));
+              columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
+              final remainColumn = columnSize - columnSizeE;
+
+              if (isRow && remainColumn > 0) {
+                itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
+              }
+
+              for (var j = 0; j < remainColumn; j++) {
+                itemRows[itemRows.length - 1].add(const SizedBox(width: 345));
+                if (j != remainColumn - 1) {
+                  itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
+                }
+              }
+              columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
+              itemRows.add([]);
+            }
+            if (i != columnSize - 1 &&
+                itemRows[itemRows.length - 1].isNotEmpty &&
+                previousRow.isEmpty) {
+              itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
+            }
+          }
+
+          if (!isLastLoop) {
+            if (itemRows[itemRows.length - 1].length != columnSize) {
+              previousRow.add(itemRows[itemRows.length - 1]);
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: itemColumn,
+            );
+          }
+          if (itemRows[itemRows.length - 1].isEmpty) {
+            itemRows.removeLast();
+          }
+          final columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
+          final remainColumn = columnSize - columnSizeE;
+          for (var j = 0; j < remainColumn; j++) {
+            itemRows[itemRows.length - 1].add(const SizedBox(width: 345));
+            if (i != remainColumn - 1) {
+              itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
+            }
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: itemColumn,
+          );
         });
-  }
-}
-
-class NewStateLess extends StatelessWidget {
-  const NewStateLess({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Placeholder();
   }
 }

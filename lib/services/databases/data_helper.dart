@@ -11,7 +11,6 @@ import 'package:path/path.dart' show join;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class DataHelper {
-  final logger = Logger();
   static const String sqlMenuRecords = 'menu_records';
   static const String sqlBillRecords = "bill_records";
   static const String sqlDishRecords = 'dish_records';
@@ -142,7 +141,6 @@ class DataHelper {
     final maps = await db.rawQuery(sql, [id]);
     for (var e in maps) {
       File image = File(e['imagePath'].toString());
-      logger.d('image: ${e['imagePath'].toString()}');
       if (image.existsSync()) {
         image.deleteSync();
       }
@@ -188,7 +186,6 @@ class DataHelper {
       return List.generate(
           maps.length, (index) => MenuRecord.fromMap(maps[index]));
     } catch (e) {
-      logger.e('Error fetching menu records: $e');
       return []; // Or rethrow, depending on your error handling strategy
     }
   }
@@ -227,7 +224,6 @@ class DataHelper {
     final maps = await db.rawQuery(sqlQuery, [id]);
     for (var e in maps) {
       File image = File(e['imagePath'].toString());
-      logger.d(image);
       if (image.existsSync()) {
         image.deleteSync();
       }
@@ -263,7 +259,6 @@ class DataHelper {
       return List.generate(
           maps.length, (index) => CategoryRecord.fromMap(maps[index]));
     } catch (e) {
-      logger.e('Error fetching category records: $e');
       return []; // Or throw the exception, depending on your error handling strategy
     }
   }
@@ -342,7 +337,6 @@ class DataHelper {
         );
       }
     } catch (e) {
-      logger.e('Error fetching dish records: $e'); // Log the error
       // Handle the error appropriately, e.g., return an empty list or rethrow
       return []; // Or throw an exception
     }
@@ -400,7 +394,6 @@ class DataHelper {
     List<dynamic> deleteArgs = [billId, billId];
     await db.rawDelete(deleteSql, deleteArgs);
 
-    logger.d("delete $sqlPreOrderedDishRecords $deleteSql\n $deleteArgs");
     // Tạo câu truy vấn
     final sql =
         '''INSERT INTO $sqlPreOrderedDishRecords(${columns.join(',')}) VALUES
@@ -491,8 +484,6 @@ class DataHelper {
           limit: pageSize ?? limit,
           offset: offset);
 
-      logger.d("maps.isEmpty ${maps.isEmpty}");
-
       if (maps.isEmpty) return [];
 
       final billRecords = List.generate(
@@ -502,7 +493,6 @@ class DataHelper {
 
       return billRecords;
     } catch (e) {
-      logger.e('Error fetching bill records: $e'); // Log the error
       // Handle the error appropriately, e.g., return an empty map or rethrow
       return []; // Or throw an exception
     }
@@ -624,7 +614,6 @@ class DataHelper {
         key: (e) => e.id,
       );
     } catch (e) {
-      logger.e('Error fetching table records: $e'); // Log the error
       // Handle the error appropriately, e.g., return an empty map or rethrow
       return {}; // Or throw an exception
     }
@@ -650,7 +639,6 @@ class DataHelper {
       return List.generate(
           maps.length, (index) => TableRecord.fromMap(maps[index]));
     } catch (e) {
-      logger.e('Error fetching table records: $e'); // Log the error
       // Handle the error appropriately, e.g., return an empty map or rethrow
       return []; // Or throw an exception
     }

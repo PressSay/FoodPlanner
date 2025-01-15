@@ -138,12 +138,13 @@ class _ListOnline48State extends State<ListOnline48> {
     billRecords[index].addAll(tmpBillRecords);
   }
 
-  Widget pageViewBuilder(double currentWidth) {
+  Widget pageViewBuilder(int columnSize) {
     return PageView.builder(
         controller: _pageViewController,
         onPageChanged: _handlePageViewChanged,
         itemBuilder: (context, index) {
           return BillsView48(
+              columnSize: columnSize,
               billRecords:
                   billRecords.elementAtOrNull(index % pageViewSize) ?? [],
               checkedBillIdList: checkedBillIdList,
@@ -178,13 +179,15 @@ class _ListOnline48State extends State<ListOnline48> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final currentWidth = MediaQuery.of(context).size.width;
+    final columnSize = (currentWidth / 320).floor() - 1;
 
     return Scaffold(
       body: Column(
         children: [
           Expanded(
               child: SafeArea(
-            child: pageViewBuilder(MediaQuery.of(context).size.width),
+            child: pageViewBuilder((columnSize == 0) ? 1 : columnSize),
           )),
           AnimatedCrossFade(
             firstChild: SizedBox(),
@@ -342,11 +345,13 @@ class _ListOnline48State extends State<ListOnline48> {
 class BillsView48 extends StatelessWidget {
   const BillsView48(
       {super.key,
+      required this.columnSize,
       required this.billRecords,
       required this.checkedBillIdList,
       required this.callbackDelete,
       required this.callbackRebuild,
       required this.callbackCheck});
+  final int columnSize;
   final List<BillRecord> billRecords;
   final Map<int, bool> checkedBillIdList;
   final Function callbackDelete;
@@ -356,22 +361,40 @@ class BillsView48 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final length = (billRecords.length / columnSize).ceil();
 
     return ListView.builder(
-        itemCount: billRecords.length,
+        itemCount: length,
         itemBuilder: (context, index1) {
-          final v = billRecords[index1];
-          return Center(
-              child: Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
-                  child: OrderSettingButtonOnl(
-                    content: '${v.dateTime}',
-                    colorScheme: colorScheme,
-                    isChecked: checkedBillIdList[v.id!] ?? false,
-                    callbackCheck: () => callbackCheck(billRecords, index1),
-                    callbackRebuild: () => callbackRebuild(),
-                    callbackDelete: () => callbackDelete(billRecords, index1),
-                  )));
+          final List<Widget> itemRow = [];
+
+          var i = 0;
+          for (; i < columnSize; i++) {
+            int idx = (index1 * columnSize) + i;
+            if (idx >= billRecords.length) break;
+            final v = billRecords[idx];
+
+            itemRow.add(OrderSettingButtonOnl(
+              content: '${v.dateTime}',
+              colorScheme: colorScheme,
+              isChecked: checkedBillIdList[v.id!] ?? false,
+              callbackCheck: () => callbackCheck(billRecords, idx),
+              callbackRebuild: () => callbackRebuild(),
+              callbackDelete: () => callbackDelete(billRecords, idx),
+            ));
+            if (i != columnSize - 1) itemRow.add(const SizedBox(width: 20));
+          }
+
+          for (; i < columnSize; i++) {
+            itemRow.add(const SizedBox(width: 322));
+            if (i != columnSize - 1) itemRow.add(const SizedBox(width: 20));
+          }
+          return Padding(
+              padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: itemRow,
+              ));
         });
   }
 }

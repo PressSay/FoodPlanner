@@ -185,6 +185,7 @@ class _Order44 extends State<Order44> {
     dishRecordSorted.sort((a, b) {
       return a.categoryId - b.categoryId;
     });
+
     widget.billRecord?.preOrderedDishRecords?.clear();
     widget.billRecord?.preOrderedDishRecords?.addAll(dishRecordSorted);
     // storage to database

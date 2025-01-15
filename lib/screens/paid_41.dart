@@ -46,6 +46,7 @@ class _Paid41State extends State<Paid41> {
   final List<PreOrderedDishRecord> preOrderedDishRecords = [];
 
   Future<void> getPreOrderedDishRecords() async {
+    // phụ thuộc vào bộ nhớ người dùng vì cần cái này để in
     final tmpPreOrderedDishRecords = await dataHelper.preOrderedDishList(
         where: 'billId = ?', whereArgs: [widget.billRecord.id!]);
     var tmpTotal = 0.0;

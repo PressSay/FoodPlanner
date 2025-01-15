@@ -373,7 +373,6 @@ class List24View extends StatelessWidget {
     final List<List<Widget>> previousRow = [];
     final colorScheme = Theme.of(context).colorScheme;
     var categoryId = 0;
-
     return ListView.builder(
         itemCount: length,
         itemBuilder: (context, index) {
@@ -381,6 +380,7 @@ class List24View extends StatelessWidget {
           final List<List<Widget>> itemRows = [];
           if (previousRow.isNotEmpty) {
             itemRows.add(previousRow.last);
+            isRow = true;
           } else {
             itemRows.add([]);
           }
@@ -412,20 +412,17 @@ class List24View extends StatelessWidget {
 
             var columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
 
-            if (columnSizeE != columnSize &&
-                previousRow.isNotEmpty &&
-                columnSize > 1) {
+            if (isRow && previousRow.isNotEmpty && columnSize > 1) {
+              // vì sao 18 thêm môt SizedBox 20
               itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
               isRow = false;
             }
             itemRows[itemRows.length - 1].add(dishCofirm);
             isRow = true;
-
             columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
 
             if (e.categoryId != categoryId) {
               categoryId = e.categoryId;
-              // cần phải xét nó có phải là phần tử cuối cùng trong danh mục không
 
               itemColumn.add(Padding(
                   padding: const EdgeInsets.fromLTRB(8, 20, 8, 12),
@@ -440,7 +437,8 @@ class List24View extends StatelessWidget {
                     ],
                   )));
             }
-            if (columnSizeE == columnSize && previousRow.isNotEmpty) {
+
+            if (columnSizeE == columnSize) {
               itemColumn.add(Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: itemRows[itemRows.length - 1]));
@@ -467,8 +465,8 @@ class List24View extends StatelessWidget {
                   itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
                 }
               }
-              columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
               itemRows.add([]);
+              previousRow.clear();
             }
             if (i != columnSize - 1 &&
                 itemRows[itemRows.length - 1].isNotEmpty &&
@@ -477,8 +475,15 @@ class List24View extends StatelessWidget {
             }
           }
 
+          if (itemRows[itemRows.length - 1].isEmpty) {
+            itemRows.removeLast();
+          }
+
           if (!isLastLoop) {
-            if (itemRows[itemRows.length - 1].length != columnSize) {
+            final columnSizeE =
+                (itemRows[itemRows.length - 1].length / 2).ceil();
+
+            if (columnSizeE != columnSize) {
               previousRow.add(itemRows[itemRows.length - 1]);
             }
             return Column(
@@ -486,9 +491,7 @@ class List24View extends StatelessWidget {
               children: itemColumn,
             );
           }
-          if (itemRows[itemRows.length - 1].isEmpty) {
-            itemRows.removeLast();
-          }
+
           final columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
           final remainColumn = columnSize - columnSizeE;
           for (var j = 0; j < remainColumn; j++) {

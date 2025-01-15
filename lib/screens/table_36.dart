@@ -51,10 +51,8 @@ class _Table36State extends State<Table36> {
   }
 
   Future<void> saveInfoTable() async {
-    if (desc.isNotEmpty) {
-      widget.tableRecord.desc = desc;
-      dataHelper.updateTableRecord(widget.tableRecord);
-    }
+    if (desc.isNotEmpty) widget.tableRecord.desc = desc;
+    dataHelper.updateTableRecord(widget.tableRecord);
   }
 
   void viewBillInTable(BillProvider billProvider) async {

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:logger/logger.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/pre_ordered_dish.dart';
 import 'package:menu_qr/models/table_record.dart';
@@ -54,6 +55,7 @@ class _ListDetail40State extends State<ListDetail40> {
 
   late PageController _pageViewController;
 
+  final logger = Logger();
   final List<List<PreOrderedDishRecord>> preOrderedDishRecords = [];
   final pageViewSize = 3;
   final pageSize = 40;
@@ -262,6 +264,8 @@ class _ListDetail40State extends State<ListDetail40> {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final DishProvider dishProvider = context.watch<DishProvider>();
+    final currentWidth = MediaQuery.of(context).size.width;
+    final columnSize = (currentWidth / 320).floor() - 1;
 
     return Scaffold(
       body: Column(
@@ -270,7 +274,7 @@ class _ListDetail40State extends State<ListDetail40> {
             child: SafeArea(
               child: Column(children: [
                 Expanded(
-                  child: dishPageView(),
+                  child: dishPageView(columnSize),
                 ),
                 PageIndicator(
                   currentPageIndex: _currentPageIndex,
@@ -352,17 +356,18 @@ class _ListDetail40State extends State<ListDetail40> {
                         total = 0;
                         updateTableRecordOfPage36(currenTableId);
                         // billRecords
-                        //     .removeWhere((e1) => e1.id! == billRecord!.id!);
+                        //     .removeWhere((e1) => e1.id! == billRecord!.id!);4
+                        billRecord = billRecords.firstOrNull;
                         billRecords.removeAt(indexBillIdCurrent);
                         preOrderedDishRecords.clear();
-                        billRecord = billRecords.firstOrNull;
-                        if (billRecord != null) {
-                          getPreOrderedDishRecords(billRecord!.id!);
-                        }
                       }
                     }
                     // 40 -> 36 -> 35
                   });
+                  if (billRecord != null) {
+                    getPreOrderedDishRecords(billRecord!.id!);
+                  }
+                  logger.d('update preOrderedDishRecords 1');
                 });
               }
             },
@@ -489,12 +494,13 @@ class _ListDetail40State extends State<ListDetail40> {
     });
   }
 
-  PageView dishPageView() {
+  PageView dishPageView(int columnSize) {
     return PageView.builder(
         controller: _pageViewController,
         onPageChanged: _handlePageViewChanged,
         itemBuilder: (context, index) {
           return ListDetailView40(
+              columnSize: columnSize,
               preOrderedDishRecords:
                   preOrderedDishRecords.elementAtOrNull(index % pageViewSize) ??
                       [],
@@ -520,58 +526,154 @@ class _ListDetail40State extends State<ListDetail40> {
 class ListDetailView40 extends StatelessWidget {
   const ListDetailView40(
       {super.key,
+      required this.columnSize,
       required this.preOrderedDishRecords,
       required this.onlyView,
       required this.deleteCallback});
+  final int columnSize;
   final List<PreOrderedDishRecord> preOrderedDishRecords;
   final bool onlyView;
   final Function deleteCallback;
 
   @override
   Widget build(BuildContext context) {
+    final length = (preOrderedDishRecords.length / columnSize).ceil();
+    final List<List<Widget>> previousRow = [];
+    final colorScheme = Theme.of(context).colorScheme;
     var categoryId = 0;
+
     return ListView.builder(
-        itemCount: preOrderedDishRecords.length,
+        itemCount: length,
         itemBuilder: (context, index) {
-          final colorScheme = Theme.of(context).colorScheme;
-          final e = preOrderedDishRecords[index];
-          final dishCofirm = DishCofirm(
-            onlyView: onlyView,
-            imagePath: e.imagePath,
-            title: e.titleDish,
-            price: e.price,
-            amount: e.amount,
-            callBackDel: () => deleteCallback(preOrderedDishRecords, index),
-          );
-          if (e.categoryId != categoryId) {
-            categoryId = e.categoryId;
+          var isRow = false;
+          final List<List<Widget>> itemRows = [];
+          if (previousRow.isNotEmpty) {
+            itemRows.add(previousRow.last);
+            isRow = true;
+          } else {
+            itemRows.add([]);
+          }
+
+          final List<Widget> itemColumn = [];
+          final isLastLoop =
+              (index * columnSize + columnSize) >= preOrderedDishRecords.length;
+
+          var i = 0;
+          for (; i < columnSize; i++) {
+            final newIndex = index * columnSize + i;
+
+            if (newIndex >= preOrderedDishRecords.length) {
+              break;
+            }
+            final e = preOrderedDishRecords[newIndex];
+            final isLastItemInCategory = (preOrderedDishRecords
+                        .elementAtOrNull(newIndex + 1)
+                        ?.categoryId ??
+                    e.categoryId) !=
+                e.categoryId;
+            final dishCofirm = DishCofirm(
+                onlyView: onlyView,
+                imagePath: e.imagePath,
+                title: e.titleDish,
+                price: e.price,
+                amount: e.amount,
+                callBackDel: () =>
+                    deleteCallback(preOrderedDishRecords, newIndex));
+
+            var columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
+
+            if (isRow && previousRow.isNotEmpty && columnSize > 1) {
+              // vì sao 18 thêm môt SizedBox 20
+              itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
+              isRow = false;
+            }
+            itemRows[itemRows.length - 1].add(dishCofirm);
+            isRow = true;
+            columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
+
+            if (e.categoryId != categoryId) {
+              categoryId = e.categoryId;
+
+              itemColumn.add(Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 20, 8, 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Text(e.titleCategory,
+                          style: TextStyle(
+                              color: colorScheme.primary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold))
+                    ],
+                  )));
+            }
+
+            if (columnSizeE == columnSize) {
+              itemColumn.add(Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: itemRows[itemRows.length - 1]));
+              itemRows.add([]);
+              previousRow.clear();
+              continue;
+            }
+
+            if (isLastItemInCategory ||
+                (newIndex == preOrderedDishRecords.length - 1)) {
+              itemColumn.add(Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: itemRows[itemRows.length - 1]));
+              columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
+              final remainColumn = columnSize - columnSizeE;
+
+              if (isRow && remainColumn > 0) {
+                itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
+              }
+
+              for (var j = 0; j < remainColumn; j++) {
+                itemRows[itemRows.length - 1].add(const SizedBox(width: 345));
+                if (j != remainColumn - 1) {
+                  itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
+                }
+              }
+              itemRows.add([]);
+              previousRow.clear();
+            }
+            if (i != columnSize - 1 &&
+                itemRows[itemRows.length - 1].isNotEmpty &&
+                previousRow.isEmpty) {
+              itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
+            }
+          }
+
+          if (itemRows[itemRows.length - 1].isEmpty) {
+            itemRows.removeLast();
+          }
+
+          if (!isLastLoop) {
+            final columnSizeE =
+                (itemRows[itemRows.length - 1].length / 2).ceil();
+
+            if (columnSizeE != columnSize) {
+              previousRow.add(itemRows[itemRows.length - 1]);
+            }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 0, 0, 8),
-                  child: Center(
-                    child: SizedBox(
-                        width: 345,
-                        child: Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              Text(
-                                e.titleCategory,
-                                style: TextStyle(
-                                    color: colorScheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 17),
-                              ),
-                            ])),
-                  ),
-                ),
-                dishCofirm
-              ],
+              children: itemColumn,
             );
           }
 
-          return dishCofirm;
+          final columnSizeE = (itemRows[itemRows.length - 1].length / 2).ceil();
+          final remainColumn = columnSize - columnSizeE;
+          for (var j = 0; j < remainColumn; j++) {
+            itemRows[itemRows.length - 1].add(const SizedBox(width: 345));
+            if (i != remainColumn - 1) {
+              itemRows[itemRows.length - 1].add(const SizedBox(width: 20));
+            }
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: itemColumn,
+          );
         });
   }
 }

@@ -591,35 +591,7 @@ class DataHelper {
     }
   }
 
-  Future<Map<int, TableRecord>> tableRecords({
-    int? pageNum,
-    int? pageSize,
-  }) async {
-    final db = await _dataHelper.database;
-    try {
-      final query = StringBuffer('SELECT * FROM $sqlTableRecords');
-      final queryParams = [];
-
-      // Handle pagination with limit and offset
-      if (pageNum != null && pageSize != null) {
-        final offset = (pageNum - 1) * pageSize;
-        query.write(' LIMIT ? OFFSET ?');
-        queryParams.addAll([pageSize, offset]);
-      }
-
-      final maps = await db.rawQuery(query.toString(), queryParams);
-
-      return Map<int, TableRecord>.fromIterable(
-        maps.map((e) => TableRecord.fromMap(e)).toList(),
-        key: (e) => e.id,
-      );
-    } catch (e) {
-      // Handle the error appropriately, e.g., return an empty map or rethrow
-      return {}; // Or throw an exception
-    }
-  }
-
-  Future<List<TableRecord>> listTypeTableRecords(
+  Future<List<TableRecord>> tableRecords(
       {String? where,
       List<Object?>? whereArgs,
       int? pageNum,

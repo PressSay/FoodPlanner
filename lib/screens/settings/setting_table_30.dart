@@ -41,7 +41,7 @@ class _Table30State extends State<Table30> {
   void getTableRecords({String? where, List<Object?>? whereArgs}) async {
     final List<List<TableRecord>> listTmpTableRecords = [];
     for (var i = 0; i < pageViewSize; i++) {
-      final tmpTableRecords = await dataHelper.listTypeTableRecords(
+      final tmpTableRecords = await dataHelper.tableRecords(
           where: where,
           whereArgs: whereArgs,
           pageNum: (i + 1),
@@ -109,7 +109,7 @@ class _Table30State extends State<Table30> {
     final where = filterTitleTable.isNotEmpty ? 'name LIKE ?' : null;
     final whereArgs =
         filterTitleTable.isNotEmpty ? ['%$filterTitleTable%'] : null;
-    final tmpBillRecords = await dataHelper.listTypeTableRecords(
+    final tmpBillRecords = await dataHelper.tableRecords(
         where: where,
         whereArgs: whereArgs,
         pageNum: pageNum,

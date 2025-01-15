@@ -135,12 +135,13 @@ class _ListScreen47State extends State<ListScreen47> {
     billRecords[index].addAll(tmpBillRecords);
   }
 
-  Widget pageViewBuilder(double currentWidth) {
+  Widget pageViewBuilder(double currentWidth, int columnSize) {
     return PageView.builder(
         controller: _pageViewController,
         onPageChanged: _handlePageViewChanged,
         itemBuilder: (context, index) {
           return BillsView47(
+              columnSize: columnSize,
               billRecords:
                   billRecords.elementAtOrNull(index % pageViewSize) ?? [],
               checkedBillIdList: checkedBillIdList,
@@ -171,13 +172,15 @@ class _ListScreen47State extends State<ListScreen47> {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final currentWidth = MediaQuery.of(context).size.width;
+    final columnSize = (currentWidth / 322).floor() - 1;
 
     return Scaffold(
       body: Column(
         children: [
           Expanded(
               child: SafeArea(
-            child: pageViewBuilder(currentWidth),
+            child: pageViewBuilder(
+                currentWidth, (columnSize == 0) ? 1 : columnSize),
           )),
           PageIndicator(
             currentPageIndex: _currentPageIndex,
@@ -287,10 +290,12 @@ class _ListScreen47State extends State<ListScreen47> {
 class BillsView47 extends StatelessWidget {
   const BillsView47(
       {super.key,
+      required this.columnSize,
       required this.billRecords,
       required this.checkedBillIdList,
       required this.callbackDelete,
       required this.callbackRebuild});
+  final int columnSize;
   final List<BillRecord> billRecords;
   final Map<int, bool> checkedBillIdList;
   final Function callbackDelete;
@@ -299,22 +304,35 @@ class BillsView47 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final length = (billRecords.length / columnSize).ceil();
 
     return ListView.builder(
-        itemCount: billRecords.length,
+        itemCount: length,
         itemBuilder: (context, index1) {
-          final v = billRecords[index1];
-          return Center(
-            child: Padding(
+          final List<Widget> itemRow = [];
+          var i = 0;
+          for (; i < columnSize; i++) {
+            final idx = (index1 * columnSize) + i;
+            if (idx >= billRecords.length) break;
+            final v = billRecords[idx];
+
+            itemRow.add(OrderSettingButton(
+                content: '${v.dateTime}',
+                colorScheme: colorScheme,
+                isChecked: checkedBillIdList[v.id!] ?? false,
+                callbackCheck: () => callbackRebuild(billRecords, idx),
+                callbackDelete: () => callbackDelete(billRecords, idx)));
+            if (i != columnSize - 1) itemRow.add(const SizedBox(width: 20));
+          }
+          for (; i < columnSize; i++) {
+            itemRow.add(const SizedBox(width: 322));
+            if (i != columnSize - 1) itemRow.add(const SizedBox(width: 20));
+          }
+          return Padding(
               padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
-              child: OrderSettingButton(
-                  content: '${v.dateTime}',
-                  colorScheme: colorScheme,
-                  isChecked: checkedBillIdList[v.id!] ?? false,
-                  callbackCheck: () => callbackRebuild(billRecords, index1),
-                  callbackDelete: () => callbackDelete(billRecords, index1)),
-            ),
-          );
+              child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: itemRow));
         });
   }
 }

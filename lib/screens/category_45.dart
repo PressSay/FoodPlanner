@@ -134,7 +134,7 @@ class _Category45 extends State<Category45> {
     );
   }
 
-  PageView categoryPageView(DishProvider dishProvider, double currentWidth) {
+  PageView categoryPageView(DishProvider dishProvider, int columnSize) {
     return PageView.builder(
         controller: _pageViewController,
         onPageChanged: _handlePageViewChanged,
@@ -142,7 +142,7 @@ class _Category45 extends State<Category45> {
           return CategoryView45(
             categoryRecords:
                 categoryRecords.elementAtOrNull(index % pageViewSize) ?? [],
-            columnSize: (currentWidth / 288).floor(),
+            columnSize: columnSize,
             callback: (CategoryRecord e) {
               dishProvider.setCateogry(e.id!, e.title);
               Navigator.pop(context);
@@ -156,15 +156,14 @@ class _Category45 extends State<Category45> {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final DishProvider dishProvider = context.watch<DishProvider>();
     final currentWidth = MediaQuery.of(context).size.width;
+    final columnSize = (currentWidth / 288).floor() - 1;
 
     return Scaffold(
       body: Column(children: [
         Expanded(
           child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(0, 15, 0, 0),
-              child: categoryPageView(dishProvider, currentWidth),
-            ),
+            child: categoryPageView(
+                dishProvider, (columnSize == 0) ? 1 : columnSize),
           ),
         ),
         PageIndicator(
@@ -302,7 +301,7 @@ class CategoryView45 extends StatelessWidget {
           }
 
           return Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 0, 0),
+            padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
             child: Row(
                 mainAxisAlignment: MainAxisAlignment.center, children: itemRow),
           );

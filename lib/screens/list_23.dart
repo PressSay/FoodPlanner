@@ -135,13 +135,13 @@ class _List23State extends State<List23> {
     );
   }
 
-  PageView billPageView(double currentWidth) {
+  PageView billPageView(int columnSize) {
     return PageView.builder(
         controller: _pageViewController,
         onPageChanged: _handlePageViewChanged,
         itemBuilder: (context, index) {
           return List23View(
-              columnSize: (currentWidth / 322).floor(),
+              columnSize: columnSize,
               billRecords:
                   billRecordsList.elementAtOrNull(index % pageViewSize) ?? [],
               deleteCallback: (List<BillRecord> billRecords, int index) {
@@ -167,10 +167,14 @@ class _List23State extends State<List23> {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final currentWidth = MediaQuery.of(context).size.width;
+    final columnSize = (currentWidth / 320).floor() - 1;
+
     return Scaffold(
       body: Column(
         children: [
-          Expanded(child: SafeArea(child: billPageView(currentWidth))),
+          Expanded(
+              child: SafeArea(
+                  child: billPageView((columnSize == 0) ? 1 : columnSize))),
           PageIndicator(
             currentPageIndex: _currentPageIndex,
             onUpdateCurrentPageIndex: _updateCurrentPageIndex,
@@ -287,9 +291,8 @@ class List23View extends StatelessWidget {
           var i = 0;
           for (; i < columnSize; i++) {
             final idx = (index * columnSize) + i;
-            if (idx >= billRecords.length) {
-              break;
-            }
+            if (idx >= billRecords.length) break;
+
             itemRow.add(SettingButton(
               colorScheme: colorScheme,
               callbackRebuild: () => rebuildCallback(billRecords, idx),
@@ -301,9 +304,7 @@ class List23View extends StatelessWidget {
             }
           }
           for (; i < columnSize; i++) {
-            itemRow.add(const SizedBox(
-              width: 322,
-            ));
+            itemRow.add(const SizedBox(width: 322));
             if (i != columnSize - 1) {
               itemRow.add(const SizedBox(width: 20));
             }

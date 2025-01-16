@@ -61,6 +61,11 @@ class _Dish32State extends State<Dish32> {
       final oldImage = File(widget.dishRecord.imagePath);
       if (oldImage.existsSync()) await oldImage.delete();
     }
+    setState(() {
+      widget.dishRecord.desc = _controllerDescDish.text;
+      widget.dishRecord.title = _controllerDishTitle.text;
+      widget.dishRecord.price = double.tryParse(_controllerDishPrice.text) ?? 0;
+    });
     widget.dishRecord.imagePath = imagePath;
     dataHelper.updateDishRecord(widget.dishRecord);
     isSaved = true;

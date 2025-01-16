@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:menu_qr/models/category_record.dart';
@@ -6,6 +7,7 @@ import 'package:menu_qr/screens/settings/dish_setting_31.dart';
 import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
+import 'package:menu_qr/widgets/page_indicator.dart';
 import 'package:menu_qr/widgets/setting_button.dart';
 
 class Category30 extends StatefulWidget {
@@ -22,14 +24,21 @@ class _Category30State extends State<Category30> {
   String titleMenu = "";
   String titleCategory = "";
   String desc = "";
+  int iBackward = (1 - 1) % 3; // pageViewSize;
+  int iForward = (1 + 1) % 3; //pageViewSize;
+  int _currentPageIndex = 0;
 
   bool _showWidgetB = false;
+  final pageViewSize = 3;
+  final pageSize = 40;
   final DataHelper dataHelper = DataHelper();
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _controllerMenu = TextEditingController();
   final TextEditingController _controllerCategory = TextEditingController();
   final TextEditingController _controllerDesc = TextEditingController();
-  final List<CategoryRecord> categoryRecords = [];
+  final List<List<CategoryRecord>> categoryRecords = [];
+  late PageController _pageViewController;
+
   final logger = Logger();
 
   @override
@@ -37,24 +46,30 @@ class _Category30State extends State<Category30> {
     alert = Alert(context: context);
     _controllerMenu.text = widget.menuRecord.title;
     getCategoryRecords();
-    return super.initState();
+    super.initState();
+    _pageViewController = PageController();
   }
 
-  void getCategoryRecords() async {
-    final List<CategoryRecord> tmpCategoryRecords = await dataHelper
-        .categoryRecords(where: null, whereArgs: null, limit: null);
+  @override
+  void dispose() {
+    super.dispose();
+    _pageViewController.dispose();
+  }
+
+  void getCategoryRecords({String? where, List<Object?>? whereArgs}) async {
+    final List<List<CategoryRecord>> tmpCategoryRecordsList = [];
+    for (var i = 0; i < pageViewSize; i++) {
+      final List<CategoryRecord> tmpCategoryRecords =
+          await dataHelper.categoryRecords(
+              where: 'menuId = ? ${where != null ? 'AND $where' : ''}',
+              whereArgs: [widget.menuRecord.id!, ...?whereArgs],
+              pageNum: (i + 1),
+              pageSize: pageSize);
+      tmpCategoryRecordsList.add(tmpCategoryRecords);
+    }
     setState(() {
       categoryRecords.clear();
-      categoryRecords.addAll(tmpCategoryRecords);
-    });
-  }
-
-  void deletedCategoryRecord(CategoryRecord categoryRecord) async {
-    alert!.showAlert('Delete Category', 'Are You Sure?', true, () {
-      dataHelper.deleteCategoryRecord(categoryRecord.id!);
-      setState(() {
-        categoryRecords.removeWhere((e1) => e1.id == categoryRecord.id);
-      });
+      categoryRecords.addAll(tmpCategoryRecordsList);
     });
   }
 
@@ -79,58 +94,144 @@ class _Category30State extends State<Category30> {
     final int lastId = await dataHelper.insertCategoryRecord(newE);
     newE.id = lastId;
     alert!.showAlert('Save Category', 'success!', false, null);
+
+    for (var i = 0; i < pageViewSize; i++) {
+      if (categoryRecords[i].length < pageSize) {
+        setState(() {
+          categoryRecords[i].add(newE);
+        });
+        break;
+      }
+    }
+  }
+
+  void getCategoryRecordsAtPageViewIndex(index, pageNum) async {
+    if (pageNum == 0) return;
+    final where = filterTitleCategory.isNotEmpty ? 'title = ?' : null;
+    final whereArgs =
+        filterTitleCategory.isNotEmpty ? [filterTitleCategory] : null;
+    final tmpDishRecords = await dataHelper.categoryRecords(
+        where: 'menuId = ? ${where != null ? 'AND $where' : ''}',
+        whereArgs: [widget.menuRecord.id!, ...?whereArgs],
+        pageNum: pageNum,
+        pageSize: pageSize);
+
+    categoryRecords[index].clear();
+    categoryRecords[index].addAll(tmpDishRecords);
+  }
+
+  void _handlePageViewChanged(int currentPageIndex) {
+    if (!_isOnDesktopAndWeb) {
+      return;
+    }
+
+    final index = currentPageIndex;
+    final newIndex = index % pageViewSize;
+    final pageNum = index + 1;
+
+    switch (newIndex) {
+      case 0:
+        if (iBackward == 0) {
+          getCategoryRecordsAtPageViewIndex(2, pageNum - 1);
+        }
+        if (iForward == 1) {
+          getCategoryRecordsAtPageViewIndex(1, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+      case 1:
+        if (iBackward == 1) {
+          getCategoryRecordsAtPageViewIndex(0, pageNum - 1);
+        }
+        if (iForward == 2) {
+          getCategoryRecordsAtPageViewIndex(2, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+      case 2:
+        if (iBackward == 2) {
+          getCategoryRecordsAtPageViewIndex(1, pageNum - 1);
+        }
+        if (iForward == 0) {
+          getCategoryRecordsAtPageViewIndex(0, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+    }
+
     setState(() {
-      categoryRecords.add(newE);
+      _currentPageIndex = currentPageIndex % pageViewSize;
     });
+  }
+
+  void _updateCurrentPageIndex(int index) {
+    _pageViewController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void navigateToDish31(int index, int index1) {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (BuildContext context) => Dish31(
+                  categoryRecord: categoryRecords[index][index1],
+                ))).then((onValue) {
+      setState(() {
+        if (onValue != null) {
+          categoryRecords[index][index1] = onValue;
+        }
+      });
+    });
+  }
+
+  PageView categoryPageView(int columnSize) {
+    return PageView.builder(
+        controller: _pageViewController,
+        onPageChanged: _handlePageViewChanged,
+        itemBuilder: (context, index) {
+          return CategorySettingView30(
+              categoryRecords:
+                  categoryRecords.elementAtOrNull(index % pageViewSize) ?? [],
+              rebuildCallback:
+                  (List<CategoryRecord> insideCategoryRecords, int index1) {
+                logger.d("category: ${insideCategoryRecords[index1].id ?? 0}");
+                navigateToDish31(index % pageViewSize, index1);
+              },
+              deleteCallback:
+                  (List<CategoryRecord> insideCategoryRecords, int index1) {
+                alert!.showAlert('Delete Category', 'Are You Sure?', true, () {
+                  dataHelper
+                      .deleteCategoryRecord(insideCategoryRecords[index1].id!);
+                  setState(() {
+                    categoryRecords[index % pageViewSize].removeAt(index1);
+                  });
+                });
+              },
+              columnSize: columnSize);
+        });
   }
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
-    List<CategoryRecord> filteredCategoryRecords = (filterTitleCategory.isEmpty)
-        ? categoryRecords
-        : categoryRecords
-            .where((e) => e.title.contains(filterTitleCategory))
-            .toList();
-    List<Widget> itemBuilder = [];
-
-    for (CategoryRecord e in filteredCategoryRecords) {
-      itemBuilder.add(Center(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
-          child: SettingButton(
-              colorScheme: colorScheme,
-              callbackRebuild: () {
-                logger.d("category: ${e.id ?? 0}");
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (BuildContext context) => Dish31(
-                              categoryRecord: e,
-                            ))).then((onValue) {
-                  setState(() {
-                    if (onValue != null) e = onValue;
-                  });
-                });
-              },
-              callbackDelete: () {
-                deletedCategoryRecord(e);
-              },
-              content: e.title),
-        ),
-      ));
-    }
+    final currentWidth = MediaQuery.of(context).size.width;
+    final columnSize = (currentWidth / 322).floor() - 1;
 
     return Scaffold(
       body: Column(
         children: [
-          Expanded(
-              child: SafeArea(
-            child: ListView(
-              children: itemBuilder,
-            ),
-          )),
+          Expanded(child: categoryPageView((columnSize == 0) ? 1 : columnSize)),
+          PageIndicator(
+            currentPageIndex: _currentPageIndex,
+            onUpdateCurrentPageIndex: _updateCurrentPageIndex,
+            isOnDesktopAndWeb: _isOnDesktopAndWeb,
+          ),
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -280,7 +381,11 @@ class _Category30State extends State<Category30> {
                     onSubmitted: (text) {
                       setState(() {
                         _showWidgetB = !_showWidgetB;
-                        filterTitleCategory = text;
+                        if (text.isNotEmpty) {
+                          getCategoryRecords(
+                              where: 'title LIKE ?', whereArgs: ['%$text%']);
+                          filterTitleCategory = text;
+                        }
                       });
                     })),
             crossFadeState: _showWidgetB
@@ -303,7 +408,10 @@ class _Category30State extends State<Category30> {
             () {
               setState(() {
                 _showWidgetB = !_showWidgetB;
-                filterTitleCategory = "";
+                if (filterTitleCategory.isNotEmpty) {
+                  getCategoryRecords();
+                  filterTitleCategory = "";
+                }
               });
             },
             () {
@@ -330,5 +438,74 @@ class _Category30State extends State<Category30> {
         ],
       ),
     );
+  }
+
+  bool get _isOnDesktopAndWeb {
+    if (kIsWeb) {
+      return true;
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.macOS:
+      case TargetPlatform.linux:
+      case TargetPlatform.windows:
+        return true;
+      case TargetPlatform.android:
+      case TargetPlatform.iOS:
+      case TargetPlatform.fuchsia:
+        return false;
+    }
+  }
+}
+
+class CategorySettingView30 extends StatelessWidget {
+  const CategorySettingView30(
+      {super.key,
+      required this.categoryRecords,
+      required this.rebuildCallback,
+      required this.deleteCallback,
+      required this.columnSize});
+  final List<CategoryRecord> categoryRecords;
+  final int columnSize;
+  final Function rebuildCallback;
+  final Function deleteCallback;
+
+  @override
+  Widget build(BuildContext context) {
+    final length = (categoryRecords.length / columnSize).ceil();
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return ListView.builder(
+        itemCount: length,
+        itemBuilder: (context, index) {
+          final List<Widget> itemRow = [];
+          var i = 0;
+          for (; i < columnSize; i++) {
+            final int idx = index * columnSize + i;
+            if (idx >= categoryRecords.length) {
+              break;
+            }
+            itemRow.add(SettingButton(
+              colorScheme: colorScheme,
+              callbackRebuild: () => rebuildCallback(categoryRecords, idx),
+              callbackDelete: () => deleteCallback(categoryRecords, idx),
+              content: categoryRecords[idx].title,
+            ));
+            if (i < columnSize - 1) {
+              itemRow.add(SizedBox(width: 20));
+            }
+          }
+          for (; i < columnSize; i++) {
+            itemRow.add(SizedBox(width: 322.0));
+            if (i < columnSize - 1) {
+              itemRow.add(SizedBox(width: 20));
+            }
+          }
+
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
+            child: Row(
+                mainAxisAlignment: MainAxisAlignment.center, children: itemRow),
+          );
+        });
   }
 }

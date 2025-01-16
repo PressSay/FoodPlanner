@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:menu_qr/models/category_record.dart';
@@ -9,6 +10,7 @@ import 'package:menu_qr/screens/settings/dish_setting_32.dart';
 import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
+import 'package:menu_qr/widgets/page_indicator.dart';
 import 'package:menu_qr/widgets/setting_button.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -29,7 +31,12 @@ class _Dish31State extends State<Dish31> {
   String imagePath = "";
 
   bool _showWidgetB = false;
+  int iBackward = (1 - 1) % 3; // pageViewSize;
+  int iForward = (1 + 1) % 3; //pageViewSize;
+  int _currentPageIndex = 0;
 
+  final pageViewSize = 3;
+  final pageSize = 40;
   final logger = Logger();
   final defaultImage = "assets/images/hinh-cafe-kem-banh-quy-2393351094.jpg";
   final TextEditingController _controller = TextEditingController();
@@ -40,8 +47,8 @@ class _Dish31State extends State<Dish31> {
   final TextEditingController _controllerDishPrice = TextEditingController();
 
   final DataHelper dataHelper = DataHelper();
-
-  final List<DishRecord> dishRecords = [];
+  final List<List<DishRecord>> dishRecords = [];
+  late PageController _pageViewController;
 
   @override
   void initState() {
@@ -49,7 +56,14 @@ class _Dish31State extends State<Dish31> {
     _controllerCategory.text = widget.categoryRecord.title;
     _controllerDescCategory.text = widget.categoryRecord.desc;
     getDishRecords();
-    return super.initState();
+    super.initState();
+    _pageViewController = PageController();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _pageViewController.dispose();
   }
 
   void uploadImage() async {
@@ -79,14 +93,19 @@ class _Dish31State extends State<Dish31> {
     }
   }
 
-  void getDishRecords() async {
-    final List<DishRecord> tmpDishRecords = await dataHelper.dishRecords(
-        where: 'categoryId = ?',
-        whereArgs: [widget.categoryRecord.id!],
-        limit: null);
+  void getDishRecords({String? where, List<Object?>? whereArgs}) async {
+    final List<List<DishRecord>> dishRecordsList = [];
+    for (var i = 0; i < pageViewSize; i++) {
+      final List<DishRecord> tmpDishRecords = await dataHelper.dishRecords(
+          where: 'categoryId = ? ${where != null ? 'AND $where' : ''}',
+          whereArgs: [widget.categoryRecord.id!, ...?whereArgs],
+          pageNum: (i + 1),
+          pageSize: pageSize);
+      dishRecordsList.add(tmpDishRecords);
+    }
     setState(() {
       dishRecords.clear();
-      dishRecords.addAll(tmpDishRecords);
+      dishRecords.addAll(dishRecordsList);
     });
   }
 
@@ -116,44 +135,96 @@ class _Dish31State extends State<Dish31> {
         price: price);
     final int lastId = await dataHelper.insertDishRecord(newE);
     newE.id = lastId;
+    for (var i = 0; i < pageViewSize; i++) {
+      if (dishRecords[i].length < pageSize) {
+        setState(() {
+          dishRecords[i].add(newE);
+        });
+        break;
+      }
+    }
     alert!.showAlert('Save Dish', 'success!', false, null);
+  }
+
+  void getDishRecordsAtPageViewIndex(index, pageNum) async {
+    if (pageNum == 0) return;
+    final where = filterTitleDish.isNotEmpty ? 'title = ?' : null;
+    final whereArgs = filterTitleDish.isNotEmpty ? [filterTitleDish] : null;
+    final tmpDishRecords = await dataHelper.dishRecords(
+        where: 'categoryId = ? ${where != null ? 'AND $where' : ''}',
+        whereArgs: [widget.categoryRecord.id!, ...?whereArgs],
+        pageNum: pageNum,
+        pageSize: pageSize);
+
+    dishRecords[index].clear();
+    dishRecords[index].addAll(tmpDishRecords);
+  }
+
+  void _handlePageViewChanged(int currentPageIndex) {
+    if (!_isOnDesktopAndWeb) {
+      return;
+    }
+
+    final index = currentPageIndex;
+    final newIndex = index % pageViewSize;
+    final pageNum = index + 1;
+
+    switch (newIndex) {
+      case 0:
+        if (iBackward == 0) {
+          getDishRecordsAtPageViewIndex(2, pageNum - 1);
+        }
+        if (iForward == 1) {
+          getDishRecordsAtPageViewIndex(1, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+      case 1:
+        if (iBackward == 1) {
+          getDishRecordsAtPageViewIndex(0, pageNum - 1);
+        }
+        if (iForward == 2) {
+          getDishRecordsAtPageViewIndex(2, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+      case 2:
+        if (iBackward == 2) {
+          getDishRecordsAtPageViewIndex(1, pageNum - 1);
+        }
+        if (iForward == 0) {
+          getDishRecordsAtPageViewIndex(0, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+    }
+
     setState(() {
-      dishRecords.add(newE);
+      _currentPageIndex = currentPageIndex % pageViewSize;
     });
   }
 
-  void deleteDishRecord(DishRecord dishRecord) {
-    alert!.showAlert('Delete Dish', 'Are You Sure?', true, () async {
-      dataHelper.deleteDishRecord(dishRecord.id!);
-      if (dishRecord.imagePath == "") {
-        return;
-      }
-      try {
-        final file = File(dishRecord.imagePath);
-        if (await file.exists()) await file.delete();
-        alert!.showAlert('Delete Dish', 'success', false, null);
-      } catch (e) {
-        alert!.showAlert('Delete Dish', 'Error deleting file: $e', false, null);
-      }
-    });
+  void _updateCurrentPageIndex(int index) {
+    _pageViewController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
-    List<DishRecord> filteredDishRecords = (filterTitleDish.isEmpty)
-        ? dishRecords
-        : dishRecords.where((e) => e.title.contains(filterTitleDish)).toList();
-    List<Widget> itemBuilder = [];
-
-    for (DishRecord e in filteredDishRecords) {
-      itemBuilder.add(Center(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
-          child: SettingButton(
-              colorScheme: colorScheme,
-              callbackRebuild: () {
+  PageView dishPageView(int columnSize) {
+    return PageView.builder(
+        controller: _pageViewController,
+        onPageChanged: _handlePageViewChanged,
+        itemBuilder: (context, index) {
+          return DishSettingView31(
+              dishRecords:
+                  dishRecords.elementAtOrNull(index % pageViewSize) ?? [],
+              rebuildCallback:
+                  (List<DishRecord> insideDishRecords, int index1) {
                 if (imagePath.isNotEmpty) {
                   final file = File(imagePath);
                   if (file.existsSync()) file.deleteSync();
@@ -163,28 +234,47 @@ class _Dish31State extends State<Dish31> {
                     context,
                     MaterialPageRoute(
                         builder: (BuildContext context) =>
-                            Dish32(dishRecord: e)));
+                            Dish32(dishRecord: insideDishRecords[index1])));
               },
-              callbackDelete: () {
-                deleteDishRecord(e);
-                setState(() {
-                  dishRecords.removeWhere((e1) => e1.id == e.id);
+              deleteCallback: (List<DishRecord> insideDishRecords, int index1) {
+                alert!.showAlert('Delete Dish', 'Are You Sure?', true,
+                    () async {
+                  dataHelper.deleteDishRecord(insideDishRecords[index1].id!);
+                  if (insideDishRecords[index1].imagePath == "") {
+                    return;
+                  }
+                  try {
+                    final file = File(insideDishRecords[index1].imagePath);
+                    if (await file.exists()) await file.delete();
+                    setState(() {
+                      dishRecords[index % pageViewSize].removeAt(index1);
+                    });
+                    alert!.showAlert('Delete Dish', 'success', false, null);
+                  } catch (e) {
+                    alert!.showAlert(
+                        'Delete Dish', 'Error deleting file: $e', false, null);
+                  }
                 });
               },
-              content: e.title),
-        ),
-      ));
-    }
+              columnSize: columnSize);
+        });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final currentWidth = MediaQuery.of(context).size.width;
+    final columnSize = (currentWidth / 322).floor() - 1;
 
     return Scaffold(
       body: Column(
         children: [
-          Expanded(
-              child: SafeArea(
-            child: ListView(
-              children: itemBuilder,
-            ),
-          )),
+          Expanded(child: dishPageView((columnSize == 0) ? 1 : columnSize)),
+          PageIndicator(
+            currentPageIndex: _currentPageIndex,
+            onUpdateCurrentPageIndex: _updateCurrentPageIndex,
+            isOnDesktopAndWeb: _isOnDesktopAndWeb,
+          ),
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -397,7 +487,11 @@ class _Dish31State extends State<Dish31> {
                     onSubmitted: (text) {
                       setState(() {
                         _showWidgetB = !_showWidgetB;
-                        filterTitleDish = text;
+                        if (text.isNotEmpty) {
+                          getDishRecords(
+                              where: 'title LIKE ?', whereArgs: ['%$text%']);
+                          filterTitleDish = text;
+                        }
                       });
                     })),
             crossFadeState: _showWidgetB
@@ -428,7 +522,10 @@ class _Dish31State extends State<Dish31> {
             () {
               setState(() {
                 _showWidgetB = !_showWidgetB;
-                filterTitleDish = "";
+                if (filterTitleDish.isNotEmpty) {
+                  getDishRecords();
+                  filterTitleDish = "";
+                }
               });
             },
             () {
@@ -455,5 +552,72 @@ class _Dish31State extends State<Dish31> {
         ],
       ),
     );
+  }
+
+  bool get _isOnDesktopAndWeb {
+    if (kIsWeb) {
+      return true;
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.macOS:
+      case TargetPlatform.linux:
+      case TargetPlatform.windows:
+        return true;
+      case TargetPlatform.android:
+      case TargetPlatform.iOS:
+      case TargetPlatform.fuchsia:
+        return false;
+    }
+  }
+}
+
+class DishSettingView31 extends StatelessWidget {
+  const DishSettingView31(
+      {super.key,
+      required this.dishRecords,
+      required this.rebuildCallback,
+      required this.deleteCallback,
+      required this.columnSize});
+  final List<DishRecord> dishRecords;
+  final int columnSize;
+  final Function rebuildCallback;
+  final Function deleteCallback;
+
+  @override
+  Widget build(BuildContext context) {
+    final length = (dishRecords.length / columnSize).ceil();
+    final colorScheme = Theme.of(context).colorScheme;
+    return ListView.builder(
+        itemCount: length,
+        itemBuilder: (context, index) {
+          final List<Widget> itemRow = [];
+          var i = 0;
+          for (; i < columnSize; i++) {
+            final int idx = index * columnSize + i;
+            if (idx >= dishRecords.length) {
+              break;
+            }
+            itemRow.add(SettingButton(
+                colorScheme: colorScheme,
+                callbackRebuild: () => rebuildCallback(dishRecords, idx),
+                callbackDelete: () => deleteCallback(dishRecords, idx),
+                content: dishRecords[idx].title));
+            if (i < columnSize - 1) {
+              itemRow.add(SizedBox(width: 20));
+            }
+          }
+          for (; i < columnSize; i++) {
+            itemRow.add(SizedBox(width: 322.0));
+            if (i < columnSize - 1) {
+              itemRow.add(SizedBox(width: 20));
+            }
+          }
+
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
+            child: Row(
+                mainAxisAlignment: MainAxisAlignment.center, children: itemRow),
+          );
+        });
   }
 }

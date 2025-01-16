@@ -197,10 +197,11 @@ class _Confirm38 extends State<Confirm38> {
             preOrderedDishRecords:
                 preOrderedDishRecordsView[index % pageViewSize],
             deleteCallback:
-                (List<PreOrderedDishRecord> preOrderedDishRecords, int index) {
-              final e = preOrderedDishRecords[index];
+                (List<PreOrderedDishRecord> preOrderedDishRecords, int index1) {
+              final e = preOrderedDishRecords[index1];
               setState(() {
-                preOrderedDishRecords.removeAt(index);
+                preOrderedDishRecordsView[index % pageViewSize]
+                    .removeAt(index1);
               });
               dishProvider.deleteAmount(e.dishId);
             },

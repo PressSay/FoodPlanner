@@ -2,6 +2,7 @@ import 'package:date_field/date_field.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:logger/logger.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/screens/list_detail_40.dart';
 import 'package:menu_qr/services/alert.dart';
@@ -142,8 +143,8 @@ class _ListScreen47State extends State<ListScreen47> {
         itemBuilder: (context, index) {
           return BillsView47(
               columnSize: columnSize,
-              billRecords:
-                  billRecords.elementAtOrNull(index % pageViewSize) ?? [],
+              billRecords: billRecords.elementAtOrNull(index % pageViewSize) ??
+                  [], // truyền mảng là truyền tham chiếu
               checkedBillIdList: checkedBillIdList,
               callbackRebuild:
                   (List<BillRecord> inSideBillRecords, int index1) {
@@ -161,7 +162,9 @@ class _ListScreen47State extends State<ListScreen47> {
                 alert!.showAlert('Delete Bill', 'Are you Sure?', true,
                     () async {
                   dataHelper.deleteBillRecord(inSideBillRecords[index1].id!);
-                  inSideBillRecords.removeAt(index1);
+                  setState(() {
+                    billRecords[index % pageViewSize].removeAt(index1);
+                  });
                   checkedBillIdList.remove(inSideBillRecords[index1].id!);
                 });
               });
@@ -204,8 +207,15 @@ class _ListScreen47State extends State<ListScreen47> {
                       _showWidgetB = !_showWidgetB;
                       if (value != null) {
                         getBillRecords(
-                            where: 'dateTime = ? AND isLeft = ?',
-                            whereArgs: [value.millisecondsSinceEpoch, 0]);
+                            where:
+                                'datetime >= ? AND datetime < ? AND isLeft = ?',
+                            whereArgs: [
+                              value.millisecondsSinceEpoch,
+                              value
+                                  .add(const Duration(days: 1))
+                                  .millisecondsSinceEpoch,
+                              0
+                            ]);
                         dateFilter = value;
                       }
                     })),

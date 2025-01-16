@@ -136,7 +136,7 @@ class _Table35 extends State<Table35> {
     }
 
     setState(() {
-      _currentPageIndex = currentPageIndex;
+      _currentPageIndex = currentPageIndex % pageViewSize;
     });
   }
 
@@ -161,7 +161,7 @@ class _Table35 extends State<Table35> {
               columnSize: numEleInRow,
               callback: (List<TableRecord> tableRecords, int index1) {
                 final value = tableRecords[index1];
-                indexTableRecordsList = index;
+                indexTableRecordsList = index % pageViewSize;
                 indexTableRecords = index1;
                 if (widget.billId != 0) {
                   Map<String, dynamic> onValue = {

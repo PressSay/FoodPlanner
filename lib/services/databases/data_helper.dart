@@ -157,7 +157,7 @@ class DataHelper {
 
   Future<List<MenuRecord>> menuRecords({
     String? where,
-    List<Object>? whereArgs,
+    List<Object?>? whereArgs,
     int? limit,
     int? pageNum,
     int? pageSize,

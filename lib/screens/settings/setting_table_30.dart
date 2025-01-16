@@ -82,11 +82,12 @@ class _Table30State extends State<Table30> {
       alert!.showAlert('Insert Table', 'failed!', false, null);
     }
     newE.id = lastId;
-    setState(() {
-      if (tableRecordsList[indexTableRecordsList].length < pageSize) {
-        tableRecordsList[indexTableRecordsList].add(newE);
-      }
-    });
+    if (tableRecordsList[_currentPageIndex].length < pageSize) {
+      logger.d('e.length ${tableRecordsList[_currentPageIndex].length}');
+      setState(() {
+        tableRecordsList[_currentPageIndex].add(newE);
+      });
+    }
     alert!.showAlert('Insert Table', 'success!', false, null);
   }
 

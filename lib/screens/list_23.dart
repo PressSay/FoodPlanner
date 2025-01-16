@@ -144,21 +144,22 @@ class _List23State extends State<List23> {
               columnSize: columnSize,
               billRecords:
                   billRecordsList.elementAtOrNull(index % pageViewSize) ?? [],
-              deleteCallback: (List<BillRecord> billRecords, int index) {
+              deleteCallback: (List<BillRecord> billRecords, int index1) {
                 alert!.showAlert("Delete Bill", "Are You Sure?", true,
                     () async {
-                  dataHelper.deleteBillRecord(billRecords[index].id!);
+                  dataHelper.deleteBillRecord(billRecords[index1].id!);
                   setState(() {
-                    billRecords.removeAt(index);
+                    billRecordsList[index % pageViewSize].removeAt(index1);
                   });
                 });
               },
-              rebuildCallback: (List<BillRecord> billRecords, int index) {
+              rebuildCallback: (List<BillRecord> billRecords, int index1) {
                 Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) =>
-                            List24(billRecord: billRecords[index])));
+                        builder: (context) => List24(
+                            billRecord: billRecordsList[index % pageViewSize]
+                                [index1])));
               });
         });
   }

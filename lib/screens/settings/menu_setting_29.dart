@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:excel/excel.dart' as excl;
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:menu_qr/models/menu_record.dart';
@@ -12,6 +13,7 @@ import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/order_setting_button_online.dart';
+import 'package:menu_qr/widgets/page_indicator.dart';
 
 class Menu29 extends StatefulWidget {
   const Menu29({super.key});
@@ -26,19 +28,171 @@ class _Menu29State extends State<Menu29> {
 
   bool _showWidgetB = false;
   Alert? alert;
+  int iBackward = (1 - 1) % 3; // pageViewSize;
+  int iForward = (1 + 1) % 3; //pageViewSize;
+  int _currentPageIndex = 0;
+
+  final pageViewSize = 3;
+  final pageSize = 40;
+
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _controllerMenu = TextEditingController();
   final Logger logger = Logger();
 
   final DataHelper dataHelper = DataHelper();
-  final List<MenuRecord> menuRecords = [];
+  final List<List<MenuRecord>> menuRecords = [];
   final List<MenuRecord> selectedMenuRecords = [];
+
+  late PageController _pageViewController;
 
   @override
   void initState() {
     alert = Alert(context: context);
     getMenuRecords();
-    return super.initState();
+    super.initState();
+    _pageViewController = PageController();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _pageViewController.dispose();
+  }
+
+  bool get _isOnDesktopAndWeb {
+    if (kIsWeb) {
+      return true;
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.macOS:
+      case TargetPlatform.linux:
+      case TargetPlatform.windows:
+        return true;
+      case TargetPlatform.android:
+      case TargetPlatform.iOS:
+      case TargetPlatform.fuchsia:
+        return false;
+    }
+  }
+
+  void getMenuRecordsAtPageViewIndex(index, pageNum) async {
+    if (pageNum == 0) return;
+    final where = filterTitleMenu.isNotEmpty ? 'title = ?' : null;
+    final whereArgs = filterTitleMenu.isNotEmpty ? [filterTitleMenu] : null;
+    final tmpDishRecords = await dataHelper.menuRecords(
+        where: where,
+        whereArgs: whereArgs,
+        pageNum: pageNum,
+        pageSize: pageSize);
+
+    menuRecords[index].clear();
+    menuRecords[index].addAll(tmpDishRecords);
+  }
+
+  void _handlePageViewChanged(int currentPageIndex) {
+    if (!_isOnDesktopAndWeb) {
+      return;
+    }
+
+    final index = currentPageIndex;
+    final newIndex = index % pageViewSize;
+    final pageNum = index + 1;
+
+    switch (newIndex) {
+      case 0:
+        if (iBackward == 0) {
+          getMenuRecordsAtPageViewIndex(2, pageNum - 1);
+        }
+        if (iForward == 1) {
+          getMenuRecordsAtPageViewIndex(1, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+      case 1:
+        if (iBackward == 1) {
+          getMenuRecordsAtPageViewIndex(0, pageNum - 1);
+        }
+        if (iForward == 2) {
+          getMenuRecordsAtPageViewIndex(2, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+      case 2:
+        if (iBackward == 2) {
+          getMenuRecordsAtPageViewIndex(1, pageNum - 1);
+        }
+        if (iForward == 0) {
+          getMenuRecordsAtPageViewIndex(0, pageNum + 1);
+        }
+        iBackward = (index - 1) % pageViewSize;
+        iForward = (index + 2) % pageViewSize;
+        break;
+    }
+
+    setState(() {
+      _currentPageIndex = currentPageIndex % pageViewSize;
+    });
+  }
+
+  void _updateCurrentPageIndex(int index) {
+    // logger.d('_updateCurrentPageIndex $index');
+    _pageViewController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  PageView menuPageView(int columnSize) {
+    return PageView.builder(
+        controller: _pageViewController,
+        onPageChanged: _handlePageViewChanged,
+        itemBuilder: (context, index) {
+          return MenuSettingView29(
+              columnSize: columnSize,
+              menuRecords:
+                  menuRecords.elementAtOrNull(index % pageViewSize) ?? [],
+              checkCallback:
+                  (List<MenuRecord> insideMenuRecord, int index1) async {
+                final selectedMenuRecords = await dataHelper
+                    .menuRecords(where: 'isSelected = ?', whereArgs: [1]);
+                setState(() {
+                  menuRecords[index % pageViewSize][index1].isSelected = true;
+                });
+                for (var e in selectedMenuRecords) {
+                  logger.d("e.id ${e.id}");
+                  for (var i = 0; i < insideMenuRecord.length; i++) {
+                    if (e.id! == insideMenuRecord[i].id!) {
+                      setState(() {
+                        menuRecords[index % pageViewSize][i].isSelected = false;
+                      });
+                      dataHelper.updateMenuRecord(insideMenuRecord[i]);
+                    }
+                  }
+                }
+                dataHelper.updateMenuRecord(
+                    menuRecords[index % pageViewSize][index1]);
+              },
+              rebuildCallback:
+                  (List<MenuRecord> insideMenuRecords, int index1) {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (BuildContext context) =>
+                            Category30(menuRecord: insideMenuRecords[index1])));
+              },
+              deleteCallback: (List<MenuRecord> insideMenuRecords, int index1) {
+                alert!.showAlert('Delete Menu', 'Are You Sure?', true,
+                    () async {
+                  dataHelper.deleteMenuRecord(insideMenuRecords[index1].id!);
+                  setState(() {
+                    menuRecords[index % pageViewSize].removeAt(index1);
+                  });
+                });
+              });
+        });
   }
 
   void saveMenu() async {
@@ -46,42 +200,30 @@ class _Menu29State extends State<Menu29> {
         MenuRecord(title: titleMenu, isSelected: false);
     final int lastId = await dataHelper.insertMenuRecord(menuRecord);
     menuRecord.id = lastId;
-    setState(() {
-      menuRecords.add(menuRecord);
-    });
+    for (var i = 0; i < pageViewSize; i++) {
+      if (menuRecords[i].length < pageSize) {
+        setState(() {
+          menuRecords[i].add(menuRecord);
+        });
+        break;
+      }
+    }
     alert!.showAlert('Save Menu', 'success!', false, null);
   }
 
-  void getMenuRecords() async {
-    final List<MenuRecord> tmpMenuRecords =
-        await dataHelper.menuRecords(where: null, whereArgs: null, limit: null);
+  void getMenuRecords({String? where, List<Object?>? whereArgs}) async {
+    final List<List<MenuRecord>> tmpMenuRecordsList = [];
+    for (var i = 0; i < pageViewSize; i++) {
+      final tmpMenuRecords = await dataHelper.menuRecords(
+          where: where,
+          whereArgs: whereArgs,
+          pageNum: (i + 1),
+          pageSize: pageSize);
+      tmpMenuRecordsList.add(tmpMenuRecords);
+    }
     setState(() {
       menuRecords.clear();
-      menuRecords.addAll(tmpMenuRecords);
-    });
-  }
-
-  void reSelectMenuRecord(MenuRecord menuRecord) async {
-    final List<int> indexRemove = [];
-    for (int i = 0; i < selectedMenuRecords.length; i++) {
-      final MenuRecord newE = selectedMenuRecords[i];
-      newE.isSelected = false;
-      await dataHelper.updateMenuRecord(newE);
-      indexRemove.add(i);
-    }
-    for (int index in indexRemove) {
-      selectedMenuRecords.removeAt(index);
-    }
-    await dataHelper.updateMenuRecord(menuRecord);
-    selectedMenuRecords.add(menuRecord);
-  }
-
-  void deleteMenu(int menuId) {
-    alert!.showAlert('Delete Menu', 'Are You Sure?', true, () async {
-      dataHelper.deleteMenuRecord(menuId);
-      setState(() {
-        menuRecords.removeWhere((e1) => e1.id == menuId);
-      });
+      menuRecords.addAll(tmpMenuRecordsList);
     });
   }
 
@@ -258,47 +400,18 @@ class _Menu29State extends State<Menu29> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
-    List<MenuRecord> filteredMenuRecords = (filterTitleMenu.isEmpty)
-        ? menuRecords
-        : menuRecords.where((e) => e.title.contains(filterTitleMenu)).toList();
-    List<Widget> itemBuilderMenu = [];
-
-    for (MenuRecord e in filteredMenuRecords) {
-      itemBuilderMenu.add(Center(
-          child: Padding(
-              padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
-              child: OrderSettingButtonOnl(
-                  colorScheme: colorScheme,
-                  isChecked: e.isSelected,
-                  callbackCheck: () {
-                    setState(() {
-                      e.isSelected = true;
-                      for (MenuRecord e1 in selectedMenuRecords) {
-                        if (e1.isSelected && e.id == e1.id) {
-                          e.isSelected = false;
-                        }
-                      }
-                    });
-                    reSelectMenuRecord(e);
-                  },
-                  callbackRebuild: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (BuildContext context) =>
-                                Category30(menuRecord: e)));
-                  },
-                  callbackDelete: () {
-                    deleteMenu(e.id!);
-                  },
-                  content: e.title))));
-    }
+    final currentWidth = MediaQuery.of(context).size.width;
+    final columnSize = (currentWidth / 322).floor() - 1;
 
     return Scaffold(
       body: Column(
         children: [
-          Expanded(child: SafeArea(child: ListView(children: itemBuilderMenu))),
+          Expanded(child: menuPageView((columnSize == 0) ? 1 : columnSize)),
+          PageIndicator(
+            currentPageIndex: _currentPageIndex,
+            onUpdateCurrentPageIndex: _updateCurrentPageIndex,
+            isOnDesktopAndWeb: _isOnDesktopAndWeb,
+          ),
           editArea(colorScheme),
           AnimatedCrossFade(
             firstChild: SizedBox(),
@@ -313,7 +426,11 @@ class _Menu29State extends State<Menu29> {
                     onSubmitted: (text) {
                       setState(() {
                         _showWidgetB = !_showWidgetB;
-                        filterTitleMenu = text;
+                        if (text.isNotEmpty) {
+                          getMenuRecords(
+                              where: 'title LIKE ?', whereArgs: ['%$text%']);
+                          filterTitleMenu = text;
+                        }
                       });
                     })),
             crossFadeState: _showWidgetB
@@ -336,7 +453,10 @@ class _Menu29State extends State<Menu29> {
             () {
               setState(() {
                 _showWidgetB = !_showWidgetB;
-                filterTitleMenu = "";
+                if (filterTitleMenu.isNotEmpty) {
+                  getMenuRecords();
+                  filterTitleMenu = "";
+                }
               });
             },
             () {
@@ -367,5 +487,61 @@ class _Menu29State extends State<Menu29> {
         ],
       ),
     );
+  }
+}
+
+class MenuSettingView29 extends StatelessWidget {
+  const MenuSettingView29(
+      {super.key,
+      required this.columnSize,
+      required this.menuRecords,
+      required this.checkCallback,
+      required this.rebuildCallback,
+      required this.deleteCallback});
+  final int columnSize;
+  final List<MenuRecord> menuRecords;
+  final Function checkCallback;
+  final Function rebuildCallback;
+  final Function deleteCallback;
+
+  @override
+  Widget build(BuildContext context) {
+    final length = (menuRecords.length / columnSize).ceil();
+    final colorScheme = Theme.of(context).colorScheme;
+    return ListView.builder(
+        itemCount: length,
+        itemBuilder: (context, index) {
+          final List<Widget> itemRow = [];
+          var i = 0;
+          for (; i < columnSize; i++) {
+            final int idx = index * columnSize + i;
+            if (idx >= menuRecords.length) {
+              break;
+            }
+            itemRow.add(OrderSettingButtonOnl(
+              isChecked: menuRecords[idx].isSelected,
+              callbackCheck: () => checkCallback(menuRecords, idx),
+              callbackDelete: () => deleteCallback(menuRecords, idx),
+              callbackRebuild: () => rebuildCallback(menuRecords, idx),
+              content: menuRecords[idx].title,
+              colorScheme: colorScheme,
+            ));
+            if (i < columnSize - 1) {
+              itemRow.add(SizedBox(width: 20));
+            }
+          }
+          for (; i < columnSize; i++) {
+            itemRow.add(SizedBox(width: 322.0));
+            if (i < columnSize - 1) {
+              itemRow.add(SizedBox(width: 20));
+            }
+          }
+
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
+            child: Row(
+                mainAxisAlignment: MainAxisAlignment.center, children: itemRow),
+          );
+        });
   }
 }

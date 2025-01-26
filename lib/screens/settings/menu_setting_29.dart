@@ -1,11 +1,9 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:excel/excel.dart' as excl;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
 import 'package:menu_qr/models/category_record.dart';
 import 'package:menu_qr/models/dish_record.dart';
 import 'package:menu_qr/models/menu_record.dart';
@@ -41,7 +39,6 @@ class _Menu29State extends State<Menu29> {
 
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _controllerMenu = TextEditingController();
-  final Logger logger = Logger();
 
   final DataHelper dataHelper = DataHelper();
   final List<List<MenuRecord>> menuRecords = [];
@@ -166,7 +163,7 @@ class _Menu29State extends State<Menu29> {
                   menuRecords[index % pageViewSize][index1].isSelected = true;
                 });
                 for (var e in selectedMenuRecords) {
-                  logger.d("e.id ${e.id}");
+                  // logger.d("e.id ${e.id}");
                   for (var i = 0; i < insideMenuRecord.length; i++) {
                     if (e.id! == insideMenuRecord[i].id!) {
                       setState(() {
@@ -235,8 +232,8 @@ class _Menu29State extends State<Menu29> {
     var menuId = 0;
     bool checkedFormat = false;
 
-    var rows = excel.tables[excel.tables.keys.first]!.rows;
-    logger.d("${rows.elementAt(12).elementAt(1)}");
+    // var rows = excel.tables[excel.tables.keys.first]!.rows;
+    // logger.d("${rows.elementAt(12).elementAt(1)}");
     for (var row in excel.tables[excel.tables.keys.first]!.rows) {
       if (!checkedFormat) {
         bool haveBreak = false;
@@ -262,11 +259,11 @@ class _Menu29State extends State<Menu29> {
       var dishTitle = row[1]?.value.toString() ?? "";
       var price = row[2]?.value.toString() ?? "";
       var description = row[3]?.value.toString() ?? "";
-      var imagePath = row[4]?.value.toString() ?? "";
+      // var imagePath = row[4]?.value.toString() ?? "";
       var categoryTitle = row[5]?.value.toString() ?? "";
       var categoryDescription = row[6]?.value.toString() ?? "";
-      logger.d('$dishTitle, $price, $description, $imagePath, '
-          '$categoryTitle, $categoryDescription\n');
+      // logger.d('$dishTitle, $price, $description, $imagePath, '
+      //     '$categoryTitle, $categoryDescription\n');
       var oldCategory = await dataHelper
           .categoryRecords(where: "title = ?", whereArgs: [categoryTitle]);
       var categoryIdBak = 0;
@@ -281,7 +278,7 @@ class _Menu29State extends State<Menu29> {
           title: dishTitle,
           desc: description,
           price: double.tryParse(price) ?? 0);
-      logger.d("newDish ${newDish.title}");
+      // logger.d("newDish ${newDish.title}");
       var oldDish = await dataHelper
           .dishRecords(where: "title = ?", whereArgs: [dishTitle]);
       if (oldDish.isEmpty) {

@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
 import 'package:menu_qr/models/table_record.dart';
 import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
@@ -34,7 +33,6 @@ class _Table30State extends State<Table30> {
   final TextEditingController _controllerDescOld = TextEditingController();
   final TextEditingController _controllerTable = TextEditingController();
   final TextEditingController _controllerDesc = TextEditingController();
-  final logger = Logger();
 
   final DataHelper dataHelper = DataHelper();
   late PageController _pageViewController;
@@ -48,7 +46,6 @@ class _Table30State extends State<Table30> {
           pageNum: (i + 1),
           pageSize: pageSize);
       listTmpTableRecords.add(tmpTableRecords);
-      logger.d('getTableRecords $i');
     }
     setState(() {
       tableRecordsList.clear();
@@ -85,7 +82,7 @@ class _Table30State extends State<Table30> {
     }
     newE.id = lastId;
     if (tableRecordsList[_currentPageIndex].length < pageSize) {
-      logger.d('e.length ${tableRecordsList[_currentPageIndex].length}');
+      // logger.d('e.length ${tableRecordsList[_currentPageIndex].length}');
       setState(() {
         tableRecordsList[_currentPageIndex].add(newE);
       });
@@ -203,12 +200,12 @@ class _Table30State extends State<Table30> {
                 numOfPeople = insideTableRecords[index1].numOfPeople;
                 indexTableRecordsList = index % pageViewSize;
                 indexTableRecords = index1;
-                logger.d('desc ${insideTableRecords[index1].desc}, '
-                    'name ${insideTableRecords[index1].name}, '
-                    'id ${insideTableRecords[index1].id}, '
-                    'numOfPeople ${insideTableRecords[index1].numOfPeople}, '
-                    'indexTableRecordsList $indexTableRecordsList, '
-                    'indexTableRecords $indexTableRecords');
+                // logger.d('desc ${insideTableRecords[index1].desc}, '
+                //     'name ${insideTableRecords[index1].name}, '
+                //     'id ${insideTableRecords[index1].id}, '
+                //     'numOfPeople ${insideTableRecords[index1].numOfPeople}, '
+                //     'indexTableRecordsList $indexTableRecordsList, '
+                //     'indexTableRecords $indexTableRecords');
               });
         });
   }

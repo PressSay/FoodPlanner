@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
 import 'package:menu_qr/models/dish_record.dart';
 import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
@@ -23,7 +22,6 @@ class _Dish32State extends State<Dish32> {
   String imagePath = "";
   bool isSaved = true;
 
-  final logger = Logger();
   final defaultImage = "assets/images/hinh-cafe-kem-banh-quy-2393351094.jpg";
   final TextEditingController _controllerDescDish = TextEditingController();
   final TextEditingController _controllerDishTitle = TextEditingController();
@@ -61,7 +59,6 @@ class _Dish32State extends State<Dish32> {
       return;
     }
     if (imagePath.compareTo(widget.dishRecord.imagePath) != 0) {
-      logger.d("delete old widget.dishRecord.imagePath");
       final oldImage = File(widget.dishRecord.imagePath);
       if (oldImage.existsSync()) await oldImage.delete();
     }
@@ -87,7 +84,6 @@ class _Dish32State extends State<Dish32> {
     }
     if (imagePath.isNotEmpty &&
         widget.dishRecord.imagePath.compareTo(imagePath) != 0) {
-      logger.d('delete tmp image!');
       File fileDelete = File(imagePath);
       if (fileDelete.existsSync()) await fileDelete.delete();
     }
@@ -103,7 +99,6 @@ class _Dish32State extends State<Dish32> {
         imagePath = newFile.path;
       });
       isSaved = false;
-      logger.i('Image uploaded successfully to temporary location.');
     } catch (e) {
       alert!.showAlert(status, '$status $e $failed', false, null);
     }

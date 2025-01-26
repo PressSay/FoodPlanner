@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:logger/logger.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/pre_ordered_dish.dart';
 import 'package:menu_qr/screens/paid_42.dart';
@@ -32,7 +31,6 @@ class _List24 extends State<List24> {
   int iForward = (1 + 1) % 3; //pageViewSize;
   int _currentPageIndex = 0;
 
-  final logger = Logger();
   final dataHelper = DataHelper();
   final pageViewSize = 3;
   final pageSize = 40;
@@ -42,7 +40,7 @@ class _List24 extends State<List24> {
 
   void getPreOrderedDishRecords(
       {String? where, List<Object?>? whereArgs}) async {
-    logger.d('billId = ${widget.billRecord.id ?? 0}');
+    // logger.d('billId = ${widget.billRecord.id ?? 0}');
     final List<List<PreOrderedDishRecord>> tmpPreOrderedDishRecordsList = [];
     var tmpTotal = 0.0;
     for (var i = 0; i < pageViewSize; i++) {
@@ -131,12 +129,12 @@ class _List24 extends State<List24> {
         if (iBackward == 2) {
           getPreOrderdDishRecordsAtPageViewIndex(
               index: 1, pageNum: pageNum - 1);
-          logger.d("index $index");
+          // logger.d("index $index");
         }
         if (iForward == 0) {
           getPreOrderdDishRecordsAtPageViewIndex(
               index: 0, pageNum: pageNum + 1);
-          logger.d("index $index");
+          // logger.d("index $index");
         }
         iBackward = (index - 1) % pageViewSize;
         iForward = (index + 2) % pageViewSize;

@@ -2,7 +2,6 @@ import 'package:date_field/date_field.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:logger/logger.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/screens/list_24.dart';
 import 'package:menu_qr/services/alert.dart';
@@ -20,7 +19,6 @@ class List23 extends StatefulWidget {
 }
 
 class _List23State extends State<List23> {
-  final Logger logger = Logger();
   DateTime? filterDateTime;
   String titleBillRecord = "";
   bool _showWidgetB = false;

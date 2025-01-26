@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
 import 'package:menu_qr/models/table_record.dart';
 import 'package:menu_qr/screens/table_36.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
@@ -22,7 +21,6 @@ class Table35 extends StatefulWidget {
 }
 
 class _Table35 extends State<Table35> {
-  final logger = Logger();
   final TextEditingController _controller = TextEditingController();
   final DataHelper dataHelper = DataHelper();
   final int numEleInRow = 2;
@@ -50,7 +48,7 @@ class _Table35 extends State<Table35> {
           pageNum: (i + 1),
           pageSize: pageSize);
       listTmpTableRecords.add(tmpTableRecords);
-      logger.d('getTableRecords $i');
+      // logger.d('getTableRecords $i');
     }
     setState(() {
       tableRecordsList.clear();
@@ -199,11 +197,11 @@ class _Table35 extends State<Table35> {
                         onValue['newIndexTableRecordsList']!;
                     final newIndexTableRecords =
                         onValue['newIndexTableRecords']!;
-                    logger.d('oldId: $oldId, newId: $newId, '
-                        'oldIndexTableRecordsList: $oldIndexTableRecordsList, '
-                        'oldIndexTableRecords: $oldIndexTableRecords, '
-                        'newIndexTableRecordsList: $newIndexTableRecordsList, '
-                        'newIndexTableRecords: $newIndexTableRecords');
+                    // logger.d('oldId: $oldId, newId: $newId, '
+                    //     'oldIndexTableRecordsList: $oldIndexTableRecordsList, '
+                    //     'oldIndexTableRecords: $oldIndexTableRecords, '
+                    //     'newIndexTableRecordsList: $newIndexTableRecordsList, '
+                    //     'newIndexTableRecords: $newIndexTableRecords');
                     if (onValue.isNotEmpty) {
                       updateTableRecord(
                           oldIndexTableRecordsList: oldIndexTableRecordsList,
@@ -212,10 +210,10 @@ class _Table35 extends State<Table35> {
                           newIndexTableRecords: newIndexTableRecords,
                           oldId: oldId,
                           newId: newId);
-                      logger.d("Đã cập nhật table old và table new");
+                      // logger.d("Đã cập nhật table old và table new");
                       return;
                     }
-                    logger.d("Không cập nhật table old và table new");
+                    // logger.d("Không cập nhật table old và table new");
                   }
                 });
               });

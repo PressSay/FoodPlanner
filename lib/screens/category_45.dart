@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
 import 'package:menu_qr/models/category_record.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
@@ -29,7 +28,6 @@ class _Category45 extends State<Category45> {
   final TextEditingController _controller = TextEditingController();
   final DataHelper dataHelper = DataHelper();
   final List<List<CategoryRecord>> categoryRecords = [];
-  final logger = Logger();
   late PageController _pageViewController;
 
   void getCategoryRecords(
@@ -166,7 +164,6 @@ class _Category45 extends State<Category45> {
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
           final navigator = Navigator.of(context);
-          logger.d("abc category");
           navigator.pop();
         }
       },

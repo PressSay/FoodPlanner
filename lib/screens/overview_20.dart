@@ -4,7 +4,6 @@ import 'package:date_field/date_field.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:logger/logger.dart';
 import 'package:menu_qr/screens/list_23.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/utils.dart';
@@ -24,8 +23,6 @@ class _Overview20State extends State<Overview20> {
 
   final List<FlSpot> spotsHourBill = [];
   final List<FlSpot> spotsMinuteBill = [];
-
-  final logger = Logger();
 
   bool isInited = false;
   DateTime? date;
@@ -97,7 +94,7 @@ class _Overview20State extends State<Overview20> {
       final minute = date.hour * 60 + date.minute;
       tmpAmountBill += 1;
       sumOfbillNumber += billMoney;
-      logger.d("hour $hour => $billMoney");
+      // logger.d("hour $hour => $billMoney");
       tmpSpotsHour[hour] = (tmpSpotsHour[hour] ?? 0) + billMoney;
       // the max tmpSpotsMinute element number is 1439 = 60*24 - 1
       tmpSpotsMinute[minute] = (tmpSpotsMinute[minute] ?? 0) + billMoney;
@@ -106,12 +103,12 @@ class _Overview20State extends State<Overview20> {
       }
     }
 
-    logger.d("maxBillMoney: $maxBillMoney");
+    // logger.d("maxBillMoney: $maxBillMoney");
     for (var e in tmpSpotsHour.entries) {
       final y = e.value;
       final x = e.key.toDouble();
       final newY = (y / maxBillMoney) * 6;
-      logger.d("x: $x, y: $newY");
+      // logger.d("x: $x, y: $newY");
       tmptSpotsHourBill.add(FlSpot(x, newY));
     }
     for (var e in tmpSpotsMinute.entries) {
@@ -119,7 +116,7 @@ class _Overview20State extends State<Overview20> {
       final x = e.key.toDouble();
       final newX = (x / 1439) * 24;
       final newY = (y / maxBillMoney) * 6;
-      logger.d("xM: $newX, yM: $newY");
+      // logger.d("xM: $newX, yM: $newY");
       tmpSpotsMinuteBill.add(FlSpot(newX, newY));
     }
     setState(() {

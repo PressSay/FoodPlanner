@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:logger/logger.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/pre_ordered_dish.dart';
 import 'package:menu_qr/models/table_record.dart';
@@ -57,7 +56,6 @@ class _ListDetail40State extends State<ListDetail40> {
 
   late PageController _pageViewController;
 
-  final logger = Logger();
   final List<List<PreOrderedDishRecord>> preOrderedDishRecords = [];
   final pageViewSize = 3;
   final pageSize = 40;
@@ -392,7 +390,7 @@ class _ListDetail40State extends State<ListDetail40> {
                     if (billRecord != null) {
                       getPreOrderedDishRecords(billRecord!.id!);
                     }
-                    logger.d('update preOrderedDishRecords 1');
+                    // logger.d('update preOrderedDishRecords 1');
                   });
                 }
               },
@@ -403,12 +401,10 @@ class _ListDetail40State extends State<ListDetail40> {
                     status: appLocalizations.update,
                     success: appLocalizations.success);
                 // int billIdCurrent = billRecord!.id!;
-                Navigator.push(
+                navigateWithFade(
                     context,
-                    MaterialPageRoute(
-                      builder: (BuildContext context) => Paid42(
-                        billRecord: billRecord!,
-                      ),
+                    Paid42(
+                      billRecord: billRecord!,
                     )).then((value) {});
                 setState(() {
                   // bigO(n) nhưng n có giới hạn theo người dùng select Bill của trang trước đó
@@ -421,7 +417,10 @@ class _ListDetail40State extends State<ListDetail40> {
                 }
               }
             ], icons: [
-              Icon(Icons.arrow_back),
+              Icon(
+                Icons.arrow_back,
+                color: colorScheme.primary,
+              ),
               Icon(
                 Icons.home,
                 color: colorScheme.primary,

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/table_record.dart';
 import 'package:menu_qr/screens/list_detail_40.dart';
@@ -33,7 +32,6 @@ class Table36 extends StatefulWidget {
 class _Table36State extends State<Table36> {
   final TextEditingController _controller = TextEditingController();
   final DataHelper dataHelper = DataHelper();
-  final logger = Logger();
   final onValueData = {
     'oldId': 0,
     'newId': 0,
@@ -71,7 +69,7 @@ class _Table36State extends State<Table36> {
         oldIndexTableRecords: widget.oldIndexTableRecords,
       ),
     ).then((onValue) {
-      logger.d('${widget.tableRecord.numOfPeople}, onValue: $onValue');
+      // logger.d('${widget.tableRecord.numOfPeople}, onValue: $onValue');
       if (onValue is Map<String, int>) {
         onValueData['oldId'] = onValue['oldId'] ?? 0;
         onValueData['newId'] = onValue['newId'] ?? 0;

@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
 import 'package:menu_qr/models/category_record.dart';
 import 'package:menu_qr/models/dish_record.dart';
 import 'package:menu_qr/screens/settings/dish_setting_32.dart';
@@ -39,7 +38,6 @@ class _Dish31State extends State<Dish31> {
 
   final pageViewSize = 3;
   final pageSize = 40;
-  final logger = Logger();
   final defaultImage = "assets/images/hinh-cafe-kem-banh-quy-2393351094.jpg";
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _controllerCategory = TextEditingController();
@@ -75,7 +73,6 @@ class _Dish31State extends State<Dish31> {
       return;
     }
     if (imagePath.isNotEmpty) {
-      logger.d('delete tmp image!');
       File fileDelete = File(imagePath);
       if (fileDelete.existsSync()) await fileDelete.delete();
     }
@@ -89,7 +86,6 @@ class _Dish31State extends State<Dish31> {
       setState(() {
         imagePath = newFile.path;
       });
-      logger.i('Image uploaded successfully to temporary location.');
     } catch (e) {
       alert!.showAlert(status, failed, false, null);
     }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
 import 'package:menu_qr/screens/list_47.dart';
 import 'package:menu_qr/screens/overview_20.dart';
 import 'package:menu_qr/screens/settings/setting_17.dart';
@@ -41,7 +40,6 @@ class _Home18 extends State<Home18> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final logger = Logger();
     double heightScreen = MediaQuery.sizeOf(context).height;
 
     return Scaffold(
@@ -55,7 +53,6 @@ class _Home18 extends State<Home18> {
               iconData: Icons.dark_mode,
               navigateFunc: () {
                 if (!isDark) {
-                  logger.d("change dark");
                   widget.changeToDark();
                   isDark = true;
                 }
@@ -68,7 +65,6 @@ class _Home18 extends State<Home18> {
                 iconData: Icons.light_mode,
                 navigateFunc: () {
                   if (isDark) {
-                    logger.d("change light");
                     widget.changeToLight();
                     isDark = false;
                   }

@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:logger/logger.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/pre_ordered_dish.dart';
 import 'package:menu_qr/screens/paid_41.dart';
@@ -35,7 +34,6 @@ class _Confirm38 extends State<Confirm38> {
   int iBackward = (1 - 1) % 3; // pageViewSize;
   int iForward = (1 + 1) % 3; //pageViewSize;
 
-  final logger = Logger();
   // độ rộng [preOrderedDishRecords] có thể vô cực
   // và phải cộng với bộ nhớ map của chính nó
   final List<List<PreOrderedDishRecord>> preOrderedDishRecordsView = [
@@ -60,14 +58,14 @@ class _Confirm38 extends State<Confirm38> {
     pageViewNumInt =
         (dishProvider.indexDishListSorted.length / pageSize).ceil();
     lastLength = dishProvider.indexDishListSorted.length % pageSize;
-    logger.d("pageViewNumInt $pageViewNumInt, lastLength $lastLength");
+    // logger.d("pageViewNumInt $pageViewNumInt, lastLength $lastLength");
     for (var i = 0; i < pageViewSize; i++) {
       // trường hợp đặc biệt khi chỉ có 1 trang
       if ((i + 1) > pageViewNumInt) break;
       final offset = i * pageSize;
       var end = pageSize + offset;
       end = (end > lastLength && lastLength != 0) ? lastLength : end;
-      logger.d("offset $offset, end $end");
+      // logger.d("offset $offset, end $end");
       if (end == 0) break;
       preOrderedDishRecordsView[i]
           .addAll(dishProvider.indexDishListSorted.getRange(offset, end));

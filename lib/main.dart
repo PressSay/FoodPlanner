@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-const appTitle = 'Free Menu App';
+const appTitle = 'Food Planner';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

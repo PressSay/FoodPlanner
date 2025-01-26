@@ -1,7 +1,4 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/category_record.dart';
 import 'package:menu_qr/models/dish_record.dart';
@@ -56,7 +53,6 @@ class _Order44 extends State<Order44> {
   final TextEditingController _controller = TextEditingController();
   final DataHelper dataHelper = DataHelper();
   final List<List<DishRecord>> dishRecords = [];
-  final logger = Logger();
   late PageController _pageViewController;
 
   @override
@@ -239,7 +235,7 @@ class _Order44 extends State<Order44> {
           if (!didPop) {
             final navigator = Navigator.of(context);
             navigator.pop();
-            logger.d("order 44");
+            // logger.d("order 44");
           }
         },
         child: Scaffold(

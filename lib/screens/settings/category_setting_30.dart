@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
 import 'package:menu_qr/models/category_record.dart';
 import 'package:menu_qr/models/menu_record.dart';
 import 'package:menu_qr/screens/settings/dish_setting_31.dart';
@@ -40,8 +39,6 @@ class _Category30State extends State<Category30> {
   final TextEditingController _controllerDesc = TextEditingController();
   final List<List<CategoryRecord>> categoryRecords = [];
   late PageController _pageViewController;
-
-  final logger = Logger();
 
   @override
   void initState() {
@@ -208,7 +205,6 @@ class _Category30State extends State<Category30> {
                   categoryRecords.elementAtOrNull(index % pageViewSize) ?? [],
               rebuildCallback:
                   (List<CategoryRecord> insideCategoryRecords, int index1) {
-                logger.d("category: ${insideCategoryRecords[index1].id ?? 0}");
                 navigateToDish31(index % pageViewSize, index1);
               },
               deleteCallback:

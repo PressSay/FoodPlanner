@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:logger/logger.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/pre_ordered_dish.dart';
 import 'package:menu_qr/models/table_record.dart';
@@ -30,7 +29,6 @@ class Paid41 extends StatefulWidget {
 }
 
 class _Paid41State extends State<Paid41> {
-  final logger = Logger();
   final TextEditingController _controller = TextEditingController();
   bool isInit = true;
 
@@ -77,8 +75,8 @@ class _Paid41State extends State<Paid41> {
         await dataHelper.tableRecord(oldTableRecordId);
     oldTableRecord?.numOfPeople -= 1;
     newTableRecord_?.numOfPeople += 1;
-    logger.d('oldTableRecord: ${oldTableRecord?.numOfPeople}, '
-        'newTableRecord_: ${newTableRecord_?.numOfPeople}');
+    // logger.d('oldTableRecord: ${oldTableRecord?.numOfPeople}, '
+    //     'newTableRecord_: ${newTableRecord_?.numOfPeople}');
     if (newTableRecord_ != null) {
       await dataHelper.updateTableRecord(newTableRecord_);
     }
@@ -122,7 +120,14 @@ class _Paid41State extends State<Paid41> {
       () {
         saveBill();
         if (widget.isRebuild) {
-          Navigator.pop(context, widget.billRecord);
+          dishProvider.clearIndexListRam();
+          widget.billRecord.preOrderedDishRecords?.clear();
+          Map<String, dynamic> onValue = {
+            'billRecord': widget.billRecord,
+            'indexTableRecords': indexTableRecords,
+            'indexTableRecordsList': indexTableRecordsList
+          };
+          Navigator.pop(context, onValue);
         } else {
           navigateWithFade(
               context,
@@ -382,9 +387,9 @@ class _Paid41State extends State<Paid41> {
                                       onValue['indexTableRecordsList'];
                                   isTableIdChange = tableRecordTmp.id !=
                                       widget.billRecord.tableId!;
-                                  logger.d(
-                                      'onValue.id != widget.billRecord.tableId! '
-                                      '$isTableIdChange');
+                                  // logger.d(
+                                  //     'onValue.id != widget.billRecord.tableId! '
+                                  //     '$isTableIdChange');
                                   if (isTableIdChange) {
                                     saveTableRebuild(tableRecordTmp,
                                         widget.billRecord.tableId!);
@@ -415,8 +420,8 @@ class _Paid41State extends State<Paid41> {
                                   numOfPeople: 0);
                               isTableIdChange =
                                   onValueDate.id != widget.billRecord.tableId!;
-                              logger.d(
-                                  'onValue.id != widget.billRecord.tableId! $isTableIdChange');
+                              // logger.d(
+                              //     'onValue.id != widget.billRecord.tableId! $isTableIdChange');
                               if (isTableIdChange) {
                                 saveTableRebuild(
                                     onValueDate, widget.billRecord.tableId!);

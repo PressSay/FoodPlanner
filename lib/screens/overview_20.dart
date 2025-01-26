@@ -7,7 +7,9 @@ import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import 'package:menu_qr/screens/list_23.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
+import 'package:menu_qr/services/utils.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class Overview20 extends StatefulWidget {
   const Overview20({super.key});
@@ -69,13 +71,17 @@ class _Overview20State extends State<Overview20> {
 
   void getBillRecords(DateTime now1) async {
     final now = DateTime(now1.year, now1.month, now1.day);
+    final tomorrow = now.add(const Duration(days: 1));
+
     final tmpBillRecords = await dataHelper.billRecords(
-        where: ("datetime >= ? AND datetime < ? "
-            "ORDER BY datetime"),
-        whereArgs: [
-          now.millisecondsSinceEpoch,
-          now.add(const Duration(days: 1)).millisecondsSinceEpoch
-        ]);
+      where:
+          "STRFTIME('%Y-%m-%d %H:%M:%f', datetime) >= ? AND STRFTIME('%Y-%m-%d %H:%M:%f', datetime) < ?",
+      whereArgs: [
+        DateFormat('yyyy-MM-dd HH:mm:ss.SSSSSS').format(now), // Format now
+        DateFormat('yyyy-MM-dd HH:mm:ss.SSSSSS')
+            .format(tomorrow), // Format tomorrow
+      ],
+    );
     final Map<int, double> tmpSpotsHour = {};
     final Map<int, double> tmpSpotsMinute = {};
     final List<FlSpot> tmptSpotsHourBill = [];
@@ -84,7 +90,7 @@ class _Overview20State extends State<Overview20> {
     var tmpAmountBill = 0;
     var sumOfbillNumber = 0.0;
     for (var e in tmpBillRecords) {
-      final date = DateTime.fromMillisecondsSinceEpoch(e.dateTime);
+      final date = e.dateTime;
       final billMoney =
           (await dataHelper.revenueBillRecord(e.id ?? 0)) - e.discount;
       final hour = date.hour + (date.minute / 60).ceil();
@@ -303,7 +309,7 @@ class _Overview20State extends State<Overview20> {
                 child: TextButton(
                   onPressed: () {},
                   child: Text(
-                    'avg',
+                    AppLocalizations.of(context)!.avg,
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.white,
@@ -326,6 +332,7 @@ class _Overview20State extends State<Overview20> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final List<Widget> itemBuilder = [];
+    final appLocalizations = AppLocalizations.of(context)!;
 
     itemBuilder.add(Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,7 +342,7 @@ class _Overview20State extends State<Overview20> {
           child: RichText(
             text: TextSpan(children: [
               TextSpan(
-                  text: 'Amount Bill: ',
+                  text: '${appLocalizations.numberOfBill}: ',
                   style: TextStyle(
                       color: colorScheme.primary, fontWeight: FontWeight.bold)),
               TextSpan(
@@ -351,7 +358,7 @@ class _Overview20State extends State<Overview20> {
           child: RichText(
             text: TextSpan(children: [
               TextSpan(
-                  text: 'Revenue: ',
+                  text: '${appLocalizations.revenue}: ',
                   style: TextStyle(
                       color: colorScheme.primary, fontWeight: FontWeight.bold)),
               TextSpan(
@@ -367,7 +374,7 @@ class _Overview20State extends State<Overview20> {
           child: RichText(
             text: TextSpan(children: [
               TextSpan(
-                  text: 'AGV Per Bill: ',
+                  text: '${appLocalizations.avgPerBill}: ',
                   style: TextStyle(
                       color: colorScheme.primary, fontWeight: FontWeight.bold)),
               TextSpan(
@@ -384,10 +391,9 @@ class _Overview20State extends State<Overview20> {
     itemBuilder.add(Center(
       child: ElevatedButton(
           onPressed: () {
-            Navigator.push(
-                context, MaterialPageRoute(builder: (context) => List23()));
+            navigateWithFade(context, List23());
           },
-          child: Text('Bill List')),
+          child: Text(appLocalizations.billList)),
     ));
 
     itemBuilder.add(Center(
@@ -398,7 +404,6 @@ class _Overview20State extends State<Overview20> {
           child: DateTimeField(
             value: date,
             decoration: const InputDecoration(
-              labelText: 'Enter Date',
               helperText: 'DD/MM/YYYY',
             ),
             dateFormat: DateFormat('dd/MM/yyyy'),

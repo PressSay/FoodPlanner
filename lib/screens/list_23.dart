@@ -7,9 +7,11 @@ import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/screens/list_24.dart';
 import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
+import 'package:menu_qr/services/utils.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/page_indicator.dart';
 import 'package:menu_qr/widgets/setting_button.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class List23 extends StatefulWidget {
   const List23({super.key});
@@ -136,6 +138,7 @@ class _List23State extends State<List23> {
   }
 
   PageView billPageView(int columnSize) {
+    final appLocalizations = AppLocalizations.of(context)!;
     return PageView.builder(
         controller: _pageViewController,
         onPageChanged: _handlePageViewChanged,
@@ -145,8 +148,10 @@ class _List23State extends State<List23> {
               billRecords:
                   billRecordsList.elementAtOrNull(index % pageViewSize) ?? [],
               deleteCallback: (List<BillRecord> billRecords, int index1) {
-                alert!.showAlert("Delete Bill", "Are You Sure?", true,
-                    () async {
+                alert!.showAlert(
+                    appLocalizations.deleteRecord(appLocalizations.billRecord),
+                    appLocalizations.areYouSure,
+                    true, () async {
                   dataHelper.deleteBillRecord(billRecords[index1].id!);
                   setState(() {
                     billRecordsList[index % pageViewSize].removeAt(index1);
@@ -154,12 +159,11 @@ class _List23State extends State<List23> {
                 });
               },
               rebuildCallback: (List<BillRecord> billRecords, int index1) {
-                Navigator.push(
+                navigateWithFade(
                     context,
-                    MaterialPageRoute(
-                        builder: (context) => List24(
-                            billRecord: billRecordsList[index % pageViewSize]
-                                [index1])));
+                    List24(
+                        billRecord: billRecordsList[index % pageViewSize]
+                            [index1]));
               });
         });
   }
@@ -188,7 +192,6 @@ class _List23State extends State<List23> {
                 child: DateTimeField(
                     value: filterDateTime,
                     decoration: const InputDecoration(
-                      labelText: 'Enter Date',
                       helperText: 'DD/MM/YYYY',
                     ),
                     dateFormat: DateFormat('dd/MM/yyyy'),
@@ -198,10 +201,9 @@ class _List23State extends State<List23> {
                       if (value != null) {
                         setState(() {
                           getBillRecords(
-                              where: 'date(datetime / 1000, \'unixepoch\') = ?',
-                              whereArgs: [
-                                DateFormat('yyyy-MM-dd').format(value)
-                              ]);
+                            where: "STRFTIME('%Y-%m-%d', datetime) = ?",
+                            whereArgs: [DateFormat('yyyy-MM-dd').format(value)],
+                          );
                           filterDateTime = value;
                         });
                       }

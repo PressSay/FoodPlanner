@@ -6,9 +6,11 @@ import 'package:menu_qr/models/menu_record.dart';
 import 'package:menu_qr/screens/settings/dish_setting_31.dart';
 import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
+import 'package:menu_qr/services/utils.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/page_indicator.dart';
 import 'package:menu_qr/widgets/setting_button.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class Category30 extends StatefulWidget {
   const Category30({super.key, required this.menuRecord});
@@ -73,27 +75,33 @@ class _Category30State extends State<Category30> {
     });
   }
 
-  void updateMenu() async {
+  void updateMenu(
+      {required String status,
+      required String failed,
+      required String success}) async {
     if (titleMenu.isEmpty) {
-      alert!.showAlert('Update Menu', 'failed!', false, null);
+      alert!.showAlert(status, failed, false, null);
       return;
     }
     final MenuRecord updateE = widget.menuRecord;
     updateE.title = titleMenu;
     dataHelper.updateMenuRecord(updateE);
-    alert!.showAlert('Update Menu', 'success!', false, null);
+    alert!.showAlert(status, success, false, null);
   }
 
-  void insertCategoryRecord() async {
+  void insertCategoryRecord(
+      {required String status,
+      required String failed,
+      required String success}) async {
     if (titleCategory.isEmpty || desc.isEmpty) {
-      alert!.showAlert('Save Category', 'failed!', false, null);
+      alert!.showAlert(status, failed, false, null);
       return;
     }
     final CategoryRecord newE = CategoryRecord(
         menuId: widget.menuRecord.id!, title: titleCategory, desc: desc);
     final int lastId = await dataHelper.insertCategoryRecord(newE);
     newE.id = lastId;
-    alert!.showAlert('Save Category', 'success!', false, null);
+    alert!.showAlert(status, success, false, null);
 
     for (var i = 0; i < pageViewSize; i++) {
       if (categoryRecords[i].length < pageSize) {
@@ -176,12 +184,11 @@ class _Category30State extends State<Category30> {
   }
 
   void navigateToDish31(int index, int index1) {
-    Navigator.push(
+    navigateWithFade(
         context,
-        MaterialPageRoute(
-            builder: (BuildContext context) => Dish31(
-                  categoryRecord: categoryRecords[index][index1],
-                ))).then((onValue) {
+        Dish31(
+          categoryRecord: categoryRecords[index][index1],
+        )).then((onValue) {
       setState(() {
         if (onValue != null) {
           categoryRecords[index][index1] = onValue;
@@ -191,6 +198,7 @@ class _Category30State extends State<Category30> {
   }
 
   PageView categoryPageView(int columnSize) {
+    final appLocalizations = AppLocalizations.of(context)!;
     return PageView.builder(
         controller: _pageViewController,
         onPageChanged: _handlePageViewChanged,
@@ -205,7 +213,11 @@ class _Category30State extends State<Category30> {
               },
               deleteCallback:
                   (List<CategoryRecord> insideCategoryRecords, int index1) {
-                alert!.showAlert('Delete Category', 'Are You Sure?', true, () {
+                alert!.showAlert(
+                    appLocalizations
+                        .deleteRecord(appLocalizations.categoryTitle),
+                    appLocalizations.areYouSure,
+                    true, () {
                   dataHelper
                       .deleteCategoryRecord(insideCategoryRecords[index1].id!);
                   setState(() {
@@ -222,7 +234,7 @@ class _Category30State extends State<Category30> {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final currentWidth = MediaQuery.of(context).size.width;
     final columnSize = (currentWidth / 322).floor() - 1;
-
+    final appLocalizations = AppLocalizations.of(context)!;
     return Scaffold(
       body: Column(
         children: [
@@ -275,7 +287,7 @@ class _Category30State extends State<Category30> {
                                   decoration: InputDecoration(
                                     border: OutlineInputBorder(
                                         borderRadius: BorderRadius.only()),
-                                    labelText: 'Menu',
+                                    labelText: appLocalizations.oldMenuTitle,
                                   ))),
                           ClipRRect(
                             borderRadius: BorderRadius.only(
@@ -296,7 +308,10 @@ class _Category30State extends State<Category30> {
                                   ),
                                 ),
                                 onTap: () {
-                                  updateMenu();
+                                  updateMenu(
+                                      status: appLocalizations.update,
+                                      failed: appLocalizations.failed,
+                                      success: appLocalizations.success);
                                 },
                               ),
                             ),
@@ -341,7 +356,7 @@ class _Category30State extends State<Category30> {
                                           borderRadius: BorderRadius.only(
                                               topRight: Radius.circular(4),
                                               bottomRight: Radius.circular(4))),
-                                      labelText: 'Category',
+                                      labelText: appLocalizations.categoryTitle,
                                     )))
                           ])),
                   Padding(
@@ -361,7 +376,8 @@ class _Category30State extends State<Category30> {
                                   border: OutlineInputBorder(
                                       borderRadius:
                                           BorderRadius.all(Radius.circular(4))),
-                                  labelText: 'Description Category',
+                                  labelText: appLocalizations.recordDesc(
+                                      appLocalizations.categoryTitle),
                                 ))),
                       )),
                 ],
@@ -376,7 +392,8 @@ class _Category30State extends State<Category30> {
                     controller: _controller,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(),
-                      labelText: 'Search Category',
+                      labelText: appLocalizations
+                          .search(appLocalizations.categoryTitle),
                     ),
                     onSubmitted: (text) {
                       setState(() {
@@ -415,7 +432,10 @@ class _Category30State extends State<Category30> {
               });
             },
             () {
-              insertCategoryRecord();
+              insertCategoryRecord(
+                  status: appLocalizations.save,
+                  failed: appLocalizations.failed,
+                  success: appLocalizations.success);
             }
           ], icons: [
             Icon(

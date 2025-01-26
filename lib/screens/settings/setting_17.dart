@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:menu_qr/screens/overview_20.dart';
 import 'package:menu_qr/screens/settings/menu_setting_29.dart';
+import 'package:menu_qr/screens/settings/setting_table_30.dart';
 import 'package:menu_qr/services/alert.dart';
+import 'package:menu_qr/services/utils.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/menu_button.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class Setting17 extends StatefulWidget {
   const Setting17({super.key});
@@ -33,6 +35,8 @@ class _Setting17State extends State<Setting17> {
     required String address,
     required double tax,
     required double discount,
+    required String status,
+    required String content,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('name', name);
@@ -40,15 +44,15 @@ class _Setting17State extends State<Setting17> {
     await prefs.setDouble('tax', tax);
     await prefs.setDouble('discount', discount);
 
-    alert!.showAlert('Success', 'Data saved successfully', false, null);
+    alert!.showAlert(status, content, false, null);
   }
 
   Future<void> loadData() async {
     final prefs = await SharedPreferences.getInstance();
     _controllerName.text = prefs.getString('name') ?? '';
     _controllerAdress.text = prefs.getString('address') ?? '';
-    _controllerTax.text = prefs.getDouble('tax').toString() ?? '';
-    _controllerDiscount.text = prefs.getDouble('discount').toString() ?? '';
+    _controllerTax.text = prefs.getDouble('tax').toString();
+    _controllerDiscount.text = prefs.getDouble('discount').toString();
   }
 
   @override
@@ -77,18 +81,16 @@ class _Setting17State extends State<Setting17> {
                                   Padding(
                                     padding:
                                         const EdgeInsets.fromLTRB(0, 0, 8, 0),
-                                    child: Text('Name:',
+                                    child: Text(
+                                        AppLocalizations.of(context)!.shopName,
                                         style: TextStyle(
                                             color: colorScheme.primary)),
                                   ),
                                   SizedBox(
                                       width: 240,
                                       child: TextField(
-                                          controller: _controllerName,
-                                          decoration: InputDecoration(
-                                            border: OutlineInputBorder(),
-                                            labelText: 'Shop Name',
-                                          )))
+                                        controller: _controllerName,
+                                      ))
                                 ]),
                           ),
                           Padding(
@@ -99,18 +101,17 @@ class _Setting17State extends State<Setting17> {
                                   Padding(
                                     padding:
                                         const EdgeInsets.fromLTRB(0, 0, 8, 0),
-                                    child: Text('Address:',
+                                    child: Text(
+                                        AppLocalizations.of(context)!
+                                            .shopAddress,
                                         style: TextStyle(
                                             color: colorScheme.primary)),
                                   ),
                                   SizedBox(
                                       width: 240,
                                       child: TextField(
-                                          controller: _controllerAdress,
-                                          decoration: InputDecoration(
-                                            border: OutlineInputBorder(),
-                                            labelText: 'Shop Address',
-                                          )))
+                                        controller: _controllerAdress,
+                                      ))
                                 ]),
                           ),
                           Padding(
@@ -121,18 +122,16 @@ class _Setting17State extends State<Setting17> {
                                   Padding(
                                     padding:
                                         const EdgeInsets.fromLTRB(0, 0, 8, 0),
-                                    child: Text('Tax:',
+                                    child: Text(
+                                        AppLocalizations.of(context)!.tax,
                                         style: TextStyle(
                                             color: colorScheme.primary)),
                                   ),
                                   SizedBox(
                                       width: 240,
                                       child: TextField(
-                                          controller: _controllerTax,
-                                          decoration: InputDecoration(
-                                            border: OutlineInputBorder(),
-                                            labelText: 'Tax %',
-                                          )))
+                                        controller: _controllerTax,
+                                      ))
                                 ]),
                           ),
                           Padding(
@@ -143,18 +142,16 @@ class _Setting17State extends State<Setting17> {
                                   Padding(
                                     padding:
                                         const EdgeInsets.fromLTRB(0, 0, 8, 0),
-                                    child: Text('Discount:',
+                                    child: Text(
+                                        '${AppLocalizations.of(context)!.discount} %',
                                         style: TextStyle(
                                             color: colorScheme.primary)),
                                   ),
                                   SizedBox(
                                       width: 240,
                                       child: TextField(
-                                          controller: _controllerDiscount,
-                                          decoration: InputDecoration(
-                                            border: OutlineInputBorder(),
-                                            labelText: 'Discount %',
-                                          )))
+                                        controller: _controllerDiscount,
+                                      ))
                                 ]),
                           )
                         ])
@@ -175,25 +172,18 @@ class _Setting17State extends State<Setting17> {
                             MenuButton(
                               key: const ValueKey('ButtonMenuId'),
                               iconData: Icons.menu,
-                              text: "Menu Setting",
+                              text: AppLocalizations.of(context)!.menuSetting,
                               navigateFunc: () {
-                                Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        maintainState: true,
-                                        builder: (context) => Menu29()));
+                                navigateWithFade(context, Menu29());
                               },
                             ),
                             Padding(padding: EdgeInsets.all(20)),
                             MenuButton(
-                                iconData: Icons.description,
-                                text: "Overview",
+                                iconData: Icons.table_bar_sharp,
+                                text:
+                                    AppLocalizations.of(context)!.tableSetting,
                                 navigateFunc: () {
-                                  Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          maintainState: true,
-                                          builder: (context) => Overview20()));
+                                  navigateWithFade(context, Table30());
                                 })
                           ])),
                 )
@@ -214,8 +204,8 @@ class _Setting17State extends State<Setting17> {
                   _controllerAdress.text.isEmpty &&
                   _controllerTax.text.isEmpty &&
                   _controllerDiscount.text.isEmpty) {
-                alert!
-                    .showAlert('Error', "Please fill all fields", false, null);
+                alert!.showAlert(AppLocalizations.of(context)!.error,
+                    AppLocalizations.of(context)!.emptyField, false, null);
               }
               double tmpTax = 0;
               double tmpDiscount = 0;
@@ -230,7 +220,9 @@ class _Setting17State extends State<Setting17> {
                   name: _controllerName.text,
                   address: _controllerAdress.text,
                   tax: tmpTax,
-                  discount: tmpDiscount);
+                  discount: tmpDiscount,
+                  status: AppLocalizations.of(context)!.success,
+                  content: AppLocalizations.of(context)!.dataSavedSuccessfully);
             }
           ], icons: [
             Icon(

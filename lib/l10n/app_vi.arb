@@ -1,0 +1,116 @@
+{
+    "@@locale": "vi",
+    "hello": "Xin chào!",
+    "tableUnlock": "Bàn ăn",
+    "overview": "Tổng quan",
+    "offlineOrderList": "Danh sách đơn",
+    "order": "Đăt hàng",
+    "setting": "Cài đặt",
+    "buyTakeAway": "Đặt đem đi",
+    "sitAtPlace": "Tại chỗ",
+
+    "success": "Thành công",
+    "error": "Lỗi",
+    "failed": "Thất bại",
+    "save": "Lưu",
+    "update": "Cập nhật",
+    "upload": "Tải lên",
+
+    "dataSavedSuccessfully": "Lưu thành công dữ liệu",
+    "emptyField": "Vui lòng điền vào tất cả các ô trống",
+
+    "import": "Nhập",
+    "export": "Xuất",
+    "shopName": "Tên shop",
+    "shopAddress": "Địa chỉ",
+    "tax": "Thuế %",
+    "discount": "Giảm giá",
+    "useSystemDiscount": "Dùng giảm giá\nhệ thống",
+    "total": "Tổng cộng",
+    "paid": "Tiền trả",
+    "change": "Tiền thối",
+    "menuSetting": "Cài đặt menu",
+    "tableSetting": "Cài đặt bàn",
+
+    "excelFormat": "Định dạng excel",
+    "dishId": "Mã món ăn",
+    "dishTitle": "Tên món ăn",
+    "dishPrice": "Giá món ăn",
+    "dishDesc": "Mô tả",
+    "dishImgPath": "Đường dẫn hình ảnh món ăn",
+    "dishCategory": "Danh mục món ăn",
+    "dishCategoryDesc": "Mô tả danh mục món ăn",
+
+    "title": "Tên {record}",
+    "@title": {
+        "description": "Tên bảng",
+        "placeholders": {
+            "record": {
+                "type": "String",
+                "example": "Record"
+            }
+        }
+    },
+    "search": "Tìm kiếm {record}",
+    "@search": {
+        "description": "Hành động tìm kiếm",
+        "placeholders": {
+            "record": {
+                "type": "String",
+                "example": "Record"
+            }
+        }
+    },
+    "deleteRecord": "Xóa {record} này",
+    "@deleteRecord": {
+        "placeholders": {
+            "record": {
+                "type": "String",
+                "example": "Record"
+            }
+        }
+    },
+    "areYouSure": "Bạn chắc không?",
+    "recordDesc": "Mô tả {record}",
+    "@recordDesc": {
+        "placeholders": {
+            "record": {
+                "type": "String",
+                "example": "Record"
+            }
+        }
+    },
+
+    "tableRecord": "Bàn",
+    "oldTableRecord": "Bàn cũ",
+
+    "categoryTitle": "Tên thể loại",
+    "category": "Thể loại",
+    "oldCategoryTitle": "Tên thể loại cũ",
+
+    "menuTitle": "Tên thực đơn",
+    "oldMenuTitle": "Tên thực đơn cũ",
+
+    "billRecord": "Hóa đơn",
+    "numberOfBill": "Số lượng Hóa đơn",
+    "revenue": "Doanh thu",
+    "avgPerBill": "AVG mỗi hóa đơn",
+    "billList": "Danh sách hóa đơn",
+    "avg": "Trung bình",
+    "date": "Ngày",
+    "type": "Loại khách hàng",
+    "billId": "Định danh hóa đơn",
+    "changeTableRecord": "Đổi bàn",
+    "unlinkTableRecord": "Bỏ liên kết bàn",
+    "qrCode": "Mã QR",
+    "view": "Xem",
+    "prepair": "Sửa",
+    "deposit": "Đặt cọc",
+    "add": "Thêm",
+    "confirm": "Xác nhận",
+    "booked": "cảnh báo bàn đã được đặt",
+
+    "name": "Tên",
+    "unitPrice": "Đơn giá",
+    "quantity": "Số lượng"
+}

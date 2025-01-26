@@ -8,11 +8,13 @@ import 'package:menu_qr/screens/paid_41.dart';
 import 'package:menu_qr/screens/table_35.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
+import 'package:menu_qr/services/utils.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/dish_cofirm.dart';
 import 'package:menu_qr/widgets/page_indicator.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class Confirm38 extends StatefulWidget {
   const Confirm38({super.key, required this.isImmediate});
@@ -96,10 +98,10 @@ class _Confirm38 extends State<Confirm38> {
         discount: discount,
         tax: tax,
         tableId: 0,
-        nameTable: "không",
+        nameTable: "none",
         isLeft: false,
         type: widget.isImmediate,
-        dateTime: DateTime.now().millisecondsSinceEpoch);
+        dateTime: DateTime.now());
     int lastId = await dataHelper.insertBillRecord(newBillRecord);
     newBillRecord.preOrderedDishRecords = await dataHelper.insertDishesAtBillId(
         dishProvider.indexDishListSorted, lastId);
@@ -109,14 +111,13 @@ class _Confirm38 extends State<Confirm38> {
   }
 
   void navigateToPaid41Immediately(BillRecord billRecord) {
-    Navigator.push(
+    navigateWithFade(
         context,
-        MaterialPageRoute(
-            builder: (BuildContext context) => Paid41(
-                  billRecord: billRecord,
-                  isRebuild: false,
-                  isImmediate: widget.isImmediate,
-                )));
+        Paid41(
+          billRecord: billRecord,
+          isRebuild: false,
+          isImmediate: widget.isImmediate,
+        ));
   }
 
   void getPreOrderdDishRecordsAtPageViewIndex(int index, int pageNum) {
@@ -200,6 +201,8 @@ class _Confirm38 extends State<Confirm38> {
                 (List<PreOrderedDishRecord> preOrderedDishRecords, int index1) {
               final e = preOrderedDishRecords[index1];
               setState(() {
+                total -= (preOrderedDishRecords[index1].amount *
+                    preOrderedDishRecords[index1].price);
                 preOrderedDishRecordsView[index % pageViewSize]
                     .removeAt(index1);
               });
@@ -215,7 +218,7 @@ class _Confirm38 extends State<Confirm38> {
     final dishProvider = context.watch<DishProvider>();
     final currentWidth = MediaQuery.of(context).size.width;
     final columnSize = (currentWidth / 320).floor() - 1;
-
+    final appLocalizations = AppLocalizations.of(context)!;
     return Scaffold(
       body: Column(
         children: [
@@ -244,7 +247,7 @@ class _Confirm38 extends State<Confirm38> {
                             padding: EdgeInsets.fromLTRB(16, 10, 16, 10),
                             child: Row(children: [
                               Text(
-                                "Discount:",
+                                appLocalizations.discount,
                                 style: TextStyle(
                                     fontSize: 18,
                                     color: colorScheme.primary,
@@ -274,13 +277,14 @@ class _Confirm38 extends State<Confirm38> {
                                       _controller.text = discount.toString();
                                     });
                                   },
-                                  child: Text('Use System\nDiscount'))
+                                  child:
+                                      Text(appLocalizations.useSystemDiscount))
                             ])),
                         Padding(
                             padding: EdgeInsets.fromLTRB(16, 0, 16, 10),
                             child: Row(children: [
                               Text(
-                                "Tax(5%):",
+                                appLocalizations.tax,
                                 style: TextStyle(
                                     fontSize: 18,
                                     color: colorScheme.primary,
@@ -289,7 +293,7 @@ class _Confirm38 extends State<Confirm38> {
                               Padding(padding: EdgeInsets.all(4)),
                               Text(
                                   NumberFormat.currency(locale: timeZone)
-                                      .format(tax),
+                                      .format(total * tax),
                                   style: TextStyle(
                                       fontSize: 16,
                                       color: colorScheme.secondary,
@@ -299,7 +303,7 @@ class _Confirm38 extends State<Confirm38> {
                             padding: EdgeInsets.fromLTRB(16, 0, 16, 10),
                             child: Row(children: [
                               Text(
-                                "Toltal:",
+                                appLocalizations.total,
                                 style: TextStyle(
                                     fontSize: 18,
                                     color: colorScheme.primary,
@@ -307,7 +311,7 @@ class _Confirm38 extends State<Confirm38> {
                               ),
                               Padding(padding: EdgeInsets.all(4)),
                               Text(
-                                  NumberFormat.currency(locale: 'vi_VN')
+                                  NumberFormat.currency(locale: timeZone)
                                       .format(total - discount),
                                   style: TextStyle(
                                       fontSize: 16,
@@ -375,7 +379,7 @@ class _Confirm38 extends State<Confirm38> {
     getPreOrderedDishRecordSorted(dishProvider);
 
     setState(() {
-      this.tax = ((tax ?? 0) / 100) * total;
+      this.tax = ((tax ?? 0) / 100);
       systemDiscount = total * ((discount ?? 0) / 100);
     });
   }

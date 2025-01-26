@@ -12,6 +12,8 @@ import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:menu_qr/services/throusand_separator_formatter.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:menu_qr/services/utils.dart';
 
 class Paid41 extends StatefulWidget {
   const Paid41(
@@ -38,7 +40,6 @@ class _Paid41State extends State<Paid41> {
 
   String timeZone = "vi_VN";
   bool isTableIdChange = true;
-  String tableName = "";
   int indexTableRecordsList = 0;
   int indexTableRecords = 0;
 
@@ -54,8 +55,9 @@ class _Paid41State extends State<Paid41> {
       tmpTotal += (element.amount * element.price);
     }
     setState(() {
-      total = tmpTotal;
+      total = tmpTotal - widget.billRecord.discount;
       widget.billRecord.preOrderedDishRecords = tmpPreOrderedDishRecords;
+      change = widget.billRecord.amountPaid - total;
     });
   }
 
@@ -106,14 +108,13 @@ class _Paid41State extends State<Paid41> {
       () {
         dishProvider.importDataToIndexDishList(
             widget.billRecord.preOrderedDishRecords!);
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (BuildContext context) => Order44(
-                  billRecord: widget.billRecord,
-                  isRebuild: true,
-                  isImmediate: true),
-            )).then((value) {
+        navigateWithFade(
+                context,
+                Order44(
+                    billRecord: widget.billRecord,
+                    isRebuild: true,
+                    isImmediate: true))
+            .then((value) {
           if (value == null) return;
           getPreOrderedDishRecords();
         });
@@ -123,12 +124,10 @@ class _Paid41State extends State<Paid41> {
         if (widget.isRebuild) {
           Navigator.pop(context, widget.billRecord);
         } else {
-          Navigator.push(
+          navigateWithFade(
               context,
-              MaterialPageRoute(
-                builder: (BuildContext context) => Paid42(
-                  billRecord: widget.billRecord,
-                ),
+              Paid42(
+                billRecord: widget.billRecord,
               ));
         }
       }
@@ -166,251 +165,281 @@ class _Paid41State extends State<Paid41> {
     final DishProvider dishProvider = context.watch<DishProvider>();
     final String typeCustomer =
         (widget.billRecord.type) ? "Buy take away" : "Sit in place";
+    final appLocalizations = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      body: Column(
-        children: [
-          Expanded(
-            child: SafeArea(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 24.0),
-                    child: RichText(
-                      text: TextSpan(children: [
-                        TextSpan(
-                            text: 'Date: ',
-                            style: TextStyle(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.bold)),
-                        TextSpan(
-                            text: '${widget.billRecord.dateTime}',
-                            style: TextStyle(
-                                color: colorScheme.secondary,
-                                fontWeight: FontWeight.bold))
-                      ]),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
-                    child: RichText(
-                      text: TextSpan(children: [
-                        TextSpan(
-                            text: 'Table name: ',
-                            style: TextStyle(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.bold)),
-                        TextSpan(
-                            text: tableName,
-                            style: TextStyle(
-                                color: colorScheme.secondary,
-                                fontWeight: FontWeight.bold))
-                      ]),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
-                    child: RichText(
-                      text: TextSpan(children: [
-                        TextSpan(
-                            text: 'Tax: ',
-                            style: TextStyle(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.bold)),
-                        TextSpan(
-                            text: moneyFormat(widget.billRecord.tax),
-                            style: TextStyle(
-                                color: colorScheme.secondary,
-                                fontWeight: FontWeight.bold))
-                      ]),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
-                    child: RichText(
-                      text: TextSpan(children: [
-                        TextSpan(
-                            text: 'Discount: ',
-                            style: TextStyle(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.bold)),
-                        TextSpan(
-                            text: moneyFormat(widget.billRecord.discount),
-                            style: TextStyle(
-                                color: colorScheme.secondary,
-                                fontWeight: FontWeight.bold))
-                      ]),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
-                    child: RichText(
-                      text: TextSpan(children: [
-                        TextSpan(
-                            text: 'Total: ',
-                            style: TextStyle(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.bold)),
-                        TextSpan(
-                            text: moneyFormat(total),
-                            style: TextStyle(
-                                color: colorScheme.secondary,
-                                fontWeight: FontWeight.bold))
-                      ]),
-                    ),
-                  ),
-                  Padding(
-                      padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
-                      child: Row(
-                        children: [
-                          Text('Amount paid: ',
-                              style: TextStyle(
-                                  color: colorScheme.primary,
-                                  fontWeight: FontWeight.bold)),
-                          Expanded(
-                              child: SizedBox(
-                            height: 48,
-                            child: TextField(
-                                onChanged: (text) {
-                                  changeMoney(text);
-                                },
-                                onSubmitted: (text) {
-                                  changeMoney(text);
-                                },
-                                keyboardType: TextInputType.number,
-                                inputFormatters: [
-                                  DecimalFormatter(),
-                                ],
-                                controller: _controller,
-                                decoration: InputDecoration(
-                                    border: const UnderlineInputBorder(),
-                                    filled: true,
-                                    fillColor: colorScheme.secondaryContainer,
-                                    focusColor: colorScheme.secondary)),
-                          ))
-                        ],
-                      )),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
-                    child: RichText(
-                      text: TextSpan(children: [
-                        TextSpan(
-                            text: 'Change: ',
-                            style: TextStyle(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.bold)),
-                        TextSpan(
-                            text: moneyFormat(change),
-                            style: TextStyle(
-                                color: colorScheme.secondary,
-                                fontWeight: FontWeight.bold))
-                      ]),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
-                    child: RichText(
-                      text: TextSpan(children: [
-                        TextSpan(
-                            text: 'Type: ',
-                            style: TextStyle(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.bold)),
-                        TextSpan(
-                            text: typeCustomer,
-                            style: TextStyle(
-                                color: colorScheme.secondary,
-                                fontWeight: FontWeight.bold))
-                      ]),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
-                    child: RichText(
-                      text: TextSpan(children: [
-                        TextSpan(
-                            text: 'Bill Id: ',
-                            style: TextStyle(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.bold)),
-                        TextSpan(
-                            text: '${widget.billRecord.id!}',
-                            style: TextStyle(
-                                color: colorScheme.secondary,
-                                fontWeight: FontWeight.bold))
-                      ]),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
-                    child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (BuildContext context) => Table35(
-                                  isList: true,
-                                  billId: widget.billRecord.id!,
-                                ),
-                              )).then((onValue) {
-                            if (onValue is Map<String, dynamic>) {
-                              TableRecord tableRecordTmp =
-                                  onValue['tableRecord'];
-                              indexTableRecords = onValue['indexTableRecords'];
-                              indexTableRecordsList =
-                                  onValue['indexTableRecordsList'];
-                              isTableIdChange = tableRecordTmp.id !=
-                                  widget.billRecord.tableId!;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          dishProvider.clearIndexListRam();
+          widget.billRecord.preOrderedDishRecords?.clear();
+          Map<String, dynamic> onValue = {
+            'billRecord': widget.billRecord,
+            'indexTableRecords': indexTableRecords,
+            'indexTableRecordsList': indexTableRecordsList
+          };
+          final navigator = Navigator.of(context);
+          navigator.pop(onValue);
+          return;
+        }
+      },
+      child: Scaffold(
+        body: Column(
+          children: [
+            Expanded(
+              child: SafeArea(
+                child: ListView(children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding:
+                            const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 24.0),
+                        child: RichText(
+                          text: TextSpan(children: [
+                            TextSpan(
+                                text: '${appLocalizations.date}: ',
+                                style: TextStyle(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.bold)),
+                            TextSpan(
+                                text: '${widget.billRecord.dateTime}',
+                                style: TextStyle(
+                                    color: colorScheme.secondary,
+                                    fontWeight: FontWeight.bold))
+                          ]),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
+                        child: RichText(
+                          text: TextSpan(children: [
+                            TextSpan(
+                                text: '${appLocalizations.tableRecord}: ',
+                                style: TextStyle(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.bold)),
+                            TextSpan(
+                                text: widget.billRecord.nameTable,
+                                style: TextStyle(
+                                    color: colorScheme.secondary,
+                                    fontWeight: FontWeight.bold))
+                          ]),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
+                        child: RichText(
+                          text: TextSpan(children: [
+                            TextSpan(
+                                text: '${appLocalizations.tax}: ',
+                                style: TextStyle(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.bold)),
+                            TextSpan(
+                                text:
+                                    moneyFormat(widget.billRecord.tax * total),
+                                style: TextStyle(
+                                    color: colorScheme.secondary,
+                                    fontWeight: FontWeight.bold))
+                          ]),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
+                        child: RichText(
+                          text: TextSpan(children: [
+                            TextSpan(
+                                text: '${appLocalizations.discount}: ',
+                                style: TextStyle(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.bold)),
+                            TextSpan(
+                                text: moneyFormat(widget.billRecord.discount),
+                                style: TextStyle(
+                                    color: colorScheme.secondary,
+                                    fontWeight: FontWeight.bold))
+                          ]),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
+                        child: RichText(
+                          text: TextSpan(children: [
+                            TextSpan(
+                                text: '${appLocalizations.total}: ',
+                                style: TextStyle(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.bold)),
+                            TextSpan(
+                                text: moneyFormat(total),
+                                style: TextStyle(
+                                    color: colorScheme.secondary,
+                                    fontWeight: FontWeight.bold))
+                          ]),
+                        ),
+                      ),
+                      Padding(
+                          padding:
+                              const EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
+                          child: Row(
+                            children: [
+                              Text('${appLocalizations.paid}: ',
+                                  style: TextStyle(
+                                      color: colorScheme.primary,
+                                      fontWeight: FontWeight.bold)),
+                              Expanded(
+                                  child: SizedBox(
+                                height: 48,
+                                child: TextField(
+                                    onChanged: (text) {
+                                      changeMoney(text);
+                                    },
+                                    onSubmitted: (text) {
+                                      changeMoney(text);
+                                    },
+                                    keyboardType: TextInputType.number,
+                                    inputFormatters: [
+                                      DecimalFormatter(),
+                                    ],
+                                    controller: _controller,
+                                    decoration: InputDecoration(
+                                        border: const UnderlineInputBorder(),
+                                        filled: true,
+                                        fillColor:
+                                            colorScheme.secondaryContainer,
+                                        focusColor: colorScheme.secondary)),
+                              ))
+                            ],
+                          )),
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
+                        child: RichText(
+                          text: TextSpan(children: [
+                            TextSpan(
+                                text: '${appLocalizations.change}: ',
+                                style: TextStyle(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.bold)),
+                            TextSpan(
+                                text: moneyFormat(change),
+                                style: TextStyle(
+                                    color: colorScheme.secondary,
+                                    fontWeight: FontWeight.bold))
+                          ]),
+                        ),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
+                        child: RichText(
+                          text: TextSpan(children: [
+                            TextSpan(
+                                text: '${appLocalizations.type}: ',
+                                style: TextStyle(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.bold)),
+                            TextSpan(
+                                text: typeCustomer,
+                                style: TextStyle(
+                                    color: colorScheme.secondary,
+                                    fontWeight: FontWeight.bold))
+                          ]),
+                        ),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
+                        child: RichText(
+                          text: TextSpan(children: [
+                            TextSpan(
+                                text: '${appLocalizations.billId}: ',
+                                style: TextStyle(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.bold)),
+                            TextSpan(
+                                text: '${widget.billRecord.id!}',
+                                style: TextStyle(
+                                    color: colorScheme.secondary,
+                                    fontWeight: FontWeight.bold))
+                          ]),
+                        ),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
+                        child: ElevatedButton(
+                            onPressed: () {
+                              navigateWithFade(
+                                  context,
+                                  Table35(
+                                    isList: true,
+                                    billId: widget.billRecord.id!,
+                                  )).then((onValue) {
+                                if (onValue is Map<String, dynamic>) {
+                                  TableRecord tableRecordTmp =
+                                      onValue['tableRecord'];
+                                  indexTableRecords =
+                                      onValue['indexTableRecords'];
+                                  indexTableRecordsList =
+                                      onValue['indexTableRecordsList'];
+                                  isTableIdChange = tableRecordTmp.id !=
+                                      widget.billRecord.tableId!;
+                                  logger.d(
+                                      'onValue.id != widget.billRecord.tableId! '
+                                      '$isTableIdChange');
+                                  if (isTableIdChange) {
+                                    saveTableRebuild(tableRecordTmp,
+                                        widget.billRecord.tableId!);
+                                    setState(() {
+                                      widget.billRecord.tableId =
+                                          tableRecordTmp.id;
+                                      widget.billRecord.nameTable =
+                                          tableRecordTmp.name;
+                                    });
+                                    dataHelper
+                                        .updateBillRecord(widget.billRecord);
+                                    return;
+                                  }
+                                }
+                              });
+                              isTableIdChange = false;
+                            },
+                            child: Text(appLocalizations.changeTableRecord)),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
+                        child: ElevatedButton(
+                            onPressed: () {
+                              var onValueDate = TableRecord(
+                                  id: 0,
+                                  name: "none",
+                                  desc: "",
+                                  numOfPeople: 0);
+                              isTableIdChange =
+                                  onValueDate.id != widget.billRecord.tableId!;
                               logger.d(
                                   'onValue.id != widget.billRecord.tableId! $isTableIdChange');
                               if (isTableIdChange) {
                                 saveTableRebuild(
-                                    tableRecordTmp, widget.billRecord.tableId!);
+                                    onValueDate, widget.billRecord.tableId!);
                                 setState(() {
-                                  widget.billRecord.tableId = tableRecordTmp.id;
+                                  widget.billRecord.tableId = onValueDate.id;
                                   widget.billRecord.nameTable =
-                                      tableRecordTmp.name;
+                                      onValueDate.name;
                                 });
                                 dataHelper.updateBillRecord(widget.billRecord);
                                 return;
                               }
-                            }
-                          });
-                          isTableIdChange = false;
-                        },
-                        child: Text('Change Table')),
+                              isTableIdChange = false;
+                            },
+                            child: Text(appLocalizations.unlinkTableRecord)),
+                      ),
+                    ],
                   ),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
-                    child: ElevatedButton(
-                        onPressed: () {
-                          var onValueDate = TableRecord(
-                              id: 0, name: "không", desc: "", numOfPeople: 0);
-                          isTableIdChange =
-                              onValueDate.id != widget.billRecord.tableId!;
-                          logger.d(
-                              'onValue.id != widget.billRecord.tableId! $isTableIdChange');
-                          if (isTableIdChange) {
-                            saveTableRebuild(
-                                onValueDate, widget.billRecord.tableId!);
-                            setState(() {
-                              widget.billRecord.tableId = onValueDate.id;
-                              widget.billRecord.nameTable = onValueDate.name;
-                            });
-                            dataHelper.updateBillRecord(widget.billRecord);
-                            return;
-                          }
-                          isTableIdChange = false;
-                        },
-                        child: Text('Unlink Table')),
-                  ),
-                ],
+                ]),
               ),
             ),
-          ),
-          bottomNavigationBar(dishProvider, colorScheme)
-        ],
+            bottomNavigationBar(dishProvider, colorScheme)
+          ],
+        ),
       ),
     );
   }

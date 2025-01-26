@@ -1,0 +1,324 @@
+{
+    "@@locale": "en",
+    "hello": "Hello!",
+    "@hello": {
+        "description": "Hello the shop name"
+    },
+    "tableUnlock": "Table Unlock",
+    "@tableUnlock": {
+        "description": "Check the remaining orders at the cafe"
+    },
+    "overview": "Overview",
+    "@overview": {
+        "description": "View daily chart"
+    },
+    "offlineOrderList": "Offline Order List",
+    "@offlineOrderList": {
+        "description": "Check the list of unfulfilled orders"
+    },
+    "order": "Order",
+    "@order": {
+        "description": "Order at the cafe"
+    },
+    "setting": "Setting",
+    "@setting": {
+        "description": "system settings"
+    },
+    "buyTakeAway": "Buy Take Away",
+    "@buyTakeAway": {
+        "description": "Take away"
+    },
+    "sitAtPlace": "Sit At Place",
+    "@sitAtPlace": {
+        "description": "Buy and process on site"
+    },
+
+
+    "success": "Success",
+    "@success": {
+        "description": "Status success"
+    },
+    "error": "Error",
+    "@error": {
+        "description": "Status error"
+    },
+    "failed": "Failed",
+    "@failed": {
+        "description": "Status failed"
+    },
+    "save": "Save",
+    "@save": {
+        "description": "Status save"
+    },
+    "update": "Update",
+    "@update": {
+        "description": "Status update"
+    },
+    "upload": "Upload",
+    "@upload": {
+        "description": "Status upload"
+    },
+
+
+
+
+    "dataSavedSuccessfully": "Data saved successfully",
+    "@dataSavedSuccessfully": {
+        "description": "Status data saved successfully"
+    },
+    "emptyField": "Please fill all fields",
+    "@emptyField": {
+        "description": "Recommend users to fill in all fields"
+    },
+    
+
+
+    "import": "Import",
+    "@import": {
+        "description": "Import the menu"
+    },
+    "export": "Export",
+    "@export": {
+        "description": "Export the menu format by excel"
+    },
+    
+    "shopName": "Shop Name",
+    "@shopName": {
+        "description": "Name of shop"
+    },
+    "shopAddress": "Address",
+    "@shopAddress": {
+        "description": "Address of shop"
+    },
+    "tax": "Tax %",
+    "@tax": {
+        "description": "State Tax"
+    },
+    "discount": "Discount",
+    "@discount": {
+        "description": "Discount program"
+    },
+    "useSystemDiscount": "Use system\ndiscount",
+    "@useSystemDiscount": {
+        "description": "System dicount"
+    },
+    "total": "Total",
+    "@total": {
+        "description": "Total of price include of discount and tax"
+    },
+    "paid": "Paid",
+    "@paid": {
+        "description": "Amount paid by customer"
+    },
+    "change": "Change",
+    "@change": {
+        "description": "Change money back"
+    },
+
+
+    "menuSetting": "Menu Setting",
+    "@menuSetting": {
+        "description": "Add or update menu list for shop"
+    },
+    "tableSetting": "Table Setting",
+    "@tableSetting": {
+        "description": "Add or update table list for shop"
+    },
+
+
+    "excelFormat": "Excel Format",
+    "@excelFormat": {
+        "description": "Status excel format"
+    },
+    "dishId": "Id of dish",
+    "@dishId": {
+        "description": "Identify of dish column (ordinary is number) in excel"
+    },
+    "dishTitle": "Title of dish",
+    "@dishTitle": {
+        "description": "Name of dish column in excel"
+    },
+    "dishPrice": "Price of dish",
+    "@dishPrice": {
+        "description": "Price of dish column in excel"
+    },
+    "dishDesc": "Description",
+    "@dishDesc": {
+        "description": "Description of dish column in excel"
+    },
+    "dishImgPath": "Image path of dish",
+    "@dishImgPath": {
+        "description": "Image path of dish column in excel"
+    },
+    "dishCategory": "Category of dish",
+    "@dishCategory": {
+        "description": "Category of dish column in excel"
+    },
+    "dishCategoryDesc": "Description of the category of dish",
+    "@dishCategoryDesc": {
+        "description": "Description of the category of dish column in excel"
+    },
+
+    "title": "Title {record}",
+    "@title": {
+        "description": "Title Record",
+        "placeholders": {
+            "record": {
+                "type": "String",
+                "example": "Record"
+            }
+        }
+    },
+    "search": "Search {record}",
+    "@search": {
+        "description": "Action search",
+        "placeholders": {
+            "record": {
+                "type": "String",
+                "example": "Record"
+            }
+        }
+    },
+    "deleteRecord": "Delete This {record}",
+    "@deleteRecord": {
+        "description": "Action delete one record",
+        "placeholders": {
+            "record": {
+                "type": "String",
+                "example": "Record"
+            }
+        }
+    },
+    "areYouSure": "Are You Sure?",
+    "@areYouSure": {
+        "description": "Confirm to delete"
+    },
+    "recordDesc": "Description {record}",
+    "@recordDesc": {
+        "placeholders": {
+            "record": {
+                "type": "String",
+                "example": "Record"
+            }
+        }
+    },
+
+    "tableRecord": "Table",
+    "@tableRecord": {
+        "description": "Table Record"
+    },
+    "oldTableRecord": "Old Table",
+    "@oldTableRecord": {
+        "description": "Old table record"
+    },
+
+    "categoryTitle": "Category Title",
+    "@categoryTitle": {
+        "description": "Title of category"
+    },
+    "category": "Category",
+    "@category": {
+        "description": "Bottom Bar"
+    },
+    "oldCategoryTitle": "Old category title",
+    "@oldCategoryTitle": {
+        "description": "Old title of category"
+    },
+
+    "menuTitle": "Menu Title",
+    "@menuTitle": {
+        "description": "Title of menu"
+    },
+    "oldMenuTitle": "Old Menu Title",
+    "@oldMenuTitle": {
+        "description": "Old title of menu"
+    },
+
+    "billRecord": "Invoice",
+    "@billRecord": {
+        "description": "Invoice after order completion"
+    },
+    "numberOfBill": "Number Of Invoice",
+    "@numberOfBill": {
+        "description": "Amount Invoice For Statistical"
+    },
+    "revenue": "Revenue",
+    "@revenue": {
+        "description": "Revenue Statistical"
+    },
+    "avgPerBill": "AGV Per Invoice",
+    "@avgPerBill": {
+        "description": "AGV Per Invoice Statistical"
+    },
+    "billList": "Invoice List",
+    "@billList": {
+        "description": "Invoice List Statistical"
+    },
+    "avg": "Average",
+    "@avg": {
+        "description": "Average"
+    },
+    "date": "Date",
+    "@date": {
+        "description": "Invoice completion date"
+    },
+    "type": "Type",
+    "@type": {
+        "description": "Customer type"
+    },
+    "billId": "Invoice identification",
+    "@billId": {
+        "description": "Invoice identification"
+    },
+    "changeTableRecord": "Change Table",
+    "@changeTableRecord": {
+        "description": "Change table record"
+    },
+    "unlinkTableRecord": "Unlink Table",
+    "@unlinkTableRecord": {
+        "description": "Unlink table record"
+    },
+    "qrCode": "My QR Code",
+    "@qrCode": {
+        "description": "QR Code"
+    },
+    
+    "view": "View",
+    "@view": {
+        "description": "View orders inside the booked table"
+    },
+    "prepair": "Prepair",
+    "@prepair": {
+        "description": "Edit invoices inside booked table"
+    },
+    "deposit": "Deposit",
+    "@deposit": {
+        "description": "deposit in advance for ordered items"
+    },
+    "add": "Add",
+    "@add": {
+        "description": "add bill to booked table"
+    },
+    "confirm": "Confirm",
+    "@confirm": {
+        "description": "confirm additional bill to booked table"
+    },
+    "booked": "table alert already booked",
+    "@booked": {
+        "description": "Booked table warning with invoice"
+    },
+
+    "name": "Name",
+    "@name": {
+        "description": "pdf name product"
+    },
+    "unitPrice": "Unit Price",
+    "@unitPrice": {
+        "description": "pdf unit price product"
+    },
+    "quantity": "Quantity",
+    "@quantity": {
+        "description": "pdf quantity product"
+    }
+
+}

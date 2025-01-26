@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class DishButton extends StatelessWidget {
   const DishButton(
@@ -115,7 +116,7 @@ class DishButton extends StatelessWidget {
                         Row(
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
-                              Text('Description:',
+                              Text('${AppLocalizations.of(context)!.dishDesc}:',
                                   style: TextStyle(
                                       color: colorScheme.primary,
                                       fontWeight: FontWeight.bold))

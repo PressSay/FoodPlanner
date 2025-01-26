@@ -9,6 +9,7 @@ import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/dish_view.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class Dish32 extends StatefulWidget {
   const Dish32({super.key, required this.dishRecord});
@@ -47,13 +48,16 @@ class _Dish32State extends State<Dish32> {
     if (file.existsSync()) file.deleteSync();
   }
 
-  void updateDish() async {
+  void updateDish(
+      {required String status,
+      required String success,
+      required String failed}) async {
     double priceDish =
         double.parse(_controllerDishPrice.text.replaceAll(',', ''));
     if (_controllerDishTitle.text.isEmpty ||
         _controllerDescDish.text.isEmpty ||
         priceDish == 0) {
-      alert!.showAlert('Update Dish', 'failed!', false, null);
+      alert!.showAlert(status, failed, false, null);
       return;
     }
     if (imagePath.compareTo(widget.dishRecord.imagePath) != 0) {
@@ -69,13 +73,16 @@ class _Dish32State extends State<Dish32> {
     widget.dishRecord.imagePath = imagePath;
     dataHelper.updateDishRecord(widget.dishRecord);
     isSaved = true;
-    alert!.showAlert('Update Category', 'success!', false, null);
+    alert!.showAlert(status, success, false, null);
   }
 
-  void uploadImage() async {
+  void uploadImage(
+      {required String status,
+      required String success,
+      required String failed}) async {
     final result = await FilePicker.platform.pickFiles();
     if (result == null) {
-      alert!.showAlert('Upload', 'failed', false, null);
+      alert!.showAlert(status, failed, false, null);
       return;
     }
     if (imagePath.isNotEmpty &&
@@ -98,13 +105,14 @@ class _Dish32State extends State<Dish32> {
       isSaved = false;
       logger.i('Image uploaded successfully to temporary location.');
     } catch (e) {
-      alert!.showAlert('Upload', 'Error uploading image: $e', false, null);
+      alert!.showAlert(status, '$status $e $failed', false, null);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final applocalizations = AppLocalizations.of(context)!;
 
     Widget dishView = Center(
         child: Padding(
@@ -171,7 +179,7 @@ class _Dish32State extends State<Dish32> {
                                     decoration: InputDecoration(
                                       border: OutlineInputBorder(
                                           borderRadius: BorderRadius.only()),
-                                      labelText: 'Dish',
+                                      labelText: applocalizations.dishTitle,
                                     ))),
                             SizedBox(
                                 width: 80,
@@ -189,7 +197,7 @@ class _Dish32State extends State<Dish32> {
                                           borderRadius: BorderRadius.only(
                                               topRight: Radius.circular(4),
                                               bottomRight: Radius.circular(4))),
-                                      labelText: 'price',
+                                      labelText: applocalizations.dishPrice,
                                     )))
                           ])),
                   Padding(
@@ -209,7 +217,7 @@ class _Dish32State extends State<Dish32> {
                                   border: OutlineInputBorder(
                                       borderRadius:
                                           BorderRadius.all(Radius.circular(4))),
-                                  labelText: 'Description Dish',
+                                  labelText: applocalizations.dishDesc,
                                 ))),
                       )),
                   Padding(
@@ -235,9 +243,12 @@ class _Dish32State extends State<Dish32> {
                               padding: const EdgeInsets.fromLTRB(10, 0, 0, 0),
                               child: ElevatedButton(
                                   onPressed: () {
-                                    uploadImage();
+                                    uploadImage(
+                                        status: applocalizations.upload,
+                                        success: applocalizations.success,
+                                        failed: applocalizations.failed);
                                   },
-                                  child: Text('Upload')),
+                                  child: Text('')),
                             )
                           ])),
                 ],
@@ -263,7 +274,10 @@ class _Dish32State extends State<Dish32> {
               Navigator.popUntil(context, (route) => route.isFirst);
             },
             () {
-              updateDish();
+              updateDish(
+                  status: applocalizations.update,
+                  success: applocalizations.success,
+                  failed: applocalizations.failed);
             }
           ], icons: [
             Icon(

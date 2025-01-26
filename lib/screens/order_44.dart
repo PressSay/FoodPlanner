@@ -1,4 +1,7 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/category_record.dart';
 import 'package:menu_qr/models/dish_record.dart';
@@ -10,12 +13,14 @@ import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/providers/bill_provider.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
+import 'package:menu_qr/services/utils.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/dish_button.dart';
 import 'package:menu_qr/widgets/category_bar.dart';
 import 'package:menu_qr/widgets/page_indicator.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class Order44 extends StatefulWidget {
   const Order44(
@@ -51,7 +56,7 @@ class _Order44 extends State<Order44> {
   final TextEditingController _controller = TextEditingController();
   final DataHelper dataHelper = DataHelper();
   final List<List<DishRecord>> dishRecords = [];
-
+  final logger = Logger();
   late PageController _pageViewController;
 
   @override
@@ -122,7 +127,7 @@ class _Order44 extends State<Order44> {
       {required DishProvider dishProvider,
       String? where,
       List<Object?>? whereArgs}) async {
-    if (!isInitMenuIdAndCategoryId && dishProvider.categoryId == 0) {
+    if (!isInitMenuIdAndCategoryId) {
       final List<MenuRecord> menuRecordSeleted = await dataHelper.menuRecords(
           where: 'isSelected = ?', whereArgs: [1], limit: 1);
       if (menuRecordSeleted.isEmpty) {
@@ -139,14 +144,18 @@ class _Order44 extends State<Order44> {
       dishProvider.setMenuId(menuRecordSeleted[0].id!);
       dishProvider.setCateogry(
           categoryRecords[0].id!, categoryRecords[0].title);
-      isInitMenuIdAndCategoryId = false;
+      categoryIdInScreen = categoryRecords[0].id!;
+      isInitMenuIdAndCategoryId = true;
     }
 
+    categoryIdInScreen = (dishProvider.categoryId == 0)
+        ? categoryIdInScreen
+        : dishProvider.categoryId;
     final List<List<DishRecord>> listTmpDishRecords = [];
-    for (var i = 0; i < (pageViewSize - 1); i++) {
+    for (var i = 0; i < pageViewSize; i++) {
       final List<DishRecord> tmpDishRecords = await dataHelper.dishRecords(
-          where: 'categoryId = ? ${(where != null) ? 'AND $where' : ''}',
-          whereArgs: [dishProvider.categoryId, ...(whereArgs ?? [])],
+          where: 'categoryId = ?${(where != null) ? ' AND $where' : ''}',
+          whereArgs: [categoryIdInScreen, ...(whereArgs ?? [])],
           pageNum: i + 1,
           pageSize: pageSize);
       listTmpDishRecords.add(tmpDishRecords);
@@ -156,7 +165,6 @@ class _Order44 extends State<Order44> {
       dishRecords.clear();
       dishRecords.addAll(listTmpDishRecords);
     });
-    categoryIdInScreen = dishProvider.categoryId;
   }
 
   Future<void> getDishRecordsAtPageViewIndex(int index, int pageNum) async {
@@ -223,12 +231,15 @@ class _Order44 extends State<Order44> {
     final BillProvider billProvider = context.watch<BillProvider>();
     final currentWidth = MediaQuery.of(context).size.width;
     final columnSize = (currentWidth / 320).floor() - 1;
+    final appLocalizations = AppLocalizations.of(context)!;
 
     return PopScope(
-        canPop: true,
-        onPopInvokedWithResult: (bool didPop, _) async {
-          if (didPop) {
-            return;
+        canPop: false,
+        onPopInvokedWithResult: (bool didPop, _) {
+          if (!didPop) {
+            final navigator = Navigator.of(context);
+            navigator.pop();
+            logger.d("order 44");
           }
         },
         child: Scaffold(
@@ -248,11 +259,7 @@ class _Order44 extends State<Order44> {
                     ),
                     Padding(padding: EdgeInsets.all(8)),
                     CategoryBar(categoryFunc: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (BuildContext context) => Category45(),
-                          )).then((onValue) {
+                      navigateWithFade(context, Category45()).then((onValue) {
                         if (categoryIdInScreen != dishProvider.categoryId) {
                           getDishRecords(dishProvider: dishProvider);
                         }
@@ -266,11 +273,8 @@ class _Order44 extends State<Order44> {
                         saveRebuildDishes(dishProvider, billProvider);
                         return;
                       }
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (BuildContext context) =>
-                                  Confirm38(isImmediate: widget.isImmediate)));
+                      navigateWithFade(
+                          context, Confirm38(isImmediate: widget.isImmediate));
                     }),
                     Padding(padding: EdgeInsets.all(8)),
                   ],
@@ -284,7 +288,8 @@ class _Order44 extends State<Order44> {
                         controller: _controller,
                         decoration: InputDecoration(
                           border: OutlineInputBorder(),
-                          labelText: 'Search Dish',
+                          labelText: appLocalizations
+                              .search(appLocalizations.dishTitle),
                         ),
                         onSubmitted: (text) {
                           setState(() {

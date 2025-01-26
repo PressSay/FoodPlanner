@@ -5,6 +5,7 @@ class DishRecord {
   String title;
   String desc;
   double price;
+  DateTime? timeStamp;
 
   DishRecord(
       {this.id,
@@ -12,7 +13,8 @@ class DishRecord {
       required this.imagePath,
       required this.title,
       required this.desc,
-      required this.price});
+      required this.price,
+      this.timeStamp});
 
   Map<String, dynamic> toMap() {
     return {
@@ -21,7 +23,8 @@ class DishRecord {
       'desc': desc,
       'price': price,
       'imagePath': imagePath,
-      'categoryId': categoryId
+      'categoryId': categoryId,
+      'timeStamp': timeStamp?.toString() ?? DateTime.now().toString()
     };
   }
 
@@ -32,6 +35,7 @@ class DishRecord {
         desc: map['desc'],
         price: map['price'],
         imagePath: map['imagePath'],
-        categoryId: map['categoryId']);
+        categoryId: map['categoryId'],
+        timeStamp: DateTime.parse(map['timeStamp']));
   }
 }

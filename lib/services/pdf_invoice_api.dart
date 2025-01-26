@@ -8,9 +8,11 @@ import 'package:menu_qr/services/pdf_api.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart';
 import 'package:printing/printing.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class PdfInvoiceApi {
   static Future<File> generate(
+    AppLocalizations appLocalizations,
     material.ColorScheme colorScheme,
     BillRecord billRecord,
     List<PreOrderedDishRecord> filteredDishRecords,
@@ -23,6 +25,7 @@ class PdfInvoiceApi {
     final fbold = await PdfGoogleFonts.notoSansBold();
     final fitalic = await PdfGoogleFonts.notoSansItalic();
     final fboldItalic = await PdfGoogleFonts.notoSansBoldItalic();
+
     ThemeData themeData = ThemeData.withFont(
       base: fbase,
       bold: fbold,
@@ -39,13 +42,14 @@ class PdfInvoiceApi {
     pdf.addPage(MultiPage(
       build: (context) => [
         buildTitle(info[0], desc),
-        buildContext(info, billRecord.id!, billRecord.dateTime),
+        buildContext(
+            appLocalizations, info, billRecord.id!, billRecord.dateTime),
         SizedBox(height: 1 * PdfPageFormat.cm),
-        buildInvoice(filteredDishRecords, timeZone),
+        buildInvoice(appLocalizations, filteredDishRecords, timeZone),
         Divider(),
-        buildTotal(info)
+        buildTotal(appLocalizations, info)
       ],
-      footer: (context) => buildFooter(qrImage, info[8]),
+      footer: (context) => buildFooter(qrImage, info[9]),
     ));
 
     return PdfApi.saveDocument(name: '$billName.pdf', pdf: pdf);
@@ -64,9 +68,10 @@ class PdfInvoiceApi {
         ],
       );
 
-  static Widget buildContext(List<String> info, int billId, int billDate) {
+  static Widget buildContext(AppLocalizations appLocalizations,
+      List<String> info, int billId, DateTime billDate) {
     List<double> stdSizePad = [1.0 * PdfPageFormat.mm, 2.0 * PdfPageFormat.mm];
-    final dateTime = DateTime.fromMillisecondsSinceEpoch(billDate);
+    final dateTime = billDate;
     final formattedDate = DateFormat('dd/MM/yyyy HH:mm:ss').format(dateTime);
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -76,7 +81,7 @@ class PdfInvoiceApi {
         child: RichText(
           text: TextSpan(children: [
             TextSpan(
-                text: 'Bill code: ',
+                text: '${appLocalizations.billId}: ',
                 style: TextStyle(fontWeight: FontWeight.bold)),
             TextSpan(
               text: '$billId',
@@ -90,7 +95,8 @@ class PdfInvoiceApi {
         child: RichText(
           text: TextSpan(children: [
             TextSpan(
-                text: 'Date: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                text: '${appLocalizations.date}: ',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             TextSpan(text: formattedDate)
           ]),
         ),
@@ -101,7 +107,7 @@ class PdfInvoiceApi {
         child: RichText(
           text: TextSpan(children: [
             TextSpan(
-                text: 'Address: ',
+                text: '${appLocalizations.shopAddress}: ',
                 style: TextStyle(fontWeight: FontWeight.bold)),
             TextSpan(text: info[1])
           ]),
@@ -113,7 +119,7 @@ class PdfInvoiceApi {
         child: RichText(
           text: TextSpan(children: [
             TextSpan(
-                text: 'Table name: ',
+                text: '${appLocalizations.tableRecord}: ',
                 style: TextStyle(fontWeight: FontWeight.bold)),
             TextSpan(text: info[2])
           ]),
@@ -122,9 +128,14 @@ class PdfInvoiceApi {
     ]);
   }
 
-  static Widget buildInvoice(
+  static Widget buildInvoice(AppLocalizations appLocalizations,
       List<PreOrderedDishRecord> filteredDishRecords, String timeZone) {
-    final List<String> headers = ['Name', 'Unit Price', 'Quantity', 'Total'];
+    final List<String> headers = [
+      appLocalizations.name,
+      appLocalizations.unitPrice,
+      appLocalizations.quantity,
+      appLocalizations.total
+    ];
     final data = filteredDishRecords.map((item) {
       final total = item.price * item.amount;
       String totalString =
@@ -148,23 +159,29 @@ class PdfInvoiceApi {
         });
   }
 
-  static Widget buildTotal(List<String> info) => Container(
+  static Widget buildTotal(
+          AppLocalizations appLocalizations, List<String> info) =>
+      Container(
           // alignment: Alignment.centerRight,
           child: Row(children: [
         Spacer(flex: 6),
         Expanded(
             flex: 4,
             child: Column(children: [
-              buildText(title: 'VAT', value: info[3], unite: false),
-              buildText(title: 'Discount', value: info[4], unite: false),
               buildText(
-                title: 'Total (VAT)',
+                  title: appLocalizations.tax, value: info[3], unite: false),
+              buildText(
+                  title: appLocalizations.discount,
+                  value: info[4],
+                  unite: false),
+              buildText(
+                title: '${appLocalizations.total} (${appLocalizations.tax})',
                 value: info[5],
                 unite: true,
               ),
               Divider(),
               buildText(
-                title: 'Paid',
+                title: appLocalizations.paid,
                 value: info[6],
                 unite: false,
               ),
@@ -174,7 +191,7 @@ class PdfInvoiceApi {
                 unite: false,
               ),
               buildText(
-                title: 'Change',
+                title: appLocalizations.change,
                 value: info[7],
                 unite: true,
               ),

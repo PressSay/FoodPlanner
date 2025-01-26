@@ -6,6 +6,7 @@ import 'package:menu_qr/services/pdf_api.dart';
 import 'package:menu_qr/services/pdf_invoice_api.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class Paid42 extends StatefulWidget {
   const Paid42({super.key, required this.billRecord});
@@ -37,13 +38,14 @@ class _Paid42State extends State<Paid42> {
       String amountPaidString,
       String changeString,
       int billId) {
+    final appLocalizations = AppLocalizations.of(context)!;
     return [
       Padding(
         padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 24.0),
         child: RichText(
           text: TextSpan(children: [
             TextSpan(
-                text: 'Name shop: ',
+                text: '${appLocalizations.shopName}: ',
                 style: TextStyle(
                     color: colorScheme.primary, fontWeight: FontWeight.bold)),
             TextSpan(
@@ -58,7 +60,7 @@ class _Paid42State extends State<Paid42> {
           child: RichText(
               text: TextSpan(children: [
             TextSpan(
-                text: 'Address shop: ',
+                text: '${appLocalizations.shopAddress}: ',
                 style: TextStyle(
                     color: colorScheme.primary, fontWeight: FontWeight.bold)),
             TextSpan(
@@ -71,7 +73,7 @@ class _Paid42State extends State<Paid42> {
           child: RichText(
               text: TextSpan(children: [
             TextSpan(
-                text: 'Tax(5%): ',
+                text: '${appLocalizations.tax}: ',
                 style: TextStyle(
                     color: colorScheme.primary, fontWeight: FontWeight.bold)),
             TextSpan(
@@ -84,7 +86,7 @@ class _Paid42State extends State<Paid42> {
           child: RichText(
               text: TextSpan(children: [
             TextSpan(
-                text: 'Discount: ',
+                text: '${appLocalizations.discount}: ',
                 style: TextStyle(
                     color: colorScheme.primary, fontWeight: FontWeight.bold)),
             TextSpan(
@@ -97,7 +99,7 @@ class _Paid42State extends State<Paid42> {
           child: RichText(
               text: TextSpan(children: [
             TextSpan(
-                text: 'Total: ',
+                text: '${appLocalizations.total}: ',
                 style: TextStyle(
                     color: colorScheme.primary, fontWeight: FontWeight.bold)),
             TextSpan(
@@ -110,7 +112,7 @@ class _Paid42State extends State<Paid42> {
           child: RichText(
               text: TextSpan(children: [
             TextSpan(
-                text: 'Amount paid: ',
+                text: '${appLocalizations.paid}: ',
                 style: TextStyle(
                     color: colorScheme.primary, fontWeight: FontWeight.bold)),
             TextSpan(
@@ -123,7 +125,7 @@ class _Paid42State extends State<Paid42> {
           child: RichText(
               text: TextSpan(children: [
             TextSpan(
-                text: 'Change: ',
+                text: '${appLocalizations.change}: ',
                 style: TextStyle(
                     color: colorScheme.primary, fontWeight: FontWeight.bold)),
             TextSpan(
@@ -136,7 +138,7 @@ class _Paid42State extends State<Paid42> {
           child: RichText(
               text: TextSpan(children: [
             TextSpan(
-                text: 'Bill Id: ',
+                text: '${appLocalizations.billId}: ',
                 style: TextStyle(
                     color: colorScheme.primary, fontWeight: FontWeight.bold)),
             TextSpan(
@@ -156,7 +158,7 @@ class _Paid42State extends State<Paid42> {
               Column(children: [
                 Padding(
                     padding: EdgeInsets.fromLTRB(16.0, 0, 16.0, 8.0),
-                    child: Text('My code:',
+                    child: Text('${AppLocalizations.of(context)!.qrCode}:',
                         style: TextStyle(
                             color: colorScheme.secondary,
                             fontWeight: FontWeight.bold))),
@@ -198,6 +200,7 @@ class _Paid42State extends State<Paid42> {
       addressShop = address ?? "";
       total = tmpTotal;
       widget.billRecord.preOrderedDishRecords = tmpPreOrderedDishRecords;
+      amountPaid = widget.billRecord.amountPaid;
     });
   }
 
@@ -220,18 +223,19 @@ class _Paid42State extends State<Paid42> {
           keyboardType: TextInputType.multiline,
           decoration: InputDecoration(
               border: OutlineInputBorder(),
-              labelText: 'Description',
+              labelText: AppLocalizations.of(context)!
+                  .recordDesc(AppLocalizations.of(context)!.billRecord),
               filled: true,
               fillColor: colorScheme.primaryContainer)),
     );
 
     List<Widget> itemBuilder = infoCustomer(
         colorScheme,
-        moneyFormat(widget.billRecord.tax),
+        moneyFormat(widget.billRecord.tax * total),
         moneyFormat(widget.billRecord.discount),
         moneyFormat(total - widget.billRecord.discount),
         moneyFormat(amountPaid),
-        moneyFormat(amountPaid - total),
+        moneyFormat(amountPaid - (total - widget.billRecord.discount)),
         widget.billRecord.id!);
     itemBuilder.add(descFieldW);
     itemBuilder.addAll(qrCode(colorScheme, logoImage, logoText));
@@ -242,65 +246,77 @@ class _Paid42State extends State<Paid42> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    return Scaffold(
-      body: Column(
-        children: [
-          Expanded(
-            child: SafeArea(
-              child: ListView(children: [
-                Padding(
-                    padding: EdgeInsets.all(12),
-                    child: contentView(colorScheme)),
-              ]),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          final navigator = Navigator.of(context);
+          widget.billRecord.preOrderedDishRecords?.clear();
+          navigator.pop();
+        }
+      },
+      child: Scaffold(
+        body: Column(
+          children: [
+            Expanded(
+              child: SafeArea(
+                child: ListView(children: [
+                  Padding(
+                      padding: EdgeInsets.all(12),
+                      child: contentView(colorScheme)),
+                ]),
+              ),
             ),
-          ),
-          BottomNavigatorCustomize(listEnableBtn: [
-            true,
-            true,
-            false,
-            true
-          ], listCallback: [
-            () {
-              widget.billRecord.preOrderedDishRecords?.clear();
-              Navigator.pop(context);
-            },
-            () {
-              Navigator.popUntil(context, (route) => route.isFirst);
-            },
-            () async {
-              final pdfFile = await PdfInvoiceApi.generate(
-                  colorScheme,
-                  widget.billRecord,
-                  widget.billRecord.preOrderedDishRecords ?? [],
-                  [
-                    nameShop,
-                    addressShop,
-                    widget.billRecord.nameTable,
-                    moneyFormat(widget.billRecord.tax),
-                    moneyFormat(widget.billRecord.discount),
-                    moneyFormat(total),
-                    moneyFormat(amountPaid),
-                    moneyFormat(amountPaid - total),
-                    logoImage,
-                    logoText
-                  ],
-                  descFromShop,
-                  timeZone,
-                  "Bill-${widget.billRecord.id!}");
-              PdfApi.openFile(pdfFile);
-            }
-          ], icons: [
-            Icon(
-              Icons.arrow_back,
-              color: colorScheme.primary,
-            ),
-            Icon(Icons.home, color: colorScheme.primary),
-            Icon(
-              Icons.print,
-              color: colorScheme.primary,
-            )
-          ])
-        ],
+            BottomNavigatorCustomize(listEnableBtn: [
+              true,
+              true,
+              false,
+              true
+            ], listCallback: [
+              () {
+                widget.billRecord.preOrderedDishRecords?.clear();
+                Navigator.pop(context);
+              },
+              () {
+                Navigator.popUntil(context, (route) => route.isFirst);
+              },
+              () async {
+                final pdfFile = await PdfInvoiceApi.generate(
+                    AppLocalizations.of(context)!,
+                    colorScheme,
+                    widget.billRecord,
+                    widget.billRecord.preOrderedDishRecords ?? [],
+                    [
+                      nameShop,
+                      addressShop,
+                      widget.billRecord.nameTable,
+                      moneyFormat(widget.billRecord.tax * total),
+                      moneyFormat(widget.billRecord.discount),
+                      moneyFormat(total - widget.billRecord.discount),
+                      moneyFormat(amountPaid),
+                      moneyFormat(
+                          amountPaid - (total - widget.billRecord.discount)),
+                      logoImage,
+                      logoText
+                    ],
+                    descFromShop,
+                    timeZone,
+                    "Bill-${widget.billRecord.id!}");
+                PdfApi.openFile(pdfFile);
+              }
+            ], icons: [
+              Icon(
+                Icons.arrow_back,
+                color: colorScheme.primary,
+              ),
+              Icon(Icons.home, color: colorScheme.primary),
+              Icon(
+                Icons.print,
+                color: colorScheme.primary,
+              )
+            ])
+          ],
+        ),
       ),
     );
   }

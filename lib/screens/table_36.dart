@@ -11,6 +11,8 @@ import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/table_cofirm.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:menu_qr/services/utils.dart';
 
 class Table36 extends StatefulWidget {
   const Table36(
@@ -60,15 +62,15 @@ class _Table36State extends State<Table36> {
   }
 
   void navigateListDetail40(isView) {
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => ListDetail40(
-                  onlyView: isView,
-                  tableRecord: widget.tableRecord,
-                  oldIndexTableRecordsList: widget.oldIndexTableRecordsList,
-                  oldIndexTableRecords: widget.oldIndexTableRecords,
-                ))).then((onValue) {
+    navigateWithFade(
+      context,
+      ListDetail40(
+        onlyView: isView,
+        tableRecord: widget.tableRecord,
+        oldIndexTableRecordsList: widget.oldIndexTableRecordsList,
+        oldIndexTableRecords: widget.oldIndexTableRecords,
+      ),
+    ).then((onValue) {
       logger.d('${widget.tableRecord.numOfPeople}, onValue: $onValue');
       if (onValue is Map<String, int>) {
         onValueData['oldId'] = onValue['oldId'] ?? 0;
@@ -115,30 +117,27 @@ class _Table36State extends State<Table36> {
   }
 
   void navigateToPaid41(BillRecord billRecord) {
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (BuildContext context) => Paid41(
-            billRecord: billRecord,
-            isRebuild: false,
-            isImmediate: false,
-          ),
-        ));
+    navigateWithFade(context,
+        Paid41(billRecord: billRecord, isRebuild: false, isImmediate: false));
   }
 
   Widget warningViewBtn(int numOfPeople, Function callback) {
+    final appLocalizations = AppLocalizations.of(context)!;
     return (numOfPeople > 0)
         ? TableConfirm(
             callBack: () {
               callback();
             },
-            text: (widget.isList) ? 'view/prepair' : 'view')
+            text: (widget.isList)
+                ? '${appLocalizations.view}/${appLocalizations.prepair}'
+                : appLocalizations.view)
         : SizedBox();
   }
 
   Widget warningText(int numOfPeople, ColorScheme colorScheme) {
+    final appLocalizations = AppLocalizations.of(context)!;
     return (numOfPeople != 0)
-        ? Text('This table is lock!\nDo you want add more.',
+        ? Text(appLocalizations.booked,
             style: TextStyle(
                 color: colorScheme.error,
                 fontWeight: FontWeight.bold,
@@ -149,6 +148,8 @@ class _Table36State extends State<Table36> {
   List<Widget> confirmPaid(int numOfPeople, ColorScheme colorScheme,
       DishProvider dishProvider, BillProvider billProvider) {
     final List<Widget> confirmPaidVar = [];
+    final appLocalizations = AppLocalizations.of(context)!;
+
     if (!widget.isList) {
       confirmPaidVar.add(
         TableConfirm(
@@ -157,14 +158,16 @@ class _Table36State extends State<Table36> {
               dishProvider.clearIndexListRam();
               Navigator.popUntil(context, (route) => route.isFirst);
             },
-            text: (numOfPeople != 0) ? "Add" : "Confirm"),
+            text: (numOfPeople != 0)
+                ? appLocalizations.add
+                : appLocalizations.confirm),
       );
       confirmPaidVar.add(Padding(padding: EdgeInsets.all(14)));
       confirmPaidVar.add(TableConfirm(
           callBack: () {
             saveBillToSQL(billProvider, dishProvider, true);
           },
-          text: 'Prepaid'));
+          text: appLocalizations.deposit));
     }
     return confirmPaidVar;
   }
@@ -174,68 +177,79 @@ class _Table36State extends State<Table36> {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final DishProvider dishProvider = context.watch<DishProvider>();
     final BillProvider billProvider = context.watch<BillProvider>();
+    final appLocalizations = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      body: Column(
-        children: [
-          Expanded(
-              child: SafeArea(
-            child: Center(
-                child: Column(children: [
-              Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-                  child: TextField(
-                      controller: _controller,
-                      minLines: 6,
-                      maxLines: null,
-                      keyboardType: TextInputType.multiline,
-                      decoration: InputDecoration(
-                          border: OutlineInputBorder(),
-                          hintText: widget.tableRecord.desc,
-                          filled: true,
-                          fillColor: colorScheme.primaryContainer),
-                      onChanged: (text) {
-                        desc = text;
-                      })),
-              Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: confirmPaid(widget.tableRecord.numOfPeople,
-                      colorScheme, dishProvider, billProvider)),
-              Padding(padding: EdgeInsets.all(14)),
-              warningViewBtn(widget.tableRecord.numOfPeople, () {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          final navigator = Navigator.of(context);
+          navigator.pop(onValueData);
+        }
+      },
+      child: Scaffold(
+        body: Column(
+          children: [
+            Expanded(
+                child: SafeArea(
+              child: Center(
+                  child: Column(children: [
+                Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                    child: TextField(
+                        controller: _controller,
+                        minLines: 6,
+                        maxLines: null,
+                        keyboardType: TextInputType.multiline,
+                        decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                            hintText: widget.tableRecord.desc,
+                            filled: true,
+                            fillColor: colorScheme.primaryContainer),
+                        onChanged: (text) {
+                          desc = text;
+                        })),
+                Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: confirmPaid(widget.tableRecord.numOfPeople,
+                        colorScheme, dishProvider, billProvider)),
+                Padding(padding: EdgeInsets.all(14)),
+                warningViewBtn(widget.tableRecord.numOfPeople, () {
+                  saveInfoTable();
+                  viewBillInTable(billProvider);
+                }),
+                Padding(padding: EdgeInsets.all(12)),
+                warningText(widget.tableRecord.numOfPeople, colorScheme)
+              ])),
+            )),
+            BottomNavigatorCustomize(listEnableBtn: [
+              true,
+              true,
+              false,
+              widget.isList
+            ], listCallback: [
+              () {
+                Navigator.pop(context, onValueData);
+                // 36 -> 35
+              },
+              () {
+                Navigator.popUntil(context, (route) => route.isFirst);
+              },
+              () {
                 saveInfoTable();
-                viewBillInTable(billProvider);
-              }),
-              Padding(padding: EdgeInsets.all(12)),
-              warningText(widget.tableRecord.numOfPeople, colorScheme)
-            ])),
-          )),
-          BottomNavigatorCustomize(listEnableBtn: [
-            true,
-            true,
-            false,
-            widget.isList
-          ], listCallback: [
-            () {
-              Navigator.pop(context, onValueData);
-              // 36 -> 35
-            },
-            () {
-              Navigator.popUntil(context, (route) => route.isFirst);
-            },
-            () {
-              saveInfoTable();
-              alert!.showAlert("Update Table", 'success!', false, null);
-            }
-          ], icons: [
-            Icon(
-              Icons.arrow_back,
-              color: colorScheme.primary,
-            ),
-            Icon(Icons.home, color: colorScheme.primary),
-            Icon(Icons.save, color: colorScheme.primary)
-          ])
-        ],
+                alert!.showAlert(appLocalizations.update,
+                    appLocalizations.success, false, null);
+              }
+            ], icons: [
+              Icon(
+                Icons.arrow_back,
+                color: colorScheme.primary,
+              ),
+              Icon(Icons.home, color: colorScheme.primary),
+              Icon(Icons.save, color: colorScheme.primary)
+            ])
+          ],
+        ),
       ),
     );
   }

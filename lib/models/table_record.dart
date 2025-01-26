@@ -3,11 +3,14 @@ class TableRecord {
   String name;
   String desc;
   int numOfPeople;
+  DateTime? timeStamp;
+
   TableRecord(
       {this.id,
       required this.name,
       required this.desc,
-      required this.numOfPeople});
+      required this.numOfPeople,
+      this.timeStamp});
 
   Map<String, dynamic> toMap() {
     return {
@@ -15,6 +18,7 @@ class TableRecord {
       'name': name,
       'desc': desc,
       'numOfPeople': numOfPeople,
+      'timeStamp': timeStamp?.toString() ?? DateTime.now().toString()
     };
   }
 
@@ -23,6 +27,7 @@ class TableRecord {
         id: map['id'],
         name: map['name'],
         desc: map['desc'],
-        numOfPeople: map['numOfPeople']);
+        numOfPeople: map['numOfPeople'],
+        timeStamp: DateTime.parse(map['timeStamp']));
   }
 }

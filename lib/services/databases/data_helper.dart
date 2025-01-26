@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:logger/logger.dart';
+import 'package:flutter/foundation.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/models/category_record.dart';
 import 'package:menu_qr/models/dish_record.dart';
@@ -30,10 +30,28 @@ class DataHelper {
     return _database!;
   }
 
+  bool get _isOnDesktopAndWeb {
+    if (kIsWeb) {
+      return true;
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.macOS:
+      case TargetPlatform.linux:
+      case TargetPlatform.windows:
+        return true;
+      case TargetPlatform.android:
+      case TargetPlatform.iOS:
+      case TargetPlatform.fuchsia:
+        return false;
+    }
+  }
+
   Future<Database> _initDatabase() async {
     // delete this if you want to use sqflite on mobile
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
+    if (_isOnDesktopAndWeb) {
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfi;
+    }
     // delete this if you want to use sqflite on mobile
 
     final databasePath = await getDatabasesPath();
@@ -50,7 +68,8 @@ class DataHelper {
     await db.execute('''CREATE TABLE $sqlMenuRecords (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT,
-      isSelected INTEGER
+      isSelected INTEGER,
+      timeStamp TEXT
     )''');
 
     await db.execute('''CREATE TABLE $sqlCategoryRecords (
@@ -58,6 +77,7 @@ class DataHelper {
       title TEXT,
       desc TEXT,
       menuId INTEGER,
+      timeStamp TEXT,
       FOREIGN KEY (menuId) REFERENCES $sqlMenuRecords(id) ON DELETE CASCADE
     )''');
 
@@ -68,6 +88,7 @@ class DataHelper {
       price REAL,
       imagePath TEXT,
       categoryId INTEGER,
+      timeStamp TEXT,
       FOREIGN KEY (categoryId) REFERENCES $sqlCategoryRecords(id) ON DELETE CASCADE
     )''');
 
@@ -75,7 +96,8 @@ class DataHelper {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT,
       desc TEXT,
-      numOfPeople INTEGER
+      numOfPeople INTEGER,
+      timeStamp TEXT
     )''');
 
     await db.execute('''CREATE TABLE $sqlBillRecords (
@@ -87,7 +109,7 @@ class DataHelper {
       nameTable TEXT,
       isLeft INTEGER,
       type INTEGER,
-      dateTime INTEGER -- Store as milliseconds since Unix epoch
+      dateTime TEXT -- Store as milliseconds since Unix epoch
     )''');
 
     await db.execute('''CREATE TABLE $sqlPreOrderedDishRecords (

@@ -7,9 +7,11 @@ import 'package:menu_qr/models/pre_ordered_dish.dart';
 import 'package:menu_qr/screens/paid_42.dart';
 import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
+import 'package:menu_qr/services/utils.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/dish_cofirm.dart';
 import 'package:menu_qr/widgets/page_indicator.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class List24 extends StatefulWidget {
   const List24({super.key, required this.billRecord});
@@ -173,6 +175,7 @@ class _List24 extends State<List24> {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final currentWidth = MediaQuery.of(context).size.width;
     final columnSize = (currentWidth / 320).floor() - 1;
+    final appLocalizations = AppLocalizations.of(context)!;
 
     return Scaffold(
       body: Column(
@@ -203,7 +206,7 @@ class _List24 extends State<List24> {
                             padding: EdgeInsets.fromLTRB(16, 10, 16, 10),
                             child: Row(children: [
                               Text(
-                                "Discount:",
+                                appLocalizations.discount,
                                 style: TextStyle(
                                     fontSize: 18,
                                     color: colorScheme.primary,
@@ -222,7 +225,7 @@ class _List24 extends State<List24> {
                             padding: EdgeInsets.fromLTRB(16, 0, 16, 10),
                             child: Row(children: [
                               Text(
-                                "Tax:",
+                                appLocalizations.tax,
                                 style: TextStyle(
                                     fontSize: 18,
                                     color: colorScheme.primary,
@@ -241,7 +244,7 @@ class _List24 extends State<List24> {
                             padding: EdgeInsets.fromLTRB(16, 0, 16, 10),
                             child: Row(children: [
                               Text(
-                                "Toltal:",
+                                appLocalizations.total,
                                 style: TextStyle(
                                     fontSize: 18,
                                     color: colorScheme.primary,
@@ -271,7 +274,8 @@ class _List24 extends State<List24> {
                     controller: _controller,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(),
-                      labelText: 'Search Dish',
+                      labelText:
+                          appLocalizations.search(appLocalizations.dishTitle),
                     ),
                     onSubmitted: (text) {
                       setState(() {
@@ -302,12 +306,10 @@ class _List24 extends State<List24> {
               Navigator.popUntil(context, (route) => route.isFirst);
             },
             () {
-              Navigator.push(
+              navigateWithFade(
                   context,
-                  MaterialPageRoute(
-                    builder: (BuildContext context) => Paid42(
-                      billRecord: widget.billRecord,
-                    ),
+                  Paid42(
+                    billRecord: widget.billRecord,
                   ));
             },
             () {

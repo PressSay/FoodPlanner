@@ -6,14 +6,18 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:menu_qr/models/category_record.dart';
+import 'package:menu_qr/models/dish_record.dart';
 import 'package:menu_qr/models/menu_record.dart';
 import 'package:menu_qr/screens/settings/category_setting_30.dart';
-import 'package:menu_qr/screens/settings/setting_table_30.dart';
 import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
+import 'package:menu_qr/services/utils.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/order_setting_button_online.dart';
 import 'package:menu_qr/widgets/page_indicator.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class Menu29 extends StatefulWidget {
   const Menu29({super.key});
@@ -177,11 +181,8 @@ class _Menu29State extends State<Menu29> {
               },
               rebuildCallback:
                   (List<MenuRecord> insideMenuRecords, int index1) {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (BuildContext context) =>
-                            Category30(menuRecord: insideMenuRecords[index1])));
+                navigateWithFade(
+                    context, Category30(menuRecord: insideMenuRecords[index1]));
               },
               deleteCallback: (List<MenuRecord> insideMenuRecords, int index1) {
                 alert!.showAlert('Delete Menu', 'Are You Sure?', true,
@@ -227,79 +228,92 @@ class _Menu29State extends State<Menu29> {
     });
   }
 
-  void importData(Uint8List bytes) {
+  void importData(Uint8List bytes, List<MenuRecord> seletedMenuRecords,
+      List<String> formalColumn, String status, String error) async {
     // var bytes = pickedFile.files.first.bytes;
     var excel = excl.Excel.decodeBytes(bytes);
+    var menuId = 0;
+    bool checkedFormat = false;
 
-    int tableNumericalOrder = 1; // 3 tables
-    for (var table in excel.tables.keys) {
-      bool checkedFormat = false;
-
-      for (var row in excel.tables[table]!.rows) {
-        if (!checkedFormat) {
-          int pFC = 0;
-          bool haveBreak = false;
-          List<String>? formalColumn;
-          if (tableNumericalOrder == 1) {
-            formalColumn = [
-              "mã số", // Cần sửa lại so sánh sao cho khớp
-              "tên món ăn",
-              "giá",
-              "mô tả",
-              "đường dẫn ảnh",
-              "thể loại",
-              "mô tả thể loại"
-            ];
-          } else if (tableNumericalOrder == 2) {
-            formalColumn = [
-              "mã số món ăn",
-              "mã số bill",
-              "số lượng",
-              "mã số bàn",
-              "tên bàn",
-              "đã thanh toán",
-              "ngày giờ",
-              "giảm giá",
-              "là loại mang đi",
-              "số tiền đã trả"
-            ];
+    var rows = excel.tables[excel.tables.keys.first]!.rows;
+    logger.d("${rows.elementAt(12).elementAt(1)}");
+    for (var row in excel.tables[excel.tables.keys.first]!.rows) {
+      if (!checkedFormat) {
+        bool haveBreak = false;
+        int pFC = 0;
+        for (var column in row) {
+          String data = column?.value.toString() ?? "";
+          if (formalColumn[pFC++].compareTo(data) == 0) {
+            continue;
           } else {
-            formalColumn = [
-              "mã số bàn",
-              "tên bàn",
-              "mô tả",
-            ];
-          }
-          for (var column in row) {
-            String data = column?.value.toString() ?? "";
-            if (formalColumn[pFC].compareTo(data) == 0) {
-              pFC++;
-              continue;
-            } else {
-              haveBreak = !haveBreak;
-              break;
-            }
-          }
-          if (!haveBreak) checkedFormat = !checkedFormat;
-          if (!checkedFormat) {
-            alert!.showAlert('Format excel', 'wrong format', false, null);
-            return;
-          }
-          // import data below
-          if (checkedFormat) {
-            // for (excl.Data? column in row) {
-            //   if (tableNumericalOrder == 1) {
-            //   } else if (tableNumericalOrder == 2) {
-            //   } else {}
-            // }
+            haveBreak = !haveBreak;
+            break;
           }
         }
+        if (!haveBreak) checkedFormat = true;
+        if (!checkedFormat || seletedMenuRecords.isEmpty) {
+          alert!.showAlert(status, error, false, null);
+          return;
+        }
+        menuId = seletedMenuRecords.first.id!;
+        continue;
       }
-      tableNumericalOrder += 1;
+      // import data below
+      var dishTitle = row[1]?.value.toString() ?? "";
+      var price = row[2]?.value.toString() ?? "";
+      var description = row[3]?.value.toString() ?? "";
+      var imagePath = row[4]?.value.toString() ?? "";
+      var categoryTitle = row[5]?.value.toString() ?? "";
+      var categoryDescription = row[6]?.value.toString() ?? "";
+      logger.d('$dishTitle, $price, $description, $imagePath, '
+          '$categoryTitle, $categoryDescription\n');
+      var oldCategory = await dataHelper
+          .categoryRecords(where: "title = ?", whereArgs: [categoryTitle]);
+      var categoryIdBak = 0;
+      if (oldCategory.isEmpty) {
+        var newCategory = CategoryRecord(
+            menuId: menuId, title: categoryTitle, desc: categoryDescription);
+        categoryIdBak = await dataHelper.insertCategoryRecord(newCategory);
+      }
+      var newDish = DishRecord(
+          categoryId: oldCategory.firstOrNull?.id ?? categoryIdBak,
+          imagePath: "",
+          title: dishTitle,
+          desc: description,
+          price: double.tryParse(price) ?? 0);
+      logger.d("newDish ${newDish.title}");
+      var oldDish = await dataHelper
+          .dishRecords(where: "title = ?", whereArgs: [dishTitle]);
+      if (oldDish.isEmpty) {
+        dataHelper.insertDishRecord(newDish);
+      }
     }
   }
 
-  Widget editArea(ColorScheme colorScheme) {
+  Future<void> exportData(List<MenuRecord> selectedMenuRecords,
+      List<String> header, String status, String content) async {
+    var excel = excl.Excel.createExcel();
+    var sheetObject = excel['Menu Data']; // Tạo sheet mới
+
+    sheetObject.insertRowIterables(header, 0);
+
+    // Lưu file
+    var fileBytes = excel.save();
+
+    // Lưu trên Android/iOS (sử dụng path_provider)
+    final directory = await getApplicationDocumentsDirectory();
+    final path = "${directory.path}/menu_data.xlsx";
+    final file = File(path);
+    await file.writeAsBytes(fileBytes!);
+
+    // In ra đường dẫn (cho debug)
+    // print("File saved at: $path");
+    //Có thể hiển thị thông báo thành công cho người dùng.
+    alert!.showAlert(status, content, false, null);
+  }
+
+  Widget editArea(ColorScheme colorScheme, List<String> excelColumnFormat,
+      String status, String error) {
     return Container(
         height: 188,
         decoration: BoxDecoration(
@@ -354,17 +368,6 @@ class _Menu29State extends State<Menu29> {
                                   )))
                         ])),
                 Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
-                    child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  maintainState: true,
-                                  builder: (context) => Table30()));
-                        },
-                        child: Text('Table'))),
-                Padding(
                   padding: const EdgeInsets.fromLTRB(0, 20, 0, 20),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -372,6 +375,9 @@ class _Menu29State extends State<Menu29> {
                     children: [
                       ElevatedButton(
                           onPressed: () async {
+                            final selectedMenuRecords = await dataHelper
+                                .menuRecords(
+                                    where: 'isSelected = ?', whereArgs: [1]);
                             final FilePickerResult? pickedFile =
                                 await FilePicker.platform.pickFiles(
                               type: FileType.custom,
@@ -382,12 +388,22 @@ class _Menu29State extends State<Menu29> {
                               final String file =
                                   pickedFile.files.firstOrNull?.path ?? "";
                               final bytes = await File(file).readAsBytes();
-                              importData(bytes);
+                              importData(bytes, selectedMenuRecords,
+                                  excelColumnFormat, status, error);
                             }
                           },
-                          child: Text('Import')),
+                          child: Text(AppLocalizations.of(context)!.import)),
                       SizedBox(width: 18),
-                      ElevatedButton(onPressed: () {}, child: Text('Export')),
+                      ElevatedButton(
+                          onPressed: () {
+                            exportData(
+                                selectedMenuRecords,
+                                excelColumnFormat,
+                                AppLocalizations.of(context)!.success,
+                                AppLocalizations.of(context)!
+                                    .dataSavedSuccessfully);
+                          },
+                          child: Text(AppLocalizations.of(context)!.export)),
                     ],
                   ),
                 )
@@ -402,7 +418,15 @@ class _Menu29State extends State<Menu29> {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final currentWidth = MediaQuery.of(context).size.width;
     final columnSize = (currentWidth / 322).floor() - 1;
-
+    final List<String> excelColumnFormat = [
+      AppLocalizations.of(context)!.dishId,
+      AppLocalizations.of(context)!.dishTitle,
+      AppLocalizations.of(context)!.dishPrice,
+      AppLocalizations.of(context)!.dishDesc,
+      AppLocalizations.of(context)!.dishImgPath,
+      AppLocalizations.of(context)!.dishCategory,
+      AppLocalizations.of(context)!.dishCategoryDesc
+    ];
     return Scaffold(
       body: Column(
         children: [
@@ -412,7 +436,11 @@ class _Menu29State extends State<Menu29> {
             onUpdateCurrentPageIndex: _updateCurrentPageIndex,
             isOnDesktopAndWeb: _isOnDesktopAndWeb,
           ),
-          editArea(colorScheme),
+          editArea(
+              colorScheme,
+              excelColumnFormat,
+              AppLocalizations.of(context)!.excelFormat,
+              AppLocalizations.of(context)!.error),
           AnimatedCrossFade(
             firstChild: SizedBox(),
             secondChild: Padding(
@@ -421,7 +449,7 @@ class _Menu29State extends State<Menu29> {
                     controller: _controller,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(),
-                      labelText: 'Search Menu',
+                      labelText: AppLocalizations.of(context)!.search("Menu"),
                     ),
                     onSubmitted: (text) {
                       setState(() {
@@ -461,7 +489,8 @@ class _Menu29State extends State<Menu29> {
             },
             () {
               if (titleMenu.isEmpty) {
-                alert!.showAlert('Save Menu', 'failed!', false, null);
+                alert!.showAlert(AppLocalizations.of(context)!.save,
+                    AppLocalizations.of(context)!.failed, false, null);
                 return;
               }
               saveMenu();

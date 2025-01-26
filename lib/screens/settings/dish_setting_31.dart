@@ -9,10 +9,12 @@ import 'package:menu_qr/models/dish_record.dart';
 import 'package:menu_qr/screens/settings/dish_setting_32.dart';
 import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
+import 'package:menu_qr/services/utils.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/page_indicator.dart';
 import 'package:menu_qr/widgets/setting_button.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class Dish31 extends StatefulWidget {
   const Dish31({super.key, required this.categoryRecord});
@@ -66,10 +68,10 @@ class _Dish31State extends State<Dish31> {
     _pageViewController.dispose();
   }
 
-  void uploadImage() async {
+  void uploadImage({required String status, required String failed}) async {
     final result = await FilePicker.platform.pickFiles();
     if (result == null) {
-      alert!.showAlert('Upload', 'failed', false, null);
+      alert!.showAlert(status, failed, false, null);
       return;
     }
     if (imagePath.isNotEmpty) {
@@ -89,7 +91,7 @@ class _Dish31State extends State<Dish31> {
       });
       logger.i('Image uploaded successfully to temporary location.');
     } catch (e) {
-      alert!.showAlert('Upload', 'failed!', false, null);
+      alert!.showAlert(status, failed, false, null);
     }
   }
 
@@ -109,22 +111,28 @@ class _Dish31State extends State<Dish31> {
     });
   }
 
-  void updateCategory() async {
+  void updateCategory(
+      {required String status,
+      required String failed,
+      required String success}) async {
     String titleCategory = _controllerCategory.text;
     String descCategory = _controllerDescCategory.text;
     if (titleCategory.isEmpty || descCategory.isEmpty) {
-      alert!.showAlert('Update Category', 'failed!', false, null);
+      alert!.showAlert(status, failed, false, null);
       return;
     }
     widget.categoryRecord.desc = descCategory;
     widget.categoryRecord.title = titleCategory;
     dataHelper.updateCategoryRecord(widget.categoryRecord);
-    alert!.showAlert('Update Category', 'success!', false, null);
+    alert!.showAlert(status, success, false, null);
   }
 
-  void insertDishRecord() async {
+  void insertDishRecord(
+      {required String status,
+      required String failed,
+      required String success}) async {
     if (titleDish.isEmpty || descDish.isEmpty || price == 0) {
-      alert!.showAlert('Save Dish', 'failed!', false, null);
+      alert!.showAlert(status, failed, false, null);
       return;
     }
     final DishRecord newE = DishRecord(
@@ -143,7 +151,7 @@ class _Dish31State extends State<Dish31> {
         break;
       }
     }
-    alert!.showAlert('Save Dish', 'success!', false, null);
+    alert!.showAlert(status, success, false, null);
   }
 
   void getDishRecordsAtPageViewIndex(index, pageNum) async {
@@ -216,6 +224,7 @@ class _Dish31State extends State<Dish31> {
   }
 
   PageView dishPageView(int columnSize) {
+    final appLocalizations = AppLocalizations.of(context)!;
     return PageView.builder(
         controller: _pageViewController,
         onPageChanged: _handlePageViewChanged,
@@ -230,15 +239,14 @@ class _Dish31State extends State<Dish31> {
                   if (file.existsSync()) file.deleteSync();
                   imagePath = "";
                 }
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (BuildContext context) =>
-                            Dish32(dishRecord: insideDishRecords[index1])));
+                navigateWithFade(
+                    context, Dish32(dishRecord: insideDishRecords[index1]));
               },
               deleteCallback: (List<DishRecord> insideDishRecords, int index1) {
-                alert!.showAlert('Delete Dish', 'Are You Sure?', true,
-                    () async {
+                alert!.showAlert(
+                    appLocalizations.deleteRecord(appLocalizations.dishTitle),
+                    appLocalizations.areYouSure,
+                    true, () async {
                   dataHelper.deleteDishRecord(insideDishRecords[index1].id!);
                   if (insideDishRecords[index1].imagePath == "") {
                     return;
@@ -249,10 +257,19 @@ class _Dish31State extends State<Dish31> {
                     setState(() {
                       dishRecords[index % pageViewSize].removeAt(index1);
                     });
-                    alert!.showAlert('Delete Dish', 'success', false, null);
+                    alert!.showAlert(
+                        appLocalizations
+                            .deleteRecord(appLocalizations.dishTitle),
+                        appLocalizations.success,
+                        false,
+                        null);
                   } catch (e) {
                     alert!.showAlert(
-                        'Delete Dish', 'Error deleting file: $e', false, null);
+                        appLocalizations
+                            .deleteRecord(appLocalizations.dishTitle),
+                        '${appLocalizations.error} $e',
+                        false,
+                        null);
                   }
                 });
               },
@@ -265,291 +282,321 @@ class _Dish31State extends State<Dish31> {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final currentWidth = MediaQuery.of(context).size.width;
     final columnSize = (currentWidth / 322).floor() - 1;
-
-    return Scaffold(
-      body: Column(
-        children: [
-          Expanded(child: dishPageView((columnSize == 0) ? 1 : columnSize)),
-          PageIndicator(
-            currentPageIndex: _currentPageIndex,
-            onUpdateCurrentPageIndex: _updateCurrentPageIndex,
-            isOnDesktopAndWeb: _isOnDesktopAndWeb,
-          ),
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                  border: Border(
-                      top: BorderSide(width: 1.0, color: colorScheme.primary))),
-              child: ListView(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
-                    child: Center(
-                      child: SizedBox(
-                          width: 288,
-                          child: TextField(
-                              minLines: 3,
-                              maxLines: null,
-                              style: TextStyle(color: colorScheme.primary),
-                              controller: _controllerDescCategory,
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(
-                                    borderRadius:
-                                        BorderRadius.all(Radius.circular(4))),
-                                labelText: 'Description Category',
-                              ))),
-                    ),
-                  ),
-                  Padding(
-                      padding: EdgeInsets.fromLTRB(0, 20, 0, 0),
-                      child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Container(
-                                width: 48,
-                                height: 48,
-                                decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4),
-                                        bottomLeft: Radius.circular(4)),
-                                    border: BorderDirectional(
-                                        top: BorderSide(
-                                            color: colorScheme.primary),
-                                        bottom: BorderSide(
-                                            color: colorScheme.primary),
-                                        start: BorderSide(
-                                            color: colorScheme.primary))),
-                                child: Icon(
-                                  Icons.category,
-                                  size: 20,
-                                )),
-                            SizedBox(
-                                width: 192,
-                                height: 48,
-                                child: TextField(
-                                    style:
-                                        TextStyle(color: colorScheme.primary),
-                                    controller: _controllerCategory,
-                                    decoration: InputDecoration(
-                                      border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.only()),
-                                      labelText: 'Category',
-                                    ))),
-                            ClipRRect(
-                              borderRadius: BorderRadius.only(
-                                  topRight: Radius.circular(4),
-                                  bottomRight: Radius.circular(4)),
-                              child: Material(
-                                color: colorScheme.onPrimary,
-                                child: InkWell(
-                                  splashColor: colorScheme.onPrimaryContainer,
-                                  child: SizedBox(
-                                    width: 48, // width * 0.15 - 2
-                                    height: 48,
-                                    child: Center(
-                                      child: Icon(
-                                        Icons.save,
-                                        color: colorScheme.primary,
-                                      ),
-                                    ),
-                                  ),
-                                  onTap: () {
-                                    updateCategory();
-                                  },
-                                ),
-                              ),
-                            )
-                          ])),
-                  Padding(
-                      padding: EdgeInsets.fromLTRB(0, 20, 0, 0),
-                      child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Container(
-                                width: 48,
-                                height: 48,
-                                decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4),
-                                        bottomLeft: Radius.circular(4)),
-                                    border: BorderDirectional(
-                                        top: BorderSide(
-                                            color: colorScheme.primary),
-                                        bottom: BorderSide(
-                                            color: colorScheme.primary),
-                                        start: BorderSide(
-                                            color: colorScheme.primary))),
-                                child: Icon(
-                                  Icons.dining_sharp,
-                                  size: 20,
-                                )),
-                            SizedBox(
-                                width: 160,
-                                height: 48,
-                                child: TextField(
-                                    onChanged: (value) {
-                                      titleDish = value;
-                                    },
-                                    style:
-                                        TextStyle(color: colorScheme.primary),
-                                    controller: _controllerDishTitle,
-                                    decoration: InputDecoration(
-                                      border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.only()),
-                                      labelText: 'Dish',
-                                    ))),
-                            SizedBox(
-                                width: 80,
-                                height: 48,
-                                child: TextField(
-                                    onChanged: (value) {
-                                      try {
-                                        price = double.parse(value);
-                                      } catch (e) {
-                                        price = 0;
-                                      }
-                                    },
-                                    style:
-                                        TextStyle(color: colorScheme.primary),
-                                    controller: _controllerDishPrice,
-                                    decoration: InputDecoration(
-                                      border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.only(
-                                              topRight: Radius.circular(4),
-                                              bottomRight: Radius.circular(4))),
-                                      labelText: 'price',
-                                    )))
-                          ])),
-                  Padding(
-                      padding: EdgeInsets.fromLTRB(0, 20, 0, 0),
+    final appLocalizations = AppLocalizations.of(context)!;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          if (imagePath.isNotEmpty) {
+            final file = File(imagePath);
+            if (file.existsSync()) file.deleteSync();
+          }
+          final navigator = Navigator.of(context);
+          navigator.pop(widget.categoryRecord);
+          return;
+        }
+      },
+      child: Scaffold(
+        body: Column(
+          children: [
+            Expanded(child: dishPageView((columnSize == 0) ? 1 : columnSize)),
+            PageIndicator(
+              currentPageIndex: _currentPageIndex,
+              onUpdateCurrentPageIndex: _updateCurrentPageIndex,
+              isOnDesktopAndWeb: _isOnDesktopAndWeb,
+            ),
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                    border: Border(
+                        top: BorderSide(
+                            width: 1.0, color: colorScheme.primary))),
+                child: ListView(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
                       child: Center(
                         child: SizedBox(
                             width: 288,
                             child: TextField(
-                                onChanged: (value) {
-                                  descDish = value;
-                                },
                                 minLines: 3,
                                 maxLines: null,
                                 style: TextStyle(color: colorScheme.primary),
-                                controller: _controllerDescDish,
+                                controller: _controllerDescCategory,
                                 decoration: InputDecoration(
                                   border: OutlineInputBorder(
                                       borderRadius:
                                           BorderRadius.all(Radius.circular(4))),
-                                  labelText: 'Description Dish',
+                                  labelText: appLocalizations.recordDesc(
+                                      appLocalizations.oldCategoryTitle),
                                 ))),
-                      )),
-                  Padding(
-                      padding: EdgeInsets.fromLTRB(0, 20, 0, 20),
-                      child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.only(
-                                topRight: Radius.circular(20.0),
-                                bottomLeft: Radius.circular(20.0),
-                              ),
-                              child: Image.asset(
-                                (imagePath.isEmpty) ? defaultImage : imagePath,
-                                fit: BoxFit.cover,
-                                width: 150, // width * 0.47
-                                height: 165, // height * 0.75
-                              ),
-                            ),
-                            /* Put Image here */
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(10, 0, 0, 0),
-                              child: ElevatedButton(
-                                  onPressed: () {
-                                    uploadImage();
+                      ),
+                    ),
+                    Padding(
+                        padding: EdgeInsets.fromLTRB(0, 20, 0, 0),
+                        child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.only(
+                                          topLeft: Radius.circular(4),
+                                          bottomLeft: Radius.circular(4)),
+                                      border: BorderDirectional(
+                                          top: BorderSide(
+                                              color: colorScheme.primary),
+                                          bottom: BorderSide(
+                                              color: colorScheme.primary),
+                                          start: BorderSide(
+                                              color: colorScheme.primary))),
+                                  child: Icon(
+                                    Icons.category,
+                                    size: 20,
+                                  )),
+                              SizedBox(
+                                  width: 192,
+                                  height: 48,
+                                  child: TextField(
+                                      style:
+                                          TextStyle(color: colorScheme.primary),
+                                      controller: _controllerCategory,
+                                      decoration: InputDecoration(
+                                        border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.only()),
+                                        labelText:
+                                            appLocalizations.oldCategoryTitle,
+                                      ))),
+                              ClipRRect(
+                                borderRadius: BorderRadius.only(
+                                    topRight: Radius.circular(4),
+                                    bottomRight: Radius.circular(4)),
+                                child: Material(
+                                  color: colorScheme.onPrimary,
+                                  child: InkWell(
+                                    splashColor: colorScheme.onPrimaryContainer,
+                                    child: SizedBox(
+                                      width: 48, // width * 0.15 - 2
+                                      height: 48,
+                                      child: Center(
+                                        child: Icon(
+                                          Icons.save,
+                                          color: colorScheme.primary,
+                                        ),
+                                      ),
+                                    ),
+                                    onTap: () {
+                                      updateCategory(
+                                          status: appLocalizations.update,
+                                          failed: appLocalizations.failed,
+                                          success: appLocalizations.success);
+                                    },
+                                  ),
+                                ),
+                              )
+                            ])),
+                    Padding(
+                        padding: EdgeInsets.fromLTRB(0, 20, 0, 0),
+                        child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.only(
+                                          topLeft: Radius.circular(4),
+                                          bottomLeft: Radius.circular(4)),
+                                      border: BorderDirectional(
+                                          top: BorderSide(
+                                              color: colorScheme.primary),
+                                          bottom: BorderSide(
+                                              color: colorScheme.primary),
+                                          start: BorderSide(
+                                              color: colorScheme.primary))),
+                                  child: Icon(
+                                    Icons.dining_sharp,
+                                    size: 20,
+                                  )),
+                              SizedBox(
+                                  width: 160,
+                                  height: 48,
+                                  child: TextField(
+                                      onChanged: (value) {
+                                        titleDish = value;
+                                      },
+                                      style:
+                                          TextStyle(color: colorScheme.primary),
+                                      controller: _controllerDishTitle,
+                                      decoration: InputDecoration(
+                                        border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.only()),
+                                        labelText: appLocalizations.dishTitle,
+                                      ))),
+                              SizedBox(
+                                  width: 80,
+                                  height: 48,
+                                  child: TextField(
+                                      onChanged: (value) {
+                                        try {
+                                          price = double.parse(value);
+                                        } catch (e) {
+                                          price = 0;
+                                        }
+                                      },
+                                      style:
+                                          TextStyle(color: colorScheme.primary),
+                                      controller: _controllerDishPrice,
+                                      decoration: InputDecoration(
+                                        border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.only(
+                                                topRight: Radius.circular(4),
+                                                bottomRight:
+                                                    Radius.circular(4))),
+                                        labelText: appLocalizations.dishPrice,
+                                      )))
+                            ])),
+                    Padding(
+                        padding: EdgeInsets.fromLTRB(0, 20, 0, 0),
+                        child: Center(
+                          child: SizedBox(
+                              width: 288,
+                              child: TextField(
+                                  onChanged: (value) {
+                                    descDish = value;
                                   },
-                                  child: Text('Upload')),
-                            )
-                          ])),
-                ],
+                                  minLines: 3,
+                                  maxLines: null,
+                                  style: TextStyle(color: colorScheme.primary),
+                                  controller: _controllerDescDish,
+                                  decoration: InputDecoration(
+                                    border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.all(
+                                            Radius.circular(4))),
+                                    labelText: appLocalizations
+                                        .recordDesc(appLocalizations.dishTitle),
+                                  ))),
+                        )),
+                    Padding(
+                        padding: EdgeInsets.fromLTRB(0, 20, 0, 20),
+                        child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.only(
+                                  topRight: Radius.circular(20.0),
+                                  bottomLeft: Radius.circular(20.0),
+                                ),
+                                child: Image.asset(
+                                  (imagePath.isEmpty)
+                                      ? defaultImage
+                                      : imagePath,
+                                  fit: BoxFit.cover,
+                                  width: 150, // width * 0.47
+                                  height: 165, // height * 0.75
+                                ),
+                              ),
+                              /* Put Image here */
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(10, 0, 0, 0),
+                                child: ElevatedButton(
+                                    onPressed: () {
+                                      uploadImage(
+                                          status: appLocalizations.upload,
+                                          failed: appLocalizations.failed);
+                                    },
+                                    child: Text('Upload')),
+                              )
+                            ])),
+                  ],
+                ),
               ),
             ),
-          ),
-          AnimatedCrossFade(
-            firstChild: SizedBox(),
-            secondChild: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-                child: TextField(
-                    controller: _controller,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Search Dish',
-                    ),
-                    onSubmitted: (text) {
-                      setState(() {
-                        _showWidgetB = !_showWidgetB;
-                        if (text.isNotEmpty) {
-                          getDishRecords(
-                              where: 'title LIKE ?', whereArgs: ['%$text%']);
-                          filterTitleDish = text;
-                        }
-                      });
-                    })),
-            crossFadeState: _showWidgetB
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 200),
-          ),
-          BottomNavigatorCustomize(listEnableBtn: [
-            true,
-            true,
-            true,
-            true
-          ], listCallback: [
-            () {
-              if (imagePath.isNotEmpty) {
-                final file = File(imagePath);
-                if (file.existsSync()) file.deleteSync();
-              }
-              Navigator.pop(context, widget.categoryRecord);
-            },
-            () {
-              if (imagePath.isNotEmpty) {
-                final file = File(imagePath);
-                if (file.existsSync()) file.deleteSync();
-              }
-              Navigator.popUntil(context, (route) => route.isFirst);
-            },
-            () {
-              setState(() {
-                _showWidgetB = !_showWidgetB;
-                if (filterTitleDish.isNotEmpty) {
-                  getDishRecords();
-                  filterTitleDish = "";
+            AnimatedCrossFade(
+              firstChild: SizedBox(),
+              secondChild: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+                  child: TextField(
+                      controller: _controller,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText:
+                            appLocalizations.search(appLocalizations.dishTitle),
+                      ),
+                      onSubmitted: (text) {
+                        setState(() {
+                          _showWidgetB = !_showWidgetB;
+                          if (text.isNotEmpty) {
+                            getDishRecords(
+                                where: 'title LIKE ?', whereArgs: ['%$text%']);
+                            filterTitleDish = text;
+                          }
+                        });
+                      })),
+              crossFadeState: _showWidgetB
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 200),
+            ),
+            BottomNavigatorCustomize(listEnableBtn: [
+              true,
+              true,
+              true,
+              true
+            ], listCallback: [
+              () {
+                if (imagePath.isNotEmpty) {
+                  final file = File(imagePath);
+                  if (file.existsSync()) file.deleteSync();
                 }
-              });
-            },
-            () {
-              insertDishRecord();
-            }
-          ], icons: [
-            Icon(
-              Icons.arrow_back,
-              color: colorScheme.primary,
-            ),
-            Icon(
-              Icons.home,
-              color: colorScheme.primary,
-            ),
-            Icon(
-              Icons.search,
-              color: colorScheme.primary,
-            ),
-            Icon(
-              Icons.add,
-              color: colorScheme.primary,
-            )
-          ]),
-        ],
+                Navigator.pop(context, widget.categoryRecord);
+              },
+              () {
+                if (imagePath.isNotEmpty) {
+                  final file = File(imagePath);
+                  if (file.existsSync()) file.deleteSync();
+                }
+                Navigator.popUntil(context, (route) => route.isFirst);
+              },
+              () {
+                setState(() {
+                  _showWidgetB = !_showWidgetB;
+                  if (filterTitleDish.isNotEmpty) {
+                    getDishRecords();
+                    filterTitleDish = "";
+                  }
+                });
+              },
+              () {
+                insertDishRecord(
+                    status: appLocalizations.save,
+                    failed: appLocalizations.failed,
+                    success: appLocalizations.success);
+              }
+            ], icons: [
+              Icon(
+                Icons.arrow_back,
+                color: colorScheme.primary,
+              ),
+              Icon(
+                Icons.home,
+                color: colorScheme.primary,
+              ),
+              Icon(
+                Icons.search,
+                color: colorScheme.primary,
+              ),
+              Icon(
+                Icons.add,
+                color: colorScheme.primary,
+              )
+            ]),
+          ],
+        ),
       ),
     );
   }

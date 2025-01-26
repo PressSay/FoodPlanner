@@ -4,8 +4,10 @@ import 'package:menu_qr/screens/home_18.dart';
 import 'package:menu_qr/services/providers/bill_provider.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-const appTitle = 'Menu QR App';
+const appTitle = 'Free Menu App';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,21 +24,65 @@ void main() async {
   ));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  ThemeMode themeMode = ThemeMode.system;
+
+  final ThemeData lightTheme = ThemeData(
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: Color.fromARGB(
+          255, 181, 101, 29), // Sử dụng màu nâu nhạt cho theme sáng
+    ),
+    useMaterial3: true,
+  );
+
+  final ThemeData darkTheme = ThemeData(
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: Color.fromARGB(
+          255, 139, 69, 19), // Sử dụng màu nâu sẫm hơn cho theme tối
+      brightness: Brightness.dark, // BẮT BUỘC phải có để nền tối
+    ),
+    useMaterial3: true,
+  );
+
+  void changeToDark() {
+    setState(() {
+      themeMode = ThemeMode.dark;
+    });
+  }
+
+  void changeToLight() {
+    setState(() {
+      themeMode = ThemeMode.light;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: appTitle,
-      theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color.fromARGB(255, 0, 178, 214)),
-          useMaterial3: true),
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: [
+        Locale('en'), // English
+        Locale('vi'), // Vietnamese
+      ],
+      theme: lightTheme,
+      darkTheme: darkTheme,
+      themeMode: themeMode,
       // home: const ResponsiveLayout(
       //     mobileBody: Scaffold(), desktopBody: Scaffold())
-      home: const Home18(),
+      home: Home18(changeToDark: changeToDark, changeToLight: changeToLight),
     );
   }
 }

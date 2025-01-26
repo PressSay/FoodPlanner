@@ -1,11 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import 'package:menu_qr/models/category_record.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/page_indicator.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class Category45 extends StatefulWidget {
   const Category45({super.key});
@@ -27,6 +29,7 @@ class _Category45 extends State<Category45> {
   final TextEditingController _controller = TextEditingController();
   final DataHelper dataHelper = DataHelper();
   final List<List<CategoryRecord>> categoryRecords = [];
+  final logger = Logger();
   late PageController _pageViewController;
 
   void getCategoryRecords(
@@ -157,78 +160,89 @@ class _Category45 extends State<Category45> {
     final DishProvider dishProvider = context.watch<DishProvider>();
     final currentWidth = MediaQuery.of(context).size.width;
     final columnSize = (currentWidth / 288).floor() - 1;
-
-    return Scaffold(
-      body: Column(children: [
-        Expanded(
-          child: SafeArea(
-            child: categoryPageView(
-                dishProvider, (columnSize == 0) ? 1 : columnSize),
-          ),
-        ),
-        PageIndicator(
-          currentPageIndex: _currentPageIndex,
-          onUpdateCurrentPageIndex: _updateCurrentPageIndex,
-          isOnDesktopAndWeb: _isOnDesktopAndWeb,
-        ),
-        AnimatedCrossFade(
-          firstChild: SizedBox(), // Thay thế CategoryBar bằng SizedBox
-          secondChild: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-            child: TextField(
-              controller: _controller,
-              decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Search Category',
-                  fillColor: colorScheme.primaryContainer),
-              onSubmitted: (text) {
-                setState(() {
-                  _showWidgetB = !_showWidgetB;
-                  if (text.isNotEmpty) {
-                    getCategoryRecords(
-                        dishProvider: dishProvider,
-                        where: 'title LIKE ? AND menuId = ?',
-                        whereArgs: ['%$text%', dishProvider.menuId]);
-                    filterTitleCategory = text;
-                  }
-                });
-              },
+    final appLocalizations = AppLocalizations.of(context)!;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          final navigator = Navigator.of(context);
+          logger.d("abc category");
+          navigator.pop();
+        }
+      },
+      child: Scaffold(
+        body: Column(children: [
+          Expanded(
+            child: SafeArea(
+              child: categoryPageView(
+                  dishProvider, (columnSize == 0) ? 1 : columnSize),
             ),
           ),
-          crossFadeState: _showWidgetB
-              ? CrossFadeState.showSecond
-              : CrossFadeState.showFirst,
-          duration: const Duration(milliseconds: 200),
-        ),
-        BottomNavigatorCustomize(listEnableBtn: [
-          true,
-          false,
-          false,
-          true
-        ], listCallback: [
-          () {
-            Navigator.pop(context);
-          },
-          () {
-            setState(() {
-              _showWidgetB = !_showWidgetB;
-              if (filterTitleCategory.isNotEmpty) {
-                getCategoryRecords(dishProvider: dishProvider);
-                filterTitleCategory = "";
-              }
-            });
-          }
-        ], icons: [
-          Icon(
-            Icons.arrow_back,
-            color: colorScheme.primary,
+          PageIndicator(
+            currentPageIndex: _currentPageIndex,
+            onUpdateCurrentPageIndex: _updateCurrentPageIndex,
+            isOnDesktopAndWeb: _isOnDesktopAndWeb,
           ),
-          Icon(
-            Icons.search,
-            color: colorScheme.primary,
-          )
+          AnimatedCrossFade(
+            firstChild: SizedBox(), // Thay thế CategoryBar bằng SizedBox
+            secondChild: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+              child: TextField(
+                controller: _controller,
+                decoration: InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText:
+                        appLocalizations.search(appLocalizations.categoryTitle),
+                    fillColor: colorScheme.primaryContainer),
+                onSubmitted: (text) {
+                  setState(() {
+                    _showWidgetB = !_showWidgetB;
+                    if (text.isNotEmpty) {
+                      getCategoryRecords(
+                          dishProvider: dishProvider,
+                          where: 'title LIKE ? AND menuId = ?',
+                          whereArgs: ['%$text%', dishProvider.menuId]);
+                      filterTitleCategory = text;
+                    }
+                  });
+                },
+              ),
+            ),
+            crossFadeState: _showWidgetB
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+          ),
+          BottomNavigatorCustomize(listEnableBtn: [
+            true,
+            false,
+            false,
+            true
+          ], listCallback: [
+            () {
+              Navigator.pop(context);
+            },
+            () {
+              setState(() {
+                _showWidgetB = !_showWidgetB;
+                if (filterTitleCategory.isNotEmpty) {
+                  getCategoryRecords(dishProvider: dishProvider);
+                  filterTitleCategory = "";
+                }
+              });
+            }
+          ], icons: [
+            Icon(
+              Icons.arrow_back,
+              color: colorScheme.primary,
+            ),
+            Icon(
+              Icons.search,
+              color: colorScheme.primary,
+            )
+          ]),
         ]),
-      ]),
+      ),
     );
   }
 

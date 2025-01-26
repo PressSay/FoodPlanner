@@ -12,7 +12,7 @@ class BillProvider extends ChangeNotifier {
       type: true,
       isLeft: false,
       preOrderedDishRecords: [],
-      dateTime: DateTime.now().millisecondsSinceEpoch);
+      dateTime: DateTime.now());
 
   void setBillRecord(
       double tax,

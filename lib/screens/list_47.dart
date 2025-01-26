@@ -2,14 +2,15 @@ import 'package:date_field/date_field.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:logger/logger.dart';
 import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/screens/list_detail_40.dart';
 import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
+import 'package:menu_qr/services/utils.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/order_setting_button.dart';
 import 'package:menu_qr/widgets/page_indicator.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ListScreen47 extends StatefulWidget {
   const ListScreen47({super.key});
@@ -137,6 +138,8 @@ class _ListScreen47State extends State<ListScreen47> {
   }
 
   Widget pageViewBuilder(double currentWidth, int columnSize) {
+    final appLocalizations = AppLocalizations.of(context)!;
+
     return PageView.builder(
         controller: _pageViewController,
         onPageChanged: _handlePageViewChanged,
@@ -159,8 +162,10 @@ class _ListScreen47State extends State<ListScreen47> {
                 });
               },
               callbackDelete: (List<BillRecord> inSideBillRecords, int index1) {
-                alert!.showAlert('Delete Bill', 'Are you Sure?', true,
-                    () async {
+                alert!.showAlert(
+                    appLocalizations.deleteRecord(appLocalizations.billRecord),
+                    appLocalizations.areYouSure,
+                    true, () async {
                   dataHelper.deleteBillRecord(inSideBillRecords[index1].id!);
                   setState(() {
                     billRecords[index % pageViewSize].removeAt(index1);
@@ -197,7 +202,6 @@ class _ListScreen47State extends State<ListScreen47> {
                 child: DateTimeField(
                     value: dateFilter,
                     decoration: const InputDecoration(
-                      labelText: 'Enter Date',
                       helperText: 'DD/MM/YYYY',
                     ),
                     dateFormat: DateFormat('dd/MM/yyyy'),
@@ -207,13 +211,10 @@ class _ListScreen47State extends State<ListScreen47> {
                       _showWidgetB = !_showWidgetB;
                       if (value != null) {
                         getBillRecords(
-                            where:
-                                'datetime >= ? AND datetime < ? AND isLeft = ?',
+                            where: "STRFTIME('%Y-%m-%d', datetime) = ? "
+                                "AND isLeft = ?",
                             whereArgs: [
-                              value.millisecondsSinceEpoch,
-                              value
-                                  .add(const Duration(days: 1))
-                                  .millisecondsSinceEpoch,
+                              DateFormat('yyyy-MM-dd').format(value),
                               0
                             ]);
                         dateFilter = value;
@@ -252,13 +253,11 @@ class _ListScreen47State extends State<ListScreen47> {
               if (billIdsArg.isEmpty) {
                 return;
               }
-              Navigator.push(
+              navigateWithFade(
                   context,
-                  MaterialPageRoute(
-                    builder: (BuildContext context) => ListDetail40(
-                      onlyView: false,
-                      listBillId: billIdsArg,
-                    ),
+                  ListDetail40(
+                    onlyView: false,
+                    listBillId: billIdsArg,
                   ));
             }
           ], icons: [

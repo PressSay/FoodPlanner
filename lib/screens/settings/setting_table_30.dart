@@ -7,6 +7,7 @@ import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/page_indicator.dart';
 import 'package:menu_qr/widgets/setting_button.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class Table30 extends StatefulWidget {
   const Table30({super.key});
@@ -55,7 +56,7 @@ class _Table30State extends State<Table30> {
     });
   }
 
-  void updateTableRecord() async {
+  void updateTableRecord(String status, String content) async {
     final TableRecord newE = TableRecord(
         id: tableId,
         name: _controllerTableOld.text,
@@ -65,12 +66,13 @@ class _Table30State extends State<Table30> {
     setState(() {
       tableRecordsList[indexTableRecordsList][indexTableRecords] = newE;
     });
-    alert!.showAlert('Update Table', 'success!', false, null);
+    alert!.showAlert(status, content, false, null);
   }
 
-  void insertTableRecord() async {
+  void insertTableRecord(String statusFailed, String contentFailed,
+      String status, String content) async {
     if (_controllerTable.text.isEmpty || _controllerTable.text.isEmpty) {
-      alert!.showAlert('Insert Table', 'failed!', false, null);
+      alert!.showAlert(statusFailed, contentFailed, false, null);
       return;
     }
     final TableRecord newE = TableRecord(
@@ -79,7 +81,7 @@ class _Table30State extends State<Table30> {
         numOfPeople: 0);
     int lastId = await dataHelper.insertTableRecord(newE);
     if (lastId == 0) {
-      alert!.showAlert('Insert Table', 'failed!', false, null);
+      alert!.showAlert(statusFailed, contentFailed, false, null);
     }
     newE.id = lastId;
     if (tableRecordsList[_currentPageIndex].length < pageSize) {
@@ -88,7 +90,7 @@ class _Table30State extends State<Table30> {
         tableRecordsList[_currentPageIndex].add(newE);
       });
     }
-    alert!.showAlert('Insert Table', 'success!', false, null);
+    alert!.showAlert(status, content, false, null);
   }
 
   @override
@@ -176,7 +178,7 @@ class _Table30State extends State<Table30> {
     );
   }
 
-  PageView tablePageView() {
+  PageView tablePageView(String statusDelete, String contentDelete) {
     return PageView.builder(
         controller: _pageViewController,
         onPageChanged: _handlePageViewChanged,
@@ -186,8 +188,7 @@ class _Table30State extends State<Table30> {
                   tableRecordsList.elementAtOrNull(index % pageViewSize) ?? [],
               deleteCallback:
                   (List<TableRecord> insideTableRecords, int index1) {
-                alert!.showAlert('Delete Table Record', 'Are You Sure', true,
-                    () {
+                alert!.showAlert(statusDelete, contentDelete, true, () {
                   dataHelper.deleteTableRecord(insideTableRecords[index1].id!);
                   setState(() {
                     insideTableRecords.removeAt(index1);
@@ -215,13 +216,15 @@ class _Table30State extends State<Table30> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
+    final applocalizations = AppLocalizations.of(context)!;
     return Scaffold(
       body: Column(
         children: [
           Expanded(
               child: SafeArea(
-            child: tablePageView(),
+            child: tablePageView(
+                applocalizations.deleteRecord(applocalizations.tableRecord),
+                applocalizations.areYouSure),
           )),
           PageIndicator(
             currentPageIndex: _currentPageIndex,
@@ -249,7 +252,8 @@ class _Table30State extends State<Table30> {
                                   border: OutlineInputBorder(
                                       borderRadius:
                                           BorderRadius.all(Radius.circular(4))),
-                                  labelText: 'Description Table Old',
+                                  labelText: applocalizations.recordDesc(
+                                      applocalizations.oldTableRecord),
                                 ))),
                       )),
                   Padding(
@@ -285,7 +289,8 @@ class _Table30State extends State<Table30> {
                                   decoration: InputDecoration(
                                     border: OutlineInputBorder(
                                         borderRadius: BorderRadius.only()),
-                                    labelText: 'Table Old',
+                                    labelText: applocalizations
+                                        .title(applocalizations.oldTableRecord),
                                   ))),
                           ClipRRect(
                             borderRadius: BorderRadius.only(
@@ -306,7 +311,8 @@ class _Table30State extends State<Table30> {
                                   ),
                                 ),
                                 onTap: () {
-                                  updateTableRecord();
+                                  updateTableRecord(applocalizations.update,
+                                      applocalizations.success);
                                 },
                               ),
                             ),
@@ -349,7 +355,8 @@ class _Table30State extends State<Table30> {
                                           borderRadius: BorderRadius.only(
                                               topRight: Radius.circular(4),
                                               bottomRight: Radius.circular(4))),
-                                      labelText: 'Table',
+                                      labelText: applocalizations
+                                          .title(applocalizations.tableRecord),
                                     )))
                           ])),
                   Padding(
@@ -366,7 +373,8 @@ class _Table30State extends State<Table30> {
                                   border: OutlineInputBorder(
                                       borderRadius:
                                           BorderRadius.all(Radius.circular(4))),
-                                  labelText: 'Description Table',
+                                  labelText: applocalizations
+                                      .recordDesc(applocalizations.tableRecord),
                                 ))),
                       )),
                 ],
@@ -381,7 +389,8 @@ class _Table30State extends State<Table30> {
                     controller: _controllerDescOld,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(),
-                      labelText: 'Search Table',
+                      labelText:
+                          applocalizations.search(applocalizations.tableRecord),
                     ),
                     onSubmitted: (text) {
                       setState(() {
@@ -420,7 +429,8 @@ class _Table30State extends State<Table30> {
               });
             },
             () {
-              insertTableRecord();
+              insertTableRecord(applocalizations.save, applocalizations.failed,
+                  applocalizations.save, applocalizations.success);
             }
           ], icons: [
             Icon(

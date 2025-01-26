@@ -10,7 +10,7 @@ class BillRecord {
   String nameTable;
   bool isLeft;
   bool type; // if true buy take away
-  int dateTime;
+  DateTime dateTime;
   List<PreOrderedDishRecord>? preOrderedDishRecords;
 
   // // For dicountNext
@@ -52,7 +52,7 @@ class BillRecord {
       'nameTable': nameTable,
       'isLeft': (isLeft) ? 1 : 0,
       'type': (type) ? 1 : 0,
-      'dateTime': dateTime,
+      'dateTime': dateTime.toString(),
       'tax': tax
     };
   }
@@ -66,7 +66,7 @@ class BillRecord {
         nameTable: map['nameTable'],
         isLeft: map['isLeft'] == 1,
         type: map['type'] == 1,
-        dateTime: map['dateTime'],
+        dateTime: DateTime.parse(map['dateTime']),
         tax: map['tax']);
   }
 }

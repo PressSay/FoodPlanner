@@ -10,6 +10,8 @@ import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/page_indicator.dart';
 import 'package:menu_qr/widgets/table_button.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:menu_qr/services/utils.dart';
 
 class Table35 extends StatefulWidget {
   const Table35({super.key, required this.isList, required this.billId});
@@ -176,16 +178,15 @@ class _Table35 extends State<Table35> {
                   saveBillToRam(
                       value.id!, value.name, billProvider, dishProvider);
                 }
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (BuildContext context) => Table36(
-                        isList: widget.isList,
-                        tableRecord: value,
-                        oldIndexTableRecordsList: indexTableRecordsList,
-                        oldIndexTableRecords: indexTableRecords,
-                      ),
-                    )).then((onValue) {
+                navigateWithFade(
+                  context,
+                  Table36(
+                    isList: widget.isList,
+                    tableRecord: value,
+                    oldIndexTableRecordsList: indexTableRecordsList,
+                    oldIndexTableRecords: indexTableRecords,
+                  ),
+                ).then((onValue) {
                   // 36 -> 35 phải có tableOldId và tableNewId để cập nhật
                   if (onValue is Map<String, int>) {
                     final oldId = onValue['oldId']!;
@@ -226,6 +227,7 @@ class _Table35 extends State<Table35> {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final DishProvider dishProvider = context.watch<DishProvider>();
     final BillProvider billProvider = context.watch<BillProvider>();
+    final appLocalizations = AppLocalizations.of(context)!;
 
     return Scaffold(
       body: Column(
@@ -247,7 +249,8 @@ class _Table35 extends State<Table35> {
                       controller: _controller,
                       decoration: InputDecoration(
                         border: OutlineInputBorder(),
-                        labelText: 'Search Table',
+                        labelText: appLocalizations
+                            .search(appLocalizations.tableRecord),
                         filled: true,
                       ),
                       onSubmitted: (text) {

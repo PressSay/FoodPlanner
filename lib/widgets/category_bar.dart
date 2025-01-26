@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class CategoryBar extends StatelessWidget {
   const CategoryBar(
@@ -24,7 +25,7 @@ class CategoryBar extends StatelessWidget {
               onPressed: () {
                 categoryFunc();
               },
-              child: Text("Class Category")),
+              child: Text(AppLocalizations.of(context)!.category)),
         ),
         SizedBox(width: 8),
         SizedBox(
@@ -41,7 +42,10 @@ class CategoryBar extends StatelessWidget {
               },
               child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [Text("Order"), Icon(Icons.shopping_cart)])),
+                  children: [
+                    Text(AppLocalizations.of(context)!.order),
+                    Icon(Icons.shopping_cart)
+                  ])),
         )
       ],
     );

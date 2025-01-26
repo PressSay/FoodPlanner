@@ -6,9 +6,11 @@ import 'package:menu_qr/models/bill_record.dart';
 import 'package:menu_qr/screens/list_detail_40.dart';
 import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
+import 'package:menu_qr/services/utils.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/order_setting_button_online.dart';
 import 'package:menu_qr/widgets/page_indicator.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ListOnline48 extends StatefulWidget {
   const ListOnline48({super.key});
@@ -140,6 +142,7 @@ class _ListOnline48State extends State<ListOnline48> {
   }
 
   Widget pageViewBuilder(int columnSize) {
+    final appLocalizations = AppLocalizations.of(context)!;
     return PageView.builder(
         controller: _pageViewController,
         onPageChanged: _handlePageViewChanged,
@@ -167,8 +170,10 @@ class _ListOnline48State extends State<ListOnline48> {
                 });
               },
               callbackDelete: (List<BillRecord> inSideBillRecords, int index1) {
-                alert!.showAlert('Delete Bill', 'Are you Sure?', true,
-                    () async {
+                alert!.showAlert(
+                    appLocalizations.deleteRecord(appLocalizations.billRecord),
+                    appLocalizations.areYouSure,
+                    true, () async {
                   dataHelper.deleteBillRecord(inSideBillRecords[index1].id!);
                   setState(() {
                     billRecords[index % pageViewSize].removeAt(index1);
@@ -183,7 +188,7 @@ class _ListOnline48State extends State<ListOnline48> {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final currentWidth = MediaQuery.of(context).size.width;
-    final columnSize = (currentWidth / 320).floor() - 1;
+    final columnSize = (currentWidth / 322).floor() - 1;
 
     return Scaffold(
       body: Column(
@@ -257,7 +262,6 @@ class _ListOnline48State extends State<ListOnline48> {
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
                 child: DateTimeField(
                     decoration: const InputDecoration(
-                      labelText: 'Enter Date',
                       helperText: 'DD/MM/YYYY',
                     ),
                     dateFormat: DateFormat('dd/MM/yyyy'),
@@ -267,13 +271,10 @@ class _ListOnline48State extends State<ListOnline48> {
                       _showWidgetB = !_showWidgetB;
                       if (value != null) {
                         getBillRecords(
-                            where:
-                                'datetime >= ? AND datetime < ? AND isLeft = ?',
+                            where: "STRFTIME('%Y-%m-%d', datetime) = ? "
+                                "AND isLeft = ?",
                             whereArgs: [
-                              value.millisecondsSinceEpoch,
-                              value
-                                  .add(const Duration(days: 1))
-                                  .millisecondsSinceEpoch,
+                              DateFormat('yyyy-MM-dd').format(value),
                               0
                             ]);
                         dateFilter = value;
@@ -312,13 +313,11 @@ class _ListOnline48State extends State<ListOnline48> {
               if (billIdsArg.isEmpty) {
                 return;
               }
-              Navigator.push(
+              navigateWithFade(
                   context,
-                  MaterialPageRoute(
-                    builder: (BuildContext context) => ListDetail40(
-                      onlyView: false,
-                      listBillId: billIdsArg,
-                    ),
+                  ListDetail40(
+                    onlyView: false,
+                    listBillId: billIdsArg,
                   ));
             }
           ], icons: [

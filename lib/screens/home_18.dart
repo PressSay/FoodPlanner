@@ -1,26 +1,47 @@
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import 'package:menu_qr/screens/list_47.dart';
-import 'package:menu_qr/screens/list_48.dart';
+import 'package:menu_qr/screens/overview_20.dart';
 import 'package:menu_qr/screens/settings/setting_17.dart';
 import 'package:menu_qr/screens/table_35.dart';
 import 'package:menu_qr/widgets/bar_button.dart';
 import 'package:menu_qr/widgets/menu_button.dart';
 import 'package:menu_qr/screens/order_44.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:menu_qr/services/utils.dart';
 
 class Home18 extends StatefulWidget {
-  const Home18({super.key});
+  const Home18(
+      {super.key, required this.changeToLight, required this.changeToDark});
+  final Function changeToLight;
+  final Function changeToDark;
 
   @override
   State<StatefulWidget> createState() => _Home18();
 }
 
 class _Home18 extends State<Home18> {
-  int isDark = 0;
+  String shopName = '';
+  bool isDark = false;
+
+  Future<void> loadData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      shopName = prefs.getString('name') ?? '';
+    });
+  }
+
+  @override
+  void initState() {
+    loadData();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
+    final logger = Logger();
     double heightScreen = MediaQuery.sizeOf(context).height;
 
     return Scaffold(
@@ -31,27 +52,41 @@ class _Home18 extends State<Home18> {
           child:
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             BarButton(
-              iconData: Icons.notifications,
-              navigateFunc: () {},
+              iconData: Icons.dark_mode,
+              navigateFunc: () {
+                if (!isDark) {
+                  logger.d("change dark");
+                  widget.changeToDark();
+                  isDark = true;
+                }
+              },
             ),
-            TextButton(
-                onPressed: () {
-                  setState(() {
-                    isDark++;
-                  });
-                },
-                child: Text('$isDark')),
-            BarButton(iconData: Icons.person, navigateFunc: () {})
+            SizedBox(
+              width: 10,
+            ),
+            BarButton(
+                iconData: Icons.light_mode,
+                navigateFunc: () {
+                  if (isDark) {
+                    logger.d("change light");
+                    widget.changeToLight();
+                    isDark = false;
+                  }
+                })
           ])),
       Padding(
           padding: EdgeInsets.fromLTRB(10, 0, 10, 10),
           child: Column(children: [
             Center(
-              child: Text('The star of the store'),
+              child: Text(AppLocalizations.of(context)!.hello),
             ),
-            Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [Text('1.45M'), Icon(Icons.star)])
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Text(shopName),
+              Icon(
+                Icons.star,
+                color: colorScheme.primary,
+              )
+            ])
           ])),
       Container(
           height: heightScreen * 0.7,
@@ -66,26 +101,18 @@ class _Home18 extends State<Home18> {
                     Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                   MenuButton(
                     iconData: Icons.table_bar,
-                    text: "Table Unclock",
+                    text: AppLocalizations.of(context)!.tableUnlock,
                     navigateFunc: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              maintainState: true,
-                              builder: (context) =>
-                                  Table35(isList: true, billId: 0)));
+                      navigateWithFade(
+                          context, Table35(isList: true, billId: 0));
                     },
                   ),
                   Padding(padding: EdgeInsets.all(20)),
                   MenuButton(
-                      iconData: Icons.adb,
-                      text: "Order online List",
+                      iconData: Icons.description,
+                      text: AppLocalizations.of(context)!.overview,
                       navigateFunc: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                maintainState: true,
-                                builder: (context) => ListOnline48()));
+                        navigateWithFade(context, Overview20());
                       })
                 ])),
             Padding(
@@ -94,28 +121,26 @@ class _Home18 extends State<Home18> {
                     Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                   MenuButton(
                     iconData: Icons.assignment,
-                    text: "Order Offline List",
+                    text: AppLocalizations.of(context)!.billList,
                     navigateFunc: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (BuildContext context) => ListScreen47(),
-                          ));
+                      navigateWithFade(
+                        context,
+                        ListScreen47(),
+                      );
                     },
                   ),
                   Padding(padding: EdgeInsets.all(20)),
                   MenuButton(
                       iconData: Icons.storefront,
-                      text: "Start Order",
+                      text: AppLocalizations.of(context)!.order,
                       navigateFunc: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (BuildContext context) => Order44(
-                                isImmediate: false,
-                                isRebuild: false,
-                              ),
-                            ));
+                        navigateWithFade(
+                          context,
+                          Order44(
+                            isImmediate: false,
+                            isRebuild: false,
+                          ),
+                        );
                       })
                 ])),
             Padding(
@@ -125,25 +150,21 @@ class _Home18 extends State<Home18> {
                   MenuButton(
                     key: const ValueKey('Setting'),
                     iconData: Icons.settings,
-                    text: "Setting",
+                    text: AppLocalizations.of(context)!.setting,
                     navigateFunc: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (BuildContext context) => Setting17(),
-                          ));
+                      navigateWithFade(context, Setting17());
                     },
                   ),
                   Padding(padding: EdgeInsets.all(20)),
                   MenuButton(
                       iconData: Icons.payment,
-                      text: "Buy Take Away",
+                      text: AppLocalizations.of(context)!.buyTakeAway,
                       navigateFunc: () {
-                        Navigator.push(
+                        navigateWithFade(
                             context,
-                            MaterialPageRoute(
-                              builder: (BuildContext context) =>
-                                  Order44(isImmediate: true, isRebuild: false),
+                            Order44(
+                              isImmediate: true,
+                              isRebuild: false,
                             ));
                       })
                 ]))

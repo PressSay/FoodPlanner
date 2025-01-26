@@ -9,13 +9,18 @@ class MockNavigatorObserver extends Mock implements NavigatorObserver {}
 
 final logger = Logger();
 
+void dump() {}
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   testWidgets('Test open menu widget', (tester) async {
     final mockObserver = MockNavigatorObserver();
     await tester.pumpWidget(
       MaterialApp(
-        home: const Home18(),
+        home: const Home18(
+          changeToDark: dump,
+          changeToLight: dump,
+        ),
         navigatorObservers: [mockObserver],
       ),
     );

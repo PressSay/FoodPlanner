@@ -43,8 +43,11 @@ class DishCofirm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    String priceDisplayToStr =
-        NumberFormat.currency(locale: 'vi_VN').format(price);
+    final myLocale = Localizations.localeOf(context);
+    final priceDisplayToStr = NumberFormat.currency(
+            locale: (myLocale.toString() == 'vi') ? 'vi_VN' : 'en_US',
+            symbol: (myLocale.toString() == 'vi') ? 'đ' : '\$')
+        .format(price);
     return Center(
         child: Padding(
       padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),

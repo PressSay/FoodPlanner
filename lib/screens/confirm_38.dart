@@ -23,7 +23,6 @@ class Confirm38 extends StatefulWidget {
 }
 
 class _Confirm38 extends State<Confirm38> {
-  String timeZone = 'vi_VN';
   bool isAddedDishRecordSorted = false;
   int offset = 1;
   double tax = 0;
@@ -74,6 +73,15 @@ class _Confirm38 extends State<Confirm38> {
       }
     }
     total = tmpTotal;
+  }
+
+  String moneyFormat(double money) {
+    final myLocale = Localizations.localeOf(context);
+
+    return NumberFormat.currency(
+            locale: (myLocale.toString() == 'vi') ? 'vi_VN' : 'en_US',
+            symbol: (myLocale.toString() == 'vi') ? 'đ' : '\$')
+        .format(money);
   }
 
   @override
@@ -289,9 +297,7 @@ class _Confirm38 extends State<Confirm38> {
                                     fontWeight: FontWeight.bold),
                               ),
                               Padding(padding: EdgeInsets.all(4)),
-                              Text(
-                                  NumberFormat.currency(locale: timeZone)
-                                      .format(total * tax),
+                              Text(moneyFormat(total * tax),
                                   style: TextStyle(
                                       fontSize: 16,
                                       color: colorScheme.secondary,
@@ -308,9 +314,7 @@ class _Confirm38 extends State<Confirm38> {
                                     fontWeight: FontWeight.bold),
                               ),
                               Padding(padding: EdgeInsets.all(4)),
-                              Text(
-                                  NumberFormat.currency(locale: timeZone)
-                                      .format(total - discount),
+                              Text(moneyFormat(total - discount),
                                   style: TextStyle(
                                       fontSize: 16,
                                       color: colorScheme.secondary,

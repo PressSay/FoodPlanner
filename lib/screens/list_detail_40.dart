@@ -37,7 +37,6 @@ class ListDetail40 extends StatefulWidget {
 }
 
 class _ListDetail40State extends State<ListDetail40> {
-  String timeZone = 'vi_VN';
   BillRecord? billRecord; // lam sao de chinh gia tri default nay day
   List<BillRecord> billRecords = [];
   int indexBillIdCurrent = 0;
@@ -126,6 +125,15 @@ class _ListDetail40State extends State<ListDetail40> {
     dataHelper.updateTableRecord(tableRecord);
   }
 
+  String moneyFormat(double money) {
+    final myLocale = Localizations.localeOf(context);
+
+    return NumberFormat.currency(
+            locale: (myLocale.toString() == 'vi') ? 'vi_VN' : 'en_US',
+            symbol: (myLocale.toString() == 'vi') ? 'đ' : '\$')
+        .format(money);
+  }
+
   Widget infoPrice(
       ColorScheme colorScheme, double paid, double total, double tax) {
     final appLocalizations = AppLocalizations.of(context)!;
@@ -147,7 +155,7 @@ class _ListDetail40State extends State<ListDetail40> {
                       fontWeight: FontWeight.bold),
                 ),
                 Padding(padding: EdgeInsets.all(4)),
-                Text(NumberFormat.currency(locale: timeZone).format(paid),
+                Text(moneyFormat(paid),
                     style: TextStyle(
                         fontSize: 16,
                         color: colorScheme.secondary,
@@ -164,7 +172,7 @@ class _ListDetail40State extends State<ListDetail40> {
                       fontWeight: FontWeight.bold),
                 ),
                 Padding(padding: EdgeInsets.all(4)),
-                Text(NumberFormat.currency(locale: timeZone).format(tax),
+                Text(moneyFormat(tax),
                     style: TextStyle(
                         fontSize: 16,
                         color: colorScheme.secondary,
@@ -181,7 +189,7 @@ class _ListDetail40State extends State<ListDetail40> {
                       fontWeight: FontWeight.bold),
                 ),
                 Padding(padding: EdgeInsets.all(4)),
-                Text(NumberFormat.currency(locale: timeZone).format(total),
+                Text(moneyFormat(total),
                     style: TextStyle(
                         fontSize: 16,
                         color: colorScheme.secondary,
@@ -198,9 +206,7 @@ class _ListDetail40State extends State<ListDetail40> {
                       fontWeight: FontWeight.bold),
                 ),
                 Padding(padding: EdgeInsets.all(4)),
-                Text(
-                    NumberFormat.currency(locale: timeZone)
-                        .format(paid - total),
+                Text(moneyFormat(paid - total),
                     style: TextStyle(
                         fontSize: 16,
                         color: colorScheme.secondary,
@@ -298,7 +304,7 @@ class _ListDetail40State extends State<ListDetail40> {
               child: SafeArea(
                 child: Column(children: [
                   Expanded(
-                    child: dishPageView((columnSize == 0) ? 1 : 0),
+                    child: dishPageView((columnSize == 0) ? 1 : columnSize),
                   ),
                   PageIndicator(
                     currentPageIndex: _currentPageIndex,

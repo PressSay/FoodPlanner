@@ -243,7 +243,8 @@ class _Dish32State extends State<Dish32> {
                                         success: applocalizations.success,
                                         failed: applocalizations.failed);
                                   },
-                                  child: Text('')),
+                                  child: Text(
+                                      AppLocalizations.of(context)!.upload)),
                             )
                           ])),
                 ],

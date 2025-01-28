@@ -319,6 +319,11 @@
     "quantity": "Quantity",
     "@quantity": {
         "description": "pdf quantity product"
-    }
+    },
 
+
+    "permissionDenied": "Permission denied",
+    "@permissionDenied": {
+        "description": "no access to storage"
+    }
 }

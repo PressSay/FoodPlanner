@@ -194,7 +194,7 @@ class _Order44 extends State<Order44> {
     widget.billRecord?.preOrderedDishRecords?.addAll(dishRecordSorted);
     // storage to database
     dataHelper.insertDishesAtBillId(dishRecordSorted, widget.billRecord!.id!);
-    Navigator.pop(context, dishRecordSorted);
+    Navigator.of(context).pop(dishRecordSorted);
   }
 
   void _updateCurrentPageIndex(int index) {
@@ -229,119 +229,110 @@ class _Order44 extends State<Order44> {
     final columnSize = (currentWidth / 320).floor() - 1;
     final appLocalizations = AppLocalizations.of(context)!;
 
-    return PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (bool didPop, _) {
-          if (!didPop) {
-            final navigator = Navigator.of(context);
-            navigator.pop();
-            // logger.d("order 44");
-          }
-        },
-        child: Scaffold(
-          body: Column(
-            children: [
-              Expanded(
-                child: SafeArea(
-                    child: Column(
-                  children: [
-                    Expanded(
-                        child: pageViewBuilder(
-                            dishProvider, (columnSize == 0) ? 1 : columnSize)),
-                    PageIndicator(
-                      currentPageIndex: _currentPageIndex,
-                      onUpdateCurrentPageIndex: _updateCurrentPageIndex,
-                      isOnDesktopAndWeb: _isOnDesktopAndWeb,
-                    ),
-                    Padding(padding: EdgeInsets.all(8)),
-                    CategoryBar(categoryFunc: () {
-                      navigateWithFade(context, Category45()).then((onValue) {
-                        if (categoryIdInScreen != dishProvider.categoryId) {
-                          getDishRecords(dishProvider: dishProvider);
-                        }
-                      });
-                    }, orderFunc: () {
-                      dishProvider.deleteEmptyIndexDishList();
-                      if (dishProvider.indexDishList.isEmpty) {
-                        return;
-                      }
-                      if (widget.isRebuild) {
-                        saveRebuildDishes(dishProvider, billProvider);
-                        return;
-                      }
-                      navigateWithFade(
-                          context, Confirm38(isImmediate: widget.isImmediate));
-                    }),
-                    Padding(padding: EdgeInsets.all(8)),
-                  ],
-                )),
-              ),
-              AnimatedCrossFade(
-                firstChild: SizedBox(),
-                secondChild: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-                    child: TextField(
-                        controller: _controller,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(),
-                          labelText: appLocalizations
-                              .search(appLocalizations.dishTitle),
-                        ),
-                        onSubmitted: (text) {
-                          setState(() {
-                            _showWidgetB = !_showWidgetB;
-                            if (text.isNotEmpty) {
-                              getDishRecords(
-                                  dishProvider: dishProvider,
-                                  where: 'title LIKE ?',
-                                  whereArgs: ['%$text%']);
-                              titleFilter = text;
-                            }
-                          });
-                        })),
-                crossFadeState: _showWidgetB
-                    ? CrossFadeState.showSecond
-                    : CrossFadeState.showFirst,
-                duration: const Duration(milliseconds: 200),
-              ),
-              BottomNavigatorCustomize(listEnableBtn: [
-                true,
-                true,
-                false,
-                true
-              ], listCallback: [
-                () {
-                  Navigator.pop(context);
-                },
-                () {
-                  dishProvider.clearIndexListWithNotify();
-                },
-                () {
-                  setState(() {
-                    _showWidgetB = !_showWidgetB;
-                    if (titleFilter.isNotEmpty) {
+    return Scaffold(
+      body: Column(
+        children: [
+          Expanded(
+            child: SafeArea(
+                child: Column(
+              children: [
+                Expanded(
+                    child: pageViewBuilder(
+                        dishProvider, (columnSize == 0) ? 1 : columnSize)),
+                PageIndicator(
+                  currentPageIndex: _currentPageIndex,
+                  onUpdateCurrentPageIndex: _updateCurrentPageIndex,
+                  isOnDesktopAndWeb: _isOnDesktopAndWeb,
+                ),
+                Padding(padding: EdgeInsets.all(8)),
+                CategoryBar(categoryFunc: () {
+                  navigateWithFade(context, Category45()).then((onValue) {
+                    if (categoryIdInScreen != dishProvider.categoryId) {
                       getDishRecords(dishProvider: dishProvider);
-                      titleFilter = "";
                     }
                   });
-                }
-              ], icons: [
-                Icon(
-                  Icons.arrow_back,
-                  color: colorScheme.primary,
-                ),
-                Icon(
-                  Icons.delete,
-                  color: colorScheme.error,
-                ),
-                Icon(
-                  Icons.search,
-                  color: colorScheme.primary,
-                )
-              ])
-            ],
+                }, orderFunc: () {
+                  dishProvider.deleteEmptyIndexDishList();
+                  if (dishProvider.indexDishList.isEmpty) {
+                    return;
+                  }
+                  if (widget.isRebuild) {
+                    saveRebuildDishes(dishProvider, billProvider);
+                    return;
+                  }
+                  navigateWithFade(
+                      context, Confirm38(isImmediate: widget.isImmediate));
+                }),
+                Padding(padding: EdgeInsets.all(8)),
+              ],
+            )),
           ),
-        ));
+          AnimatedCrossFade(
+            firstChild: SizedBox(),
+            secondChild: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+                child: TextField(
+                    controller: _controller,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText:
+                          appLocalizations.search(appLocalizations.dishTitle),
+                    ),
+                    onSubmitted: (text) {
+                      setState(() {
+                        _showWidgetB = !_showWidgetB;
+                        if (text.isNotEmpty) {
+                          getDishRecords(
+                              dishProvider: dishProvider,
+                              where: 'title LIKE ?',
+                              whereArgs: ['%$text%']);
+                          titleFilter = text;
+                        }
+                      });
+                    })),
+            crossFadeState: _showWidgetB
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+          ),
+          BottomNavigatorCustomize(listEnableBtn: [
+            true,
+            true,
+            false,
+            true
+          ], listCallback: [
+            () {
+              Navigator.pop(context);
+            },
+            () {
+              dishProvider.clearIndexListWithNotify();
+            },
+            () {
+              setState(() {
+                _showWidgetB = !_showWidgetB;
+                if (titleFilter.isNotEmpty) {
+                  getDishRecords(dishProvider: dishProvider);
+                  titleFilter = "";
+                }
+              });
+            }
+          ], icons: [
+            Icon(
+              Icons.arrow_back,
+              color: colorScheme.primary,
+            ),
+            Icon(
+              Icons.delete,
+              color: colorScheme.error,
+            ),
+            Icon(
+              Icons.search,
+              color: colorScheme.primary,
+            )
+          ])
+        ],
+      ),
+    );
   }
 
   bool get _isOnDesktopAndWeb {

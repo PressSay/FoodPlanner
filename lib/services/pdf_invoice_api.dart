@@ -21,16 +21,25 @@ class PdfInvoiceApi {
     String timeZone,
     String billName,
   ) async {
-    final fbase = await PdfGoogleFonts.notoSansRegular();
-    final fbold = await PdfGoogleFonts.notoSansBold();
-    final fitalic = await PdfGoogleFonts.notoSansItalic();
-    final fboldItalic = await PdfGoogleFonts.notoSansBoldItalic();
+    final regularFontData =
+        await rootBundle.load('assets/fonts/NotoSans-Regular.ttf');
+    final boldFontData =
+        await rootBundle.load('assets/fonts/NotoSans-Bold.ttf');
+    final italicFontData =
+        await rootBundle.load('assets/fonts/NotoSans-Italic.ttf');
+    final boldItalicFontData =
+        await rootBundle.load('assets/fonts/NotoSans-BoldItalic.ttf');
 
-    ThemeData themeData = ThemeData.withFont(
-      base: fbase,
-      bold: fbold,
-      italic: fitalic,
-      boldItalic: fboldItalic,
+    final regularFont = Font.ttf(regularFontData.buffer.asByteData());
+    final boldFont = Font.ttf(boldFontData.buffer.asByteData());
+    final italicFont = Font.ttf(italicFontData.buffer.asByteData());
+    final boldItalicFont = Font.ttf(boldItalicFontData.buffer.asByteData());
+
+    final themeData = ThemeData.withFont(
+      base: regularFont,
+      bold: boldFont,
+      italic: italicFont,
+      boldItalic: boldItalicFont,
     );
 
     final pdf = Document(theme: themeData);
@@ -129,7 +138,7 @@ class PdfInvoiceApi {
   }
 
   static Widget buildInvoice(AppLocalizations appLocalizations,
-      List<PreOrderedDishRecord> filteredDishRecords, String timeZone) {
+      List<PreOrderedDishRecord> filteredDishRecords, String myLocale) {
     final List<String> headers = [
       appLocalizations.name,
       appLocalizations.unitPrice,
@@ -138,10 +147,14 @@ class PdfInvoiceApi {
     ];
     final data = filteredDishRecords.map((item) {
       final total = item.price * item.amount;
-      String totalString =
-          NumberFormat.currency(locale: timeZone).format(total);
-      String priceString =
-          NumberFormat.currency(locale: timeZone).format(item.price);
+      String totalString = NumberFormat.currency(
+              locale: (myLocale.toString() == 'vi') ? 'vi_VN' : 'en_US',
+              symbol: (myLocale.toString() == 'vi') ? 'đ' : '\$')
+          .format(total);
+      String priceString = NumberFormat.currency(
+              locale: (myLocale.toString() == 'vi') ? 'vi_VN' : 'en_US',
+              symbol: (myLocale.toString() == 'vi') ? 'đ' : '\$')
+          .format(item.price);
       return [item.titleDish, priceString, item.amount, totalString];
     }).toList();
 

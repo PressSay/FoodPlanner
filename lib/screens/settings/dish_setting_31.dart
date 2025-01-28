@@ -505,7 +505,7 @@ class _Dish31State extends State<Dish31> {
                                           status: appLocalizations.upload,
                                           failed: appLocalizations.failed);
                                     },
-                                    child: Text('Upload')),
+                                    child: Text(appLocalizations.upload)),
                               )
                             ])),
                   ],

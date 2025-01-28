@@ -22,7 +22,6 @@ class List24 extends StatefulWidget {
 class _List24 extends State<List24> {
   int categoryId = 0;
   double total = 0;
-  String timeZone = 'vi_VN';
   String filterTitleDish = "";
   bool _showWidgetB = false;
   bool isInit = true;
@@ -168,6 +167,15 @@ class _List24 extends State<List24> {
         });
   }
 
+  String moneyFormat(double money) {
+    final myLocale = Localizations.localeOf(context);
+
+    return NumberFormat.currency(
+            locale: (myLocale.toString() == 'vi') ? 'vi_VN' : 'en_US',
+            symbol: (myLocale.toString() == 'vi') ? 'đ' : '\$')
+        .format(money);
+  }
+
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
@@ -211,9 +219,7 @@ class _List24 extends State<List24> {
                                     fontWeight: FontWeight.bold),
                               ),
                               Padding(padding: EdgeInsets.all(4)),
-                              Text(
-                                  NumberFormat.currency(locale: timeZone)
-                                      .format(widget.billRecord.discount),
+                              Text(moneyFormat(widget.billRecord.discount),
                                   style: TextStyle(
                                       fontSize: 16,
                                       color: colorScheme.secondary,
@@ -230,9 +236,7 @@ class _List24 extends State<List24> {
                                     fontWeight: FontWeight.bold),
                               ),
                               Padding(padding: EdgeInsets.all(4)),
-                              Text(
-                                  NumberFormat.currency(locale: timeZone)
-                                      .format(widget.billRecord.tax),
+                              Text(moneyFormat(widget.billRecord.tax),
                                   style: TextStyle(
                                       fontSize: 16,
                                       color: colorScheme.secondary,
@@ -249,9 +253,7 @@ class _List24 extends State<List24> {
                                     fontWeight: FontWeight.bold),
                               ),
                               Padding(padding: EdgeInsets.all(4)),
-                              Text(
-                                  NumberFormat.currency(locale: 'vi_VN')
-                                      .format(total),
+                              Text(moneyFormat(total),
                                   style: TextStyle(
                                       fontSize: 16,
                                       color: colorScheme.secondary,

@@ -1,12 +1,15 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:menu_qr/models/bill_record.dart';
+import 'package:menu_qr/services/alert.dart';
 import 'package:menu_qr/services/databases/data_helper.dart';
 import 'package:menu_qr/services/pdf_api.dart';
 import 'package:menu_qr/services/pdf_invoice_api.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class Paid42 extends StatefulWidget {
   const Paid42({super.key, required this.billRecord});
@@ -20,12 +23,15 @@ class _Paid42State extends State<Paid42> {
   final TextEditingController _controller = TextEditingController();
   final String logoImage = 'assets/images/wislam.png';
   final String logoText = 'https://wislam.ct.ws';
+  final permissionManageExternalStorage = Permission.manageExternalStorage;
+  final permissionStorage = Permission.storage;
+
   final dataHelper = DataHelper();
 
   String descFromShop = "";
-  String timeZone = "vi_VN";
   String nameShop = "";
   String addressShop = "";
+  Alert? alert;
 
   double total = 0;
   double amountPaid = 0;
@@ -206,6 +212,7 @@ class _Paid42State extends State<Paid42> {
 
   @override
   void initState() {
+    alert = Alert(context: context);
     loadData();
     super.initState();
   }
@@ -246,6 +253,9 @@ class _Paid42State extends State<Paid42> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final appLocalizations = AppLocalizations.of(context)!;
+    final myLocale = Localizations.localeOf(context);
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -281,8 +291,24 @@ class _Paid42State extends State<Paid42> {
                 Navigator.popUntil(context, (route) => route.isFirst);
               },
               () async {
+                if (!_isOnDesktopAndWeb) {
+                  final statusMStorage =
+                      await permissionManageExternalStorage.request();
+                  final statusStorage = await permissionStorage.request();
+                  if (!(statusMStorage == PermissionStatus.granted ||
+                      statusStorage == PermissionStatus.granted)) {
+                    // Permission denied
+                    alert!.showAlert(appLocalizations.error,
+                        appLocalizations.permissionDenied, false, null);
+                    openAppSettings();
+                    return;
+                  }
+                }
+                alert!.showAlert(appLocalizations.success,
+                    appLocalizations.success, false, null);
+
                 final pdfFile = await PdfInvoiceApi.generate(
-                    AppLocalizations.of(context)!,
+                    appLocalizations,
                     colorScheme,
                     widget.billRecord,
                     widget.billRecord.preOrderedDishRecords ?? [],
@@ -300,9 +326,9 @@ class _Paid42State extends State<Paid42> {
                       logoText
                     ],
                     descFromShop,
-                    timeZone,
+                    myLocale.toString(),
                     "Bill-${widget.billRecord.id!}");
-                PdfApi.openFile(pdfFile);
+                await PdfApi.openFile(pdfFile);
               }
             ], icons: [
               Icon(
@@ -321,7 +347,28 @@ class _Paid42State extends State<Paid42> {
     );
   }
 
+  bool get _isOnDesktopAndWeb {
+    if (kIsWeb) {
+      return true;
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.macOS:
+      case TargetPlatform.linux:
+      case TargetPlatform.windows:
+        return true;
+      case TargetPlatform.android:
+      case TargetPlatform.iOS:
+      case TargetPlatform.fuchsia:
+        return false;
+    }
+  }
+
   String moneyFormat(double money) {
-    return NumberFormat.currency(locale: timeZone).format(money);
+    final myLocale = Localizations.localeOf(context);
+
+    return NumberFormat.currency(
+            locale: (myLocale.toString() == 'vi') ? 'vi_VN' : 'en_US',
+            symbol: (myLocale.toString() == 'vi') ? 'đ' : '\$')
+        .format(money);
   }
 }

@@ -275,6 +275,7 @@ class _Table30State extends State<Table30> {
                                           color: colorScheme.primary))),
                               child: Icon(
                                 Icons.table_bar,
+                                color: colorScheme.primary,
                                 size: 20,
                               )),
                           SizedBox(
@@ -338,6 +339,7 @@ class _Table30State extends State<Table30> {
                                             color: colorScheme.primary))),
                                 child: Icon(
                                   Icons.table_bar,
+                                  color: colorScheme.primary,
                                   size: 20,
                                 )),
                             SizedBox(

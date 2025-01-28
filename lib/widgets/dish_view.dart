@@ -31,8 +31,11 @@ class DishView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     DishProvider dishProvider = context.watch<DishProvider>();
-    String priceDisplayToStr =
-        NumberFormat.currency(locale: 'vi_VN').format(price);
+    final myLocale = Localizations.localeOf(context);
+    String priceDisplayToStr = NumberFormat.currency(
+            locale: (myLocale.toString() == 'vi') ? 'vi_VN' : 'en_US',
+            symbol: (myLocale.toString() == 'vi') ? 'đ' : '\$')
+        .format(price);
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     return Stack(
       children: [

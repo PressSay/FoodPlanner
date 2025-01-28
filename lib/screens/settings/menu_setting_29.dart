@@ -14,8 +14,9 @@ import 'package:menu_qr/services/utils.dart';
 import 'package:menu_qr/widgets/bottom_navigator.dart';
 import 'package:menu_qr/widgets/order_setting_button_online.dart';
 import 'package:menu_qr/widgets/page_indicator.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class Menu29 extends StatefulWidget {
   const Menu29({super.key});
@@ -39,6 +40,8 @@ class _Menu29State extends State<Menu29> {
 
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _controllerMenu = TextEditingController();
+  final permissionStorage = Permission.storage;
+  final permissionManageExternalStorage = Permission.manageExternalStorage;
 
   final DataHelper dataHelper = DataHelper();
   final List<List<MenuRecord>> menuRecords = [];
@@ -287,8 +290,24 @@ class _Menu29State extends State<Menu29> {
     }
   }
 
-  Future<void> exportData(List<MenuRecord> selectedMenuRecords,
-      List<String> header, String status, String content) async {
+  Future<void> exportData(
+      List<MenuRecord> selectedMenuRecords,
+      List<String> header,
+      String status,
+      String content,
+      String statusError,
+      String error) async {
+    if (!_isOnDesktopAndWeb) {
+      final statusMStorage = await permissionManageExternalStorage.request();
+      final statusStorage = await permissionStorage.request();
+      if (!(statusMStorage == PermissionStatus.granted ||
+          statusStorage == PermissionStatus.granted)) {
+        // Permission denied
+        openAppSettings();
+        return;
+      }
+    }
+
     var excel = excl.Excel.createExcel();
     var sheetObject = excel['Menu Data']; // Tạo sheet mới
 
@@ -298,8 +317,13 @@ class _Menu29State extends State<Menu29> {
     var fileBytes = excel.save();
 
     // Lưu trên Android/iOS (sử dụng path_provider)
-    final directory = await getApplicationDocumentsDirectory();
-    final path = "${directory.path}/menu_data.xlsx";
+    final dir = (!_isOnDesktopAndWeb)
+        ? Directory('/storage/emulated/0/Documents')
+        : await getApplicationDocumentsDirectory();
+    if (!dir.existsSync()) {
+      dir.createSync(recursive: true);
+    }
+    final path = "${dir.path}/menu_data.xlsx";
     final file = File(path);
     await file.writeAsBytes(fileBytes!);
 
@@ -398,7 +422,9 @@ class _Menu29State extends State<Menu29> {
                                 excelColumnFormat,
                                 AppLocalizations.of(context)!.success,
                                 AppLocalizations.of(context)!
-                                    .dataSavedSuccessfully);
+                                    .dataSavedSuccessfully,
+                                AppLocalizations.of(context)!.error,
+                                AppLocalizations.of(context)!.permissionDenied);
                           },
                           child: Text(AppLocalizations.of(context)!.export)),
                     ],

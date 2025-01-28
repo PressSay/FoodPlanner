@@ -36,7 +36,6 @@ class _Paid41State extends State<Paid41> {
   double amountPaid = 0;
   double change = 0;
 
-  String timeZone = "vi_VN";
   bool isTableIdChange = true;
   int indexTableRecordsList = 0;
   int indexTableRecords = 0;
@@ -113,8 +112,17 @@ class _Paid41State extends State<Paid41> {
                     isRebuild: true,
                     isImmediate: true))
             .then((value) {
-          if (value == null) return;
-          getPreOrderedDishRecords();
+          if (value is List<PreOrderedDishRecord>) {
+            double tmpTotal = 0.0;
+            for (var e in value) {
+              tmpTotal += (e.price * e.amount);
+            }
+            setState(() {
+              total = tmpTotal - widget.billRecord.discount;
+              widget.billRecord.preOrderedDishRecords = value;
+              change = widget.billRecord.amountPaid - total;
+            });
+          }
         });
       },
       () {
@@ -450,6 +458,11 @@ class _Paid41State extends State<Paid41> {
   }
 
   String moneyFormat(double money) {
-    return NumberFormat.currency(locale: timeZone).format(money);
+    final myLocale = Localizations.localeOf(context);
+
+    return NumberFormat.currency(
+            locale: (myLocale.toString() == 'vi') ? 'vi_VN' : 'en_US',
+            symbol: (myLocale.toString() == 'vi') ? 'đ' : '\$')
+        .format(money);
   }
 }

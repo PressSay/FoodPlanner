@@ -112,5 +112,7 @@
 
     "name": "Tên",
     "unitPrice": "Đơn giá",
-    "quantity": "Số lượng"
+    "quantity": "Số lượng",
+
+    "permissionDenied": "Quyền bị từ chối"
 }

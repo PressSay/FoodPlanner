@@ -389,6 +389,9 @@ class _ListDetail40State extends State<ListDetail40> {
                           billRecords.removeAt(indexBillIdCurrent);
                           billRecord = billRecords.firstOrNull;
                           preOrderedDishRecords.clear();
+                          setState(() {
+                            total = 0.0;
+                          });
                         }
                       }
                       // 40 -> 36 -> 35
@@ -417,6 +420,10 @@ class _ListDetail40State extends State<ListDetail40> {
                   // billRecords.removeWhere((e) => e.id! == billIdCurrent);
                   billRecords.removeAt(indexBillIdCurrent);
                   billRecord = billRecords.lastOrNull;
+                  preOrderedDishRecords.clear();
+                  setState(() {
+                    total = 0.0;
+                  });
                 });
                 if (billRecord != null) {
                   getPreOrderedDishRecords(billRecord!.id!);

@@ -37,15 +37,15 @@
             android:value="2" />
 
         <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.fileProvider"
-            android:exported="false"
-            android:grantUriPermissions="true"
-            tools:replace="android:authorities">
+                android:name="androidx.core.content.FileProvider"
+                android:authorities="com.example.free_menu_app.fileprovider"
+                android:exported="false"
+                android:grantUriPermissions="true"
+                tools:replace="android:authorities">
             <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/filepaths"
-                tools:replace="android:resource" />
+                    android:name="android.support.FILE_PROVIDER_PATHS"
+                    android:resource="@xml/provider_paths"
+                    tools:replace="android:resource" />
         </provider>
     </application>
     <!-- Required to query activities that can process text, see:

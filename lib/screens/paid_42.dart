@@ -328,7 +328,7 @@ class _Paid42State extends State<Paid42> {
                     descFromShop,
                     myLocale.toString(),
                     "Bill-${widget.billRecord.id!}");
-                await PdfApi.openFile(pdfFile);
+                PdfApi.openFile(pdfFile);
               }
             ], icons: [
               Icon(

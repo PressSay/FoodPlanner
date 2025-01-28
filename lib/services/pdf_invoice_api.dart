@@ -239,7 +239,7 @@ class PdfInvoiceApi {
         children: [
           Divider(),
           SizedBox(height: 2 * PdfPageFormat.mm),
-          Container(width: 120, height: 120, child: qrImage),
+          Center(child: SizedBox(width: 120, height: 120, child: qrImage)),
           SizedBox(height: 1 * PdfPageFormat.mm),
           Text(qrText, style: TextStyle(fontWeight: FontWeight.bold))
         ],

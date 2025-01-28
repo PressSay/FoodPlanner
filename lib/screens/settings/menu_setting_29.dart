@@ -41,7 +41,7 @@ class _Menu29State extends State<Menu29> {
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _controllerMenu = TextEditingController();
   final permissionStorage = Permission.storage;
-  final permissionManageExternalStorage = Permission.manageExternalStorage;
+  final permissionManageExternalStorage = Permission.mediaLibrary;
 
   final DataHelper dataHelper = DataHelper();
   final List<List<MenuRecord>> menuRecords = [];

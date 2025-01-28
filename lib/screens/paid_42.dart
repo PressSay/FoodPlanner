@@ -23,7 +23,7 @@ class _Paid42State extends State<Paid42> {
   final TextEditingController _controller = TextEditingController();
   final String logoImage = 'assets/images/wislam.png';
   final String logoText = 'https://wislam.ct.ws';
-  final permissionManageExternalStorage = Permission.manageExternalStorage;
+  final permissionManageExternalStorage = Permission.mediaLibrary;
   final permissionStorage = Permission.storage;
 
   final dataHelper = DataHelper();

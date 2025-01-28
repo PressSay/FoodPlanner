@@ -56,9 +56,9 @@ class PdfInvoiceApi {
         SizedBox(height: 1 * PdfPageFormat.cm),
         buildInvoice(appLocalizations, filteredDishRecords, timeZone),
         Divider(),
-        buildTotal(appLocalizations, info)
+        buildTotal(appLocalizations, info),
+        buildFooter(qrImage, info[9])
       ],
-      footer: (context) => buildFooter(qrImage, info[9]),
     ));
 
     return PdfApi.saveDocument(name: '$billName.pdf', pdf: pdf);

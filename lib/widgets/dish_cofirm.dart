@@ -84,14 +84,14 @@ class DishCofirm extends StatelessWidget {
                 ? Image.file(
                     File(imagePath),
                     fit: BoxFit.cover,
-                    width: 86.25, // width * 0.47
-                    height: 76.5, // height * 0.75
+                    width: 86.25 /* widthBarDish * 0.25 */,
+                    height: 76.5 /* heightBarDish * 0.85 */,
                   )
                 : Image.asset(
                     'assets/images/hinh-cafe-kem-banh-quy-2393351094.webp',
                     fit: BoxFit.cover,
-                    width: 86.25, // width * 0.47
-                    height: 76.5, // height * 0.75
+                    width: 86.25 /* widthBarDish * 0.25 */,
+                    height: 76.5 /* heightBarDish * 0.85 */,
                   ),
           ),
         ),

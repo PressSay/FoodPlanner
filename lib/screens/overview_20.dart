@@ -300,20 +300,6 @@ class _Overview20State extends State<Overview20> {
                 aspectRatio: 1.70,
                 child: LineChart(chartData()),
               ),
-              SizedBox(
-                width: 60,
-                height: 34,
-                child: TextButton(
-                  onPressed: () {},
-                  child: Text(
-                    AppLocalizations.of(context)!.avg,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
             ],
           )
         : SizedBox();

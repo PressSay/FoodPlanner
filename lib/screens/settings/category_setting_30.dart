@@ -268,6 +268,7 @@ class _Category30State extends State<Category30> {
                                       start: BorderSide(
                                           color: colorScheme.primary))),
                               child: Icon(
+                                color: colorScheme.primary,
                                 Icons.menu,
                                 size: 20,
                               )),
@@ -336,6 +337,7 @@ class _Category30State extends State<Category30> {
                                             color: colorScheme.primary))),
                                 child: Icon(
                                   Icons.category,
+                                  color: colorScheme.primary,
                                   size: 20,
                                 )),
                             SizedBox(

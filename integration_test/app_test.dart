@@ -18,6 +18,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: const Home18(
+          themeMode: ThemeMode.dark,
           changeToDark: dump,
           changeToLight: dump,
         ),

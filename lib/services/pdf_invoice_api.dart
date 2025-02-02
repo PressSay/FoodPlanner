@@ -7,7 +7,6 @@ import 'package:menu_qr/models/pre_ordered_dish.dart';
 import 'package:menu_qr/services/pdf_api.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart';
-import 'package:printing/printing.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class PdfInvoiceApi {

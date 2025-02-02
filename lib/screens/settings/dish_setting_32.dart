@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:menu_qr/models/dish_record.dart';
 import 'package:menu_qr/services/alert.dart';
@@ -22,7 +23,7 @@ class _Dish32State extends State<Dish32> {
   String imagePath = "";
   bool isSaved = true;
 
-  final defaultImage = "assets/images/hinh-cafe-kem-banh-quy-2393351094.jpg";
+  final defaultImage = "assets/images/hinh-cafe-kem-banh-quy-2393351094.webp";
   final TextEditingController _controllerDescDish = TextEditingController();
   final TextEditingController _controllerDishTitle = TextEditingController();
   final TextEditingController _controllerDishPrice = TextEditingController();
@@ -35,9 +36,7 @@ class _Dish32State extends State<Dish32> {
     _controllerDishTitle.text = widget.dishRecord.title;
     _controllerDescDish.text = widget.dishRecord.desc;
     _controllerDishPrice.text = widget.dishRecord.price.toString();
-    imagePath = (widget.dishRecord.imagePath.isEmpty)
-        ? "assets/images/hinh-cafe-kem-banh-quy-2393351094.webp"
-        : widget.dishRecord.imagePath;
+    imagePath = widget.dishRecord.imagePath;
     super.initState();
   }
 
@@ -88,7 +87,12 @@ class _Dish32State extends State<Dish32> {
       if (fileDelete.existsSync()) await fileDelete.delete();
     }
     final file = result.files.first;
-    final appStorage = await getApplicationCacheDirectory();
+    final appStorage = (!_isOnDesktopAndWeb)
+        ? Directory('/storage/emulated/0/Documents/Food Planer/Images')
+        : await getApplicationDocumentsDirectory();
+    if (!appStorage.existsSync()) {
+      appStorage.createSync(recursive: true);
+    }
     final filename =
         '${DateTime.now().millisecondsSinceEpoch}.${file.extension}';
     final tmpNewFile = File('${appStorage.path}/$filename');
@@ -159,6 +163,7 @@ class _Dish32State extends State<Dish32> {
                                             color: colorScheme.primary))),
                                 child: Icon(
                                   Icons.dining_sharp,
+                                  color: colorScheme.primary,
                                   size: 20,
                                 )),
                             SizedBox(
@@ -226,12 +231,19 @@ class _Dish32State extends State<Dish32> {
                                 topRight: Radius.circular(20.0),
                                 bottomLeft: Radius.circular(20.0),
                               ),
-                              child: Image.asset(
-                                (imagePath.isEmpty) ? defaultImage : imagePath,
-                                fit: BoxFit.cover,
-                                width: 150, // width * 0.47
-                                height: 165, // height * 0.75
-                              ),
+                              child: (imagePath.isNotEmpty)
+                                  ? Image.file(
+                                      File(imagePath),
+                                      fit: BoxFit.cover,
+                                      width: 150, // width * 0.47
+                                      height: 165, // height * 0.75
+                                    )
+                                  : Image.asset(
+                                      defaultImage,
+                                      fit: BoxFit.cover,
+                                      width: 150, // width * 0.47
+                                      height: 165,
+                                    ),
                             ),
                             /* Put Image here */
                             Padding(
@@ -292,5 +304,21 @@ class _Dish32State extends State<Dish32> {
         ],
       ),
     );
+  }
+
+  bool get _isOnDesktopAndWeb {
+    if (kIsWeb) {
+      return true;
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.macOS:
+      case TargetPlatform.linux:
+      case TargetPlatform.windows:
+        return true;
+      case TargetPlatform.android:
+      case TargetPlatform.iOS:
+      case TargetPlatform.fuchsia:
+        return false;
+    }
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:menu_qr/services/providers/dish_provider.dart';
@@ -76,12 +78,19 @@ class DishView extends StatelessWidget {
                             topRight: Radius.circular(20.0),
                             bottomLeft: Radius.circular(20.0),
                           ),
-                          child: Image.asset(
-                            imagePath,
-                            fit: BoxFit.cover,
-                            width: 150, // width * 0.47
-                            height: 165, // height * 0.75
-                          ),
+                          child: (imagePath.isNotEmpty)
+                              ? Image.file(
+                                  File(imagePath),
+                                  fit: BoxFit.cover,
+                                  width: 150, // width * 0.47
+                                  height: 165, // height * 0.75
+                                )
+                              : Image.asset(
+                                  'assets/images/hinh-cafe-kem-banh-quy-2393351094.webp',
+                                  fit: BoxFit.cover,
+                                  width: 150, // width * 0.47
+                                  height: 165,
+                                ),
                         )
                       ],
                     ),

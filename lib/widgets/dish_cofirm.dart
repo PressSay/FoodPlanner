@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -78,14 +80,19 @@ class DishCofirm extends StatelessWidget {
               topRight: Radius.circular(20.0),
               bottomLeft: Radius.circular(20.0),
             ),
-            child: Image.asset(
-              (imagePath.isEmpty)
-                  ? "assets/images/hinh-cafe-kem-banh-quy-2393351094.webp"
-                  : imagePath,
-              fit: BoxFit.cover,
-              width: 86.25 /* widthBarDish * 0.25 */,
-              height: 76.5 /* heightBarDish * 0.85 */,
-            ),
+            child: (imagePath.isNotEmpty)
+                ? Image.file(
+                    File(imagePath),
+                    fit: BoxFit.cover,
+                    width: 86.25, // width * 0.47
+                    height: 76.5, // height * 0.75
+                  )
+                : Image.asset(
+                    'assets/images/hinh-cafe-kem-banh-quy-2393351094.webp',
+                    fit: BoxFit.cover,
+                    width: 86.25, // width * 0.47
+                    height: 76.5, // height * 0.75
+                  ),
           ),
         ),
         Positioned(

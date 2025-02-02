@@ -59,6 +59,16 @@ class _Table36State extends State<Table36> {
     navigateListDetail40(!widget.isList);
   }
 
+  void updateNumberOfPeople() async {
+    TableRecord? tableRecord =
+        await dataHelper.tableRecord(widget.tableRecord.id ?? 0);
+    if (tableRecord != null) {
+      setState(() {
+        widget.tableRecord.numOfPeople = tableRecord.numOfPeople;
+      });
+    }
+  }
+
   void navigateListDetail40(isView) {
     navigateWithFade(
       context,
@@ -69,6 +79,7 @@ class _Table36State extends State<Table36> {
         oldIndexTableRecords: widget.oldIndexTableRecords,
       ),
     ).then((onValue) {
+      updateNumberOfPeople();
       // logger.d('${widget.tableRecord.numOfPeople}, onValue: $onValue');
       if (onValue is Map<String, int>) {
         onValueData['oldId'] = onValue['oldId'] ?? 0;

@@ -254,11 +254,13 @@ class _ListScreen47State extends State<ListScreen47> {
                 return;
               }
               navigateWithFade(
-                  context,
-                  ListDetail40(
-                    onlyView: false,
-                    listBillId: billIdsArg,
-                  ));
+                      context,
+                      ListDetail40(
+                        onlyView: false,
+                        listBillId: billIdsArg,
+                      ))
+                  .then((_) =>
+                      getBillRecords(where: 'isLeft = ?', whereArgs: [0]));
             }
           ], icons: [
             Icon(

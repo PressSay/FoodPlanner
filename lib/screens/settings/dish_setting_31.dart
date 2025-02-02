@@ -26,6 +26,8 @@ class _Dish31State extends State<Dish31> {
   Alert? alert;
   String filterTitleDish = "";
 
+  bool isInserted = false;
+
   String titleDish = "";
   String descDish = "";
   double price = 0;
@@ -38,7 +40,7 @@ class _Dish31State extends State<Dish31> {
 
   final pageViewSize = 3;
   final pageSize = 40;
-  final defaultImage = "assets/images/hinh-cafe-kem-banh-quy-2393351094.jpg";
+  final defaultImage = "assets/images/hinh-cafe-kem-banh-quy-2393351094.webp";
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _controllerCategory = TextEditingController();
   final TextEditingController _controllerDescCategory = TextEditingController();
@@ -74,10 +76,17 @@ class _Dish31State extends State<Dish31> {
     }
     if (imagePath.isNotEmpty) {
       File fileDelete = File(imagePath);
-      if (fileDelete.existsSync()) await fileDelete.delete();
+      if (fileDelete.existsSync() && !isInserted) await fileDelete.delete();
     }
     final file = result.files.first;
-    final appStorage = await getApplicationCacheDirectory();
+
+    final appStorage = (!_isOnDesktopAndWeb)
+        ? Directory('/storage/emulated/0/Documents/Food Planer/Images')
+        : await getApplicationDocumentsDirectory();
+    if (!appStorage.existsSync()) {
+      appStorage.createSync(recursive: true);
+    }
+
     final filename =
         '${DateTime.now().millisecondsSinceEpoch}.${file.extension}';
     final tmpNewFile = File('${appStorage.path}/$filename');
@@ -138,6 +147,7 @@ class _Dish31State extends State<Dish31> {
         desc: descDish,
         price: price);
     final int lastId = await dataHelper.insertDishRecord(newE);
+    isInserted = true;
     newE.id = lastId;
     for (var i = 0; i < pageViewSize; i++) {
       if (dishRecords[i].length < pageSize) {
@@ -232,7 +242,7 @@ class _Dish31State extends State<Dish31> {
                   (List<DishRecord> insideDishRecords, int index1) {
                 if (imagePath.isNotEmpty) {
                   final file = File(imagePath);
-                  if (file.existsSync()) file.deleteSync();
+                  if (file.existsSync() && !isInserted) file.deleteSync();
                   imagePath = "";
                 }
                 navigateWithFade(
@@ -283,7 +293,7 @@ class _Dish31State extends State<Dish31> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
-          if (imagePath.isNotEmpty) {
+          if (imagePath.isNotEmpty && !isInserted) {
             final file = File(imagePath);
             if (file.existsSync()) file.deleteSync();
           }
@@ -350,6 +360,7 @@ class _Dish31State extends State<Dish31> {
                                               color: colorScheme.primary))),
                                   child: Icon(
                                     Icons.category,
+                                    color: colorScheme.primary,
                                     size: 20,
                                   )),
                               SizedBox(
@@ -415,6 +426,7 @@ class _Dish31State extends State<Dish31> {
                                               color: colorScheme.primary))),
                                   child: Icon(
                                     Icons.dining_sharp,
+                                    color: colorScheme.primary,
                                     size: 20,
                                   )),
                               SizedBox(
@@ -487,14 +499,20 @@ class _Dish31State extends State<Dish31> {
                                   topRight: Radius.circular(20.0),
                                   bottomLeft: Radius.circular(20.0),
                                 ),
-                                child: Image.asset(
-                                  (imagePath.isEmpty)
-                                      ? defaultImage
-                                      : imagePath,
-                                  fit: BoxFit.cover,
-                                  width: 150, // width * 0.47
-                                  height: 165, // height * 0.75
-                                ),
+                                child: (imagePath.isNotEmpty)
+                                    ? Image.file(
+                                        File(imagePath),
+                                        fit: BoxFit.cover,
+                                        width: 150, // width * 0.47
+                                        height: 165, // height * 0.75
+                                      )
+                                    : Image.asset(
+                                        'assets/images/'
+                                        'hinh-cafe-kem-banh-quy-2393351094.webp',
+                                        fit: BoxFit.cover,
+                                        width: 150, // width * 0.47
+                                        height: 165,
+                                      ),
                               ),
                               /* Put Image here */
                               Padding(
@@ -545,14 +563,14 @@ class _Dish31State extends State<Dish31> {
               true
             ], listCallback: [
               () {
-                if (imagePath.isNotEmpty) {
+                if (imagePath.isNotEmpty && !isInserted) {
                   final file = File(imagePath);
                   if (file.existsSync()) file.deleteSync();
                 }
                 Navigator.pop(context, widget.categoryRecord);
               },
               () {
-                if (imagePath.isNotEmpty) {
+                if (imagePath.isNotEmpty && !isInserted) {
                   final file = File(imagePath);
                   if (file.existsSync()) file.deleteSync();
                 }

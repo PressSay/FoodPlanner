@@ -309,7 +309,7 @@ class _Menu29State extends State<Menu29> {
     }
 
     var excel = excl.Excel.createExcel();
-    var sheetObject = excel['Menu Data']; // Tạo sheet mới
+    var sheetObject = excel['Sheet1']; // Tạo sheet mới
 
     sheetObject.insertRowIterables(header, 0);
 
@@ -368,6 +368,7 @@ class _Menu29State extends State<Menu29> {
                                           color: colorScheme.primary))),
                               child: Icon(
                                 Icons.menu,
+                                color: colorScheme.primary,
                                 size: 20,
                               )),
                           SizedBox(

@@ -314,11 +314,13 @@ class _ListOnline48State extends State<ListOnline48> {
                 return;
               }
               navigateWithFade(
-                  context,
-                  ListDetail40(
-                    onlyView: false,
-                    listBillId: billIdsArg,
-                  ));
+                      context,
+                      ListDetail40(
+                        onlyView: false,
+                        listBillId: billIdsArg,
+                      ))
+                  .then((_) =>
+                      getBillRecords(where: 'isLeft = ?', whereArgs: [0]));
             }
           ], icons: [
             Icon(

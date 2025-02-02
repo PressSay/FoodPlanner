@@ -82,7 +82,10 @@ class _MyAppState extends State<MyApp> {
       themeMode: themeMode,
       // home: const ResponsiveLayout(
       //     mobileBody: Scaffold(), desktopBody: Scaffold())
-      home: Home18(changeToDark: changeToDark, changeToLight: changeToLight),
+      home: Home18(
+          themeMode: themeMode,
+          changeToDark: changeToDark,
+          changeToLight: changeToLight),
     );
   }
 }

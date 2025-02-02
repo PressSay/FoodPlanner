@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import 'package:menu_qr/screens/list_47.dart';
 import 'package:menu_qr/screens/overview_20.dart';
 import 'package:menu_qr/screens/settings/setting_17.dart';
@@ -12,9 +13,13 @@ import 'package:menu_qr/services/utils.dart';
 
 class Home18 extends StatefulWidget {
   const Home18(
-      {super.key, required this.changeToLight, required this.changeToDark});
+      {super.key,
+      required this.themeMode,
+      required this.changeToLight,
+      required this.changeToDark});
   final Function changeToLight;
   final Function changeToDark;
+  final ThemeMode themeMode;
 
   @override
   State<StatefulWidget> createState() => _Home18();
@@ -23,6 +28,8 @@ class Home18 extends StatefulWidget {
 class _Home18 extends State<Home18> {
   String shopName = '';
   bool isDark = false;
+
+  final logger = Logger();
 
   Future<void> loadData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -33,6 +40,7 @@ class _Home18 extends State<Home18> {
 
   @override
   void initState() {
+    logger.d("themeMode = ${widget.themeMode.name}");
     loadData();
     super.initState();
   }
@@ -52,7 +60,7 @@ class _Home18 extends State<Home18> {
             BarButton(
               iconData: Icons.dark_mode,
               navigateFunc: () {
-                if (!isDark) {
+                if (!isDark || widget.themeMode.name == "system") {
                   widget.changeToDark();
                   isDark = true;
                 }
@@ -64,7 +72,7 @@ class _Home18 extends State<Home18> {
             BarButton(
                 iconData: Icons.light_mode,
                 navigateFunc: () {
-                  if (isDark) {
+                  if (isDark || widget.themeMode.name == "system") {
                     widget.changeToLight();
                     isDark = false;
                   }

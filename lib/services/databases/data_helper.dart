@@ -364,6 +364,43 @@ class DataHelper {
     }
   }
 
+  Future<List<DishRecord>> getDishesByMenuId({
+    required int menuId,
+    required int pageNum,
+    required int pageSize,
+  }) async {
+    final Database db = await database;
+
+    final int offset = pageNum * pageSize;
+
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+    SELECT d.*, c.title as categoryTitle, c.desc as categoryDesc
+    FROM $sqlDishRecords d
+    INNER JOIN $sqlCategoryRecords c ON d.categoryId = c.id
+    INNER JOIN $sqlMenuRecords m ON c.menuId = m.id
+    WHERE m.id = ?
+    LIMIT ? OFFSET ?
+  ''', [menuId, pageSize, offset]);
+
+    return List.generate(maps.length, (i) {
+      return DishRecord(
+        id: maps[i]['id'],
+        title: maps[i]['title'],
+        desc: maps[i]['desc'],
+        price: maps[i]['price'],
+        imagePath: maps[i]['imagePath'],
+        categoryId: maps[i]['categoryId'],
+        timeStamp: DateTime.parse(maps[i]['timeStamp']),
+        category: CategoryRecord(
+          id: maps[i]['categoryId'],
+          title: maps[i]['categoryTitle'],
+          desc: maps[i]['categoryDesc'],
+          menuId: menuId,
+        ),
+      );
+    });
+  }
+
 // bill_helper
 
   Future<void> deteleDishIdAtBillId(int billId, int dishId) async {

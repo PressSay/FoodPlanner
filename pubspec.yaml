@@ -44,7 +44,7 @@ dependencies:
   google_fonts: ^6.2.1
   printing: ^5.13.4
   file_picker: ^8.1.7
-  excel: ^3.0.0
+  excel: ^4.0.0
   sqflite_common_ffi: ^2.3.4+4
   mockito: ^5.4.5
   fl_chart: ^0.70.1

@@ -254,7 +254,12 @@ class _Table35 extends State<Table35> {
                       onSubmitted: (text) {
                         setState(() {
                           _showWidgetB = !_showWidgetB;
-                          filterTitleTable = text;
+                          if (text.isNotEmpty) {
+                            filterTitleTable = text;
+                            getTableRecords(
+                                where: 'name LIKE ?',
+                                whereArgs: ['%$filterTitleTable%']);
+                          }
                         });
                       })),
               crossFadeState: _showWidgetB
@@ -277,6 +282,10 @@ class _Table35 extends State<Table35> {
               setState(() {
                 _showWidgetB = !_showWidgetB;
                 filterTitleTable = "";
+                if (filterTitleTable.isNotEmpty) {
+                  getTableRecords();
+                  filterTitleTable = "";
+                }
               });
             }
           ], icons: [

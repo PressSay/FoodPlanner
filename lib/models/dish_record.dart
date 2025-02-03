@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+import 'package:menu_qr/models/category_record.dart';
+
 class DishRecord {
   int? id;
   int categoryId;
@@ -6,6 +9,7 @@ class DishRecord {
   String desc;
   double price;
   DateTime? timeStamp;
+  CategoryRecord? category;
 
   DishRecord(
       {this.id,
@@ -14,7 +18,8 @@ class DishRecord {
       required this.title,
       required this.desc,
       required this.price,
-      this.timeStamp});
+      this.timeStamp,
+      this.category});
 
   Map<String, dynamic> toMap() {
     return {

@@ -88,7 +88,7 @@ class _Dish32State extends State<Dish32> {
     }
     final file = result.files.first;
     final appStorage = (!_isOnDesktopAndWeb)
-        ? Directory('/storage/emulated/0/Documents/Food Planer/Images')
+        ? Directory('/storage/emulated/0/Documents/Food Planner/Images')
         : await getApplicationDocumentsDirectory();
     if (!appStorage.existsSync()) {
       appStorage.createSync(recursive: true);

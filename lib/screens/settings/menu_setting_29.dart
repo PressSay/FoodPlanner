@@ -222,9 +222,15 @@ class _Menu29State extends State<Menu29> {
           pageSize: pageSize);
       tmpMenuRecordsList.add(tmpMenuRecords);
     }
+
+    final List<MenuRecord> tmpSelectedMenuRecords =
+        await dataHelper.menuRecords(where: "isSelected = 1");
+
     setState(() {
       menuRecords.clear();
       menuRecords.addAll(tmpMenuRecordsList);
+      selectedMenuRecords.clear();
+      selectedMenuRecords.addAll(tmpSelectedMenuRecords);
     });
   }
 
@@ -243,7 +249,7 @@ class _Menu29State extends State<Menu29> {
         int pFC = 0;
         for (var column in row) {
           String data = column?.value.toString() ?? "";
-          if (formalColumn[pFC++].compareTo(data) == 0) {
+          if (formalColumn[pFC++].toString().compareTo(data) == 0) {
             continue;
           } else {
             haveBreak = !haveBreak;
@@ -308,17 +314,62 @@ class _Menu29State extends State<Menu29> {
       }
     }
 
+    var rowIndex = 0;
     var excel = excl.Excel.createExcel();
     var sheetObject = excel['Sheet1']; // Tạo sheet mới
 
-    sheetObject.insertRowIterables(header, 0);
+    sheetObject.insertRowIterables(
+        header.map((e) => excl.TextCellValue(e)).toList(), rowIndex);
 
-    // Lưu file
+    rowIndex++;
+
+    final List<DishRecord> dishes = [];
+
+    for (var menuRecord in selectedMenuRecords) {
+      // Use the new getDishesByMenuId function
+      int pageNum = 0;
+      int pageSize = 20; // Adjust page size as needed
+
+      while (true) {
+        try {
+          dishes.clear();
+          dishes.addAll(await dataHelper.getDishesByMenuId(
+            menuId: menuRecord.id!,
+            pageNum: pageNum,
+            pageSize: pageSize,
+          ));
+
+          if (dishes.isEmpty) break; // No more dishes for this menu
+
+          for (var dish in dishes) {
+            List<excl.CellValue> rowData = [
+              excl.TextCellValue(dish.id?.toString() ?? ""),
+              excl.TextCellValue(dish.title),
+              excl.TextCellValue(dish.price.toString()),
+              excl.TextCellValue(dish.desc),
+              excl.TextCellValue(dish.imagePath),
+              excl.TextCellValue(dish.category?.title ?? ""),
+              excl.TextCellValue(dish.category?.desc ?? ""),
+            ];
+            sheetObject.insertRowIterables(rowData, rowIndex);
+            rowIndex++;
+          }
+
+          if (dishes.length < pageSize) break; // Last page
+
+          pageNum++; // Move to the next page
+        } catch (e) {
+          alert!.showAlert(statusError, "Error exporting: $e", false, null);
+          return;
+        }
+      }
+    }
+
     var fileBytes = excel.save();
 
     // Lưu trên Android/iOS (sử dụng path_provider)
     final dir = (!_isOnDesktopAndWeb)
-        ? Directory('/storage/emulated/0/Documents')
+        ? Directory('/storage/emulated/0/Documents/Food Planner')
         : await getApplicationDocumentsDirectory();
     if (!dir.existsSync()) {
       dir.createSync(recursive: true);
@@ -329,8 +380,8 @@ class _Menu29State extends State<Menu29> {
 
     // In ra đường dẫn (cho debug)
     // print("File saved at: $path");
-    //Có thể hiển thị thông báo thành công cho người dùng.
-    alert!.showAlert(status, content, false, null);
+    // Có thể hiển thị thông báo thành công cho người dùng.
+    alert!.showAlert(status, '$content\n$path', false, null);
   }
 
   Widget editArea(ColorScheme colorScheme, List<String> excelColumnFormat,

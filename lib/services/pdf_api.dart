@@ -13,7 +13,7 @@ class PdfApi {
     final bytes = await pdf.save();
 
     final dir = (!_isOnDesktopAndWeb)
-        ? Directory('/storage/emulated/0/Documents/Food Planer/Invoice')
+        ? Directory('/storage/emulated/0/Documents/Food Planner/Invoice')
         : await getApplicationDocumentsDirectory();
     if (!dir.existsSync()) {
       dir.createSync(recursive: true);

@@ -36,7 +36,7 @@ class _MyAppState extends State<MyApp> {
 
   final ThemeData lightTheme = ThemeData(
     colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color.fromARGB(0, 107, 8, 107), // Màu nâu nhạt
+      seedColor: const Color(0x00ede0d0), // Màu nâu nhạt
       brightness: Brightness.light, // Theme sáng
     ),
     useMaterial3: true,
@@ -44,7 +44,7 @@ class _MyAppState extends State<MyApp> {
 
   final ThemeData darkTheme = ThemeData(
     colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0x00210021), // Màu nâu nhạt
+      seedColor: const Color(0x00ede0d0), // Màu nâu nhạt
       brightness: Brightness.dark, // Theme tối
     ),
     useMaterial3: true,

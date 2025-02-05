@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:menu_qr/models/category_record.dart';
 
 class DishRecord {

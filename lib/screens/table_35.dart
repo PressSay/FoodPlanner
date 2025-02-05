@@ -257,8 +257,7 @@ class _Table35 extends State<Table35> {
                           if (text.isNotEmpty) {
                             filterTitleTable = text;
                             getTableRecords(
-                                where: 'name LIKE ?',
-                                whereArgs: ['%$filterTitleTable%']);
+                                where: 'name LIKE ?', whereArgs: ['%$text%']);
                           }
                         });
                       })),
@@ -281,7 +280,6 @@ class _Table35 extends State<Table35> {
             () {
               setState(() {
                 _showWidgetB = !_showWidgetB;
-                filterTitleTable = "";
                 if (filterTitleTable.isNotEmpty) {
                   getTableRecords();
                   filterTitleTable = "";
